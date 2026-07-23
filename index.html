@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
@@ -28,7 +28,13 @@
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  /* Zoom stays allowed (accessibility); buttons opt out of double-tap zoom
+     so fast tapping during practice doesn't zoom the page. */
+  button, input, select{ touch-action: manipulation; }
   html,body{height:100%;}
+  /* Solid fallback on the canvas so overscroll / stale scroll positions on
+     iOS never reveal white outside the body gradient. */
+  html{ background:var(--bg-1); }
   body{
     margin:0;
     min-height:100vh;
@@ -162,9 +168,12 @@
   .choice-btn:active{ transform:scale(0.96); }
   .choice-btn.correct{ background:var(--good-bg); border-color:var(--good); color:#00734a; }
   .choice-btn.wrong{ background:var(--bad-bg); border-color:var(--bad); color:#a83c22; }
-  .choice-btn[disabled]{ cursor:default; }
+  /* Locked buttons must not swallow taps (disabled buttons emit no events,
+     which would break tap-anywhere-to-continue), so block them via
+     pointer-events instead. */
+  .choice-btn.locked{ pointer-events:none; }
   @media (hover:hover) and (pointer:fine){
-    .choice-btn:not([disabled]):hover{ border-color:var(--bg-1); }
+    .choice-btn:not(.locked):hover{ border-color:var(--bg-1); }
   }
   .choices.keypad{ grid-template-columns: repeat(3, 1fr); }
   .key-btn{
@@ -179,7 +188,7 @@
     transition:transform .08s ease;
   }
   .key-btn:active{ transform:scale(0.94); }
-  .key-btn[disabled]{ opacity:0.5; cursor:default; }
+  .key-btn.locked{ opacity:0.5; pointer-events:none; }
   .key-ok{ background:var(--good-bg); border-color:var(--good); color:#00734a; }
 
   .feedback{
@@ -404,7 +413,6 @@
       <div class="question" id="questionText">7 × 8</div>
       <div class="choices" id="choicesWrap"></div>
       <div class="feedback" id="feedbackText"></div>
-      <button class="primary-btn" id="continueBtn" style="display:none; margin-top:14px;">Weiter 👉</button>
     </div>
 
     <!-- SESSION COMPLETE SCREEN -->
@@ -564,7 +572,7 @@
   var FAST_MS = 3500;
   var SLOW_MS = 9000;
   var CORRECT_ADVANCE_DELAY_MS = 1400;
-  var WRONG_CONTINUE_DELAY_MS = 2500; // minimum time to look at the correct answer
+  var WRONG_TAP_DELAY_MS = 1200; // minimum time to look at the correct answer before a tap advances
 
   var GOOD_MESSAGES = ["Super gemacht! 🌟", "Klasse! 🎉", "Toll gemacht! 👏", "Weiter so! 💪", "Perfekt! ✨"];
   var BAD_MESSAGES_PREFIX = ["Fast geschafft!", "Kein Problem!", "Nächstes Mal klappt's!", "Schau nochmal genau hin!"];
@@ -901,7 +909,6 @@
   var questionText = document.getElementById('questionText');
   var choicesWrap = document.getElementById('choicesWrap');
   var feedbackText = document.getElementById('feedbackText');
-  var continueBtn = document.getElementById('continueBtn');
 
   var doneSubtitle = document.getElementById('doneSubtitle');
   var doneStreakVal = document.getElementById('doneStreakVal');
@@ -954,6 +961,7 @@
   function showScreen(el){
     [screenHome, screenQuestion, screenDone, screenStickers].forEach(function(s){ s.classList.remove('active'); });
     el.classList.add('active');
+    window.scrollTo(0, 0);
   }
 
   function renderStickers(){
@@ -1003,7 +1011,7 @@
     streakVal.textContent = state.streak;
     var doneCount = state.today.completed ? state.config.tasksPerDay : state.today.index;
     todayVal.textContent = Math.min(doneCount, state.config.tasksPerDay) + "/" + state.config.tasksPerDay;
-    masteredVal.textContent = masteredCount();
+    masteredVal.textContent = masteredCount() + "/" + factsInRange().length;
 
     if (state.today.completed){
       startBtn.style.display = 'none';
@@ -1067,7 +1075,7 @@
     questionText.textContent = gapTask ? fmt(placeholder) : (fx + " × " + fy);
     feedbackText.textContent = '';
     feedbackText.className = 'feedback';
-    continueBtn.style.display = 'none';
+    awaitTap = false;
 
     choicesWrap.innerHTML = '';
     if (state.config.answerMode === 'input'){
@@ -1078,7 +1086,10 @@
         var btn = document.createElement('button');
         btn.className = 'choice-btn';
         btn.textContent = opt;
-        btn.addEventListener('click', function(){ onAnswer(key, opt, gen.correct, btn); });
+        btn.addEventListener('click', function(){
+          if (answering && gapTask) questionText.textContent = fmt(gen.correct);
+          onAnswer(key, opt, gen.correct, btn);
+        });
         choicesWrap.appendChild(btn);
       });
     }
@@ -1124,11 +1135,11 @@
     var isCorrect = chosen === correct;
 
     choicesWrap.querySelectorAll('.choice-btn').forEach(function(b){
-      b.disabled = true;
+      b.classList.add('locked');
       if (parseInt(b.textContent, 10) === correct) b.classList.add('correct');
       else if (b === btnEl) b.classList.add('wrong');
     });
-    choicesWrap.querySelectorAll('.key-btn').forEach(function(b){ b.disabled = true; });
+    choicesWrap.querySelectorAll('.key-btn').forEach(function(b){ b.classList.add('locked'); });
 
     var newlyMastered = applyAnswerResult(key, isCorrect, elapsed);
 
@@ -1163,7 +1174,7 @@
     if (isCorrect){
       setTimeout(function(){ renderQuestion(); }, newlyMastered ? 2400 : CORRECT_ADVANCE_DELAY_MS);
     } else {
-      setTimeout(function(){ continueBtn.style.display = 'block'; }, WRONG_CONTINUE_DELAY_MS);
+      setTimeout(function(){ awaitTap = true; }, WRONG_TAP_DELAY_MS);
     }
   }
 
@@ -1224,7 +1235,18 @@
     launchConfetti();
   }
 
-  continueBtn.addEventListener('click', function(){ renderQuestion(); });
+  // After a wrong answer, any tap/click advances (except on the gear button
+  // or inside modals, so the parent area stays usable). touchstart is handled
+  // too because iOS does not reliably emit click on non-interactive elements.
+  var awaitTap = false;
+  function tapAdvance(e){
+    if (!awaitTap) return;
+    if (e.target.closest && e.target.closest('.gear-btn, .modal-overlay')) return;
+    awaitTap = false;
+    renderQuestion();
+  }
+  document.addEventListener('click', tapAdvance);
+  document.addEventListener('touchstart', tapAdvance, { passive: true });
 
   startBtn.addEventListener('click', function(){ startSession(false); });
   bonusBtn.addEventListener('click', function(){ startSession(true); });

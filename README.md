@@ -45,6 +45,31 @@ python3 -m http.server 8080
 
 Dann im Netzwerk aufrufen: `http://<pi-ip>:8080/index.html`
 
+**Achtung:** So gestartet läuft der Server nur, solange die SSH-Sitzung offen
+ist, und übersteht keinen Reboot. Für Dauerbetrieb Option B (nginx) nutzen
+oder den Python-Server als systemd-Dienst einrichten:
+
+```ini
+# /etc/systemd/system/mathserver.service
+[Unit]
+Description=1x1 Trainer Webserver
+After=network.target
+
+[Service]
+WorkingDirectory=/home/pi/mathServer
+ExecStart=/usr/bin/python3 -m http.server 8080
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now mathserver
+```
+
 ### Option B: nginx (dauerhaft, startet automatisch mit)
 
 ```bash
