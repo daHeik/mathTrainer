@@ -1,4 +1,4 @@
-var CACHE_NAME = "1x1-trainer-v1";
+var CACHE_NAME = "1x1-trainer-v9";
 var ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", function(e){
@@ -12,7 +12,9 @@ self.addEventListener("install", function(e){
 self.addEventListener("activate", function(e){
   e.waitUntil(
     caches.keys().then(function(keys){
-      return Promise.all(keys.filter(function(k){ return k !== CACHE_NAME; })
+      return Promise.all(keys.filter(function(k){
+        return k.indexOf("1x1-trainer-") === 0 && k !== CACHE_NAME;
+      })
         .map(function(k){ return caches.delete(k); }));
     }).then(function(){ return self.clients.claim(); })
   );

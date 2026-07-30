@@ -316,11 +316,41 @@
   .progress-grid-wrap{ overflow-x:auto; margin-top:8px; }
   .progress-grid{ border-collapse:collapse; font-size:0.75rem; }
   .progress-grid th, .progress-grid td{
-    width:26px; height:26px; text-align:center; padding:0;
+    width:26px; min-width:26px; height:26px; text-align:center; padding:0;
     border:1px solid #eee;
   }
   .progress-grid th{ background:#f4f3ff; font-weight:600; }
-  .box-cell{ font-weight:700; color:white; border-radius:3px; }
+  .box-cell{
+    display:block; width:100%; height:100%; padding:0; border:0;
+    font-weight:700; color:white; border-radius:3px; cursor:pointer;
+  }
+  .box-cell.inactive{ opacity:0.22; cursor:default; }
+  .table-choice-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(54px, 1fr));
+    gap:7px; margin-top:8px;
+  }
+  .table-choice{
+    display:flex !important; align-items:center; justify-content:center; gap:5px;
+    margin:0 !important; padding:8px 5px; border:2px solid #e4e2fb;
+    border-radius:10px; background:#fbfaff; cursor:pointer;
+  }
+  .learning-summary{
+    display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin:10px 0;
+  }
+  .learning-summary div{ background:#f4f3ff; border-radius:10px; padding:9px; text-align:center; }
+  .learning-summary strong{ display:block; font-size:1.15rem; color:var(--bg-1); }
+  .history-row{ display:flex; align-items:center; gap:8px; margin:6px 0; font-size:0.8rem; }
+  .history-row span{ width:42px; }
+  .history-bar{ flex:1; height:8px; overflow:hidden; background:#ecebf4; border-radius:999px; }
+  .history-bar i{ display:block; height:100%; background:var(--good); border-radius:inherit; }
+  .trouble-list{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .trouble-list button{
+    border:1px solid #f2c1bd; background:#fff5f4; color:var(--bad);
+    border-radius:999px; padding:6px 9px; cursor:pointer; font-weight:600;
+  }
+  .fact-detail{ min-height:38px; margin-top:9px; padding:9px; background:#fbfaff; border-radius:9px; font-size:0.82rem; }
+  .backup-reminder{ font-size:0.8rem; margin:9px 0 0; color:var(--ink-soft); }
+  .backup-reminder.warning{ color:#a04f00; font-weight:600; }
 
   .badge-row{ display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
   .badge{
@@ -348,6 +378,70 @@
     text-align:center;
     color:var(--ink-soft);
     padding:20px 0;
+  }
+
+  .reward-note{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:0.9rem;
+    margin:12px 0 0;
+  }
+  .game-hud{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:12px;
+    font-weight:700;
+    color:var(--bg-1);
+  }
+  .game-hud span{
+    flex:1 1 95px;
+    background:#f4f3ff;
+    border-radius:999px;
+    padding:7px 12px;
+    text-align:center;
+    white-space:nowrap;
+  }
+  .game-wrap{
+    position:relative;
+    overflow:hidden;
+    border:3px solid #e4e2fb;
+    border-radius:18px;
+    background:#eefaff;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+    -webkit-touch-callout:none;
+  }
+  #gameCanvas{
+    display:block;
+    width:100%;
+    height:auto;
+    aspect-ratio:16 / 9;
+    user-select:none;
+    -webkit-user-select:none;
+    -webkit-touch-callout:none;
+  }
+  .game-overlay{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(255,255,255,0.86);
+    text-align:center;
+  }
+  .game-overlay[hidden]{ display:none; }
+  .game-overlay strong{ font-size:1.35rem; }
+  .game-overlay span{ color:var(--ink-soft); margin-top:6px; }
+  .game-help{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:0.85rem;
+    margin:10px 0 0;
   }
 
   .confetti-layer{
@@ -404,6 +498,8 @@
 
       <button class="primary-btn" id="startBtn">Los geht's! 🚀</button>
       <button class="secondary-btn" id="bonusBtn" style="display:none;">Bonus-Runde spielen ⭐</button>
+      <button class="secondary-btn" id="rewardBtn" style="display:none;">Dino-Belohnung spielen 🦖</button>
+      <p class="reward-note" id="rewardNote"></p>
       <button class="secondary-btn" id="stickersBtn">Meine Sticker 🏆</button>
     </div>
 
@@ -412,7 +508,7 @@
       <div class="progress-dots" id="progressDots"></div>
       <div class="question" id="questionText">7 × 8</div>
       <div class="choices" id="choicesWrap"></div>
-      <div class="feedback" id="feedbackText"></div>
+      <div class="feedback" id="feedbackText" role="status" aria-live="polite"></div>
     </div>
 
     <!-- SESSION COMPLETE SCREEN -->
@@ -431,6 +527,7 @@
         </div>
       </div>
       <p class="subtitle" id="doneReward" style="display:none; margin:0 0 20px;"></p>
+      <button class="primary-btn" id="doneRewardGameBtn" style="display:none;">Dino-Belohnung spielen 🦖</button>
       <button class="primary-btn" id="doneBonusBtn">Bonus-Runde spielen ⭐</button>
       <button class="secondary-btn" id="doneHomeBtn">Fertig für heute 🏁</button>
     </div>
@@ -442,6 +539,30 @@
       <div class="badge-row" id="badgeRow"></div>
       <div class="sticker-grid" id="stickerGrid"></div>
       <button class="secondary-btn" id="stickersBackBtn">Zurück 🏠</button>
+    </div>
+
+    <!-- REWARD GAME SCREEN -->
+    <div class="screen" id="screen-game">
+      <h1>Dino-Sprung 🦖</h1>
+      <p class="subtitle">Spring über die Kakteen!</p>
+      <div class="game-hud">
+        <span id="gameTime">2:00</span>
+        <span id="gameAttempts">Versuche: 0/3</span>
+        <span id="gameScore">Punkte: 0</span>
+        <span id="gameLevel">Stufe: 1/6</span>
+        <span id="gameStars">⭐ 0 · Super 0/3</span>
+        <span id="gameCombo">Combo ×1</span>
+      </div>
+      <div class="game-wrap" id="gameWrap">
+        <canvas id="gameCanvas" width="480" height="270" draggable="false"
+                aria-label="Dinosaurier-Sprungspiel mit Kakteen, Sternen und fliegenden Hindernissen"></canvas>
+        <div class="game-overlay" id="gameOverlay" role="status" aria-live="polite" hidden>
+          <strong id="gameOverlayTitle"></strong>
+          <span id="gameOverlayText"></span>
+        </div>
+      </div>
+      <p class="game-help">Sammle Sterne über den Kakteen. Bei fliegenden Dinos bleibst du besser am Boden!</p>
+      <button class="secondary-btn" id="gameHomeBtn">Spiel beenden 🏠</button>
     </div>
 
   </div>
@@ -503,8 +624,33 @@
     </div>
 
     <div class="field">
+      <label>Zu übende Reihen</label>
+      <div class="table-choice-grid" id="tableChoices"></div>
+      <div class="hint">Wähle gezielt einzelne Reihen aus. Mindestens eine Reihe bleibt aktiv.</div>
+    </div>
+
+    <div class="field">
+      <label for="newFactsPerDay">Neue Aufgaben pro Tag</label>
+      <input type="number" id="newFactsPerDay" min="1" max="10" value="2">
+      <div class="hint">Begrenzt neue Malaufgaben; Wiederholungen haben Vorrang.</div>
+    </div>
+
+    <div class="field">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input type="checkbox" id="autoUnlockTables"> Reihen automatisch freischalten
+      </label>
+      <div class="hint" id="unlockStatus">Beginnt mit der ersten gewählten Reihe und schaltet die nächste bei 80 % sicherem Lernstand frei.</div>
+    </div>
+
+    <div class="field">
       <label for="tasksPerDay">Aufgaben pro Tag</label>
       <input type="number" id="tasksPerDay" min="1" max="20" value="5">
+    </div>
+
+    <div class="field">
+      <label for="rewardEvery">Richtige Antworten pro Dino-Spiel</label>
+      <input type="number" id="rewardEvery" min="1" max="100" value="10">
+      <div class="hint">Nach so vielen richtigen Antworten wird jeweils ein Dino-Spiel freigeschaltet.</div>
     </div>
 
     <div class="field">
@@ -512,8 +658,9 @@
       <select id="answerMode">
         <option value="choice">Antwort antippen (Multiple-Choice)</option>
         <option value="input">Antwort eintippen (Ziffernblock)</option>
+        <option value="adaptive">Adaptiv (erst antippen, später eintippen)</option>
       </select>
-      <div class="hint">Eintippen ist anspruchsvoller, trainiert aber besser.</div>
+      <div class="hint">Adaptiv wechselt ab Lernstufe 2 zur freien Eingabe.</div>
     </div>
 
     <div class="field">
@@ -540,11 +687,20 @@
     </div>
 
     <div class="field" style="margin-top:24px;">
+      <label>Lernübersicht</label>
+      <div class="learning-summary" id="learningSummary"></div>
+      <div id="historySummary"></div>
+      <div class="hint" style="margin-top:10px;">Braucht Aufmerksamkeit</div>
+      <div class="trouble-list" id="troubleList"></div>
+      <div class="fact-detail" id="factDetail">Tippe auf eine Aufgabe, um Details zu sehen.</div>
+    </div>
+
+    <div class="field">
       <label>Fortschritt (Kästchenfarbe = Lernstand)</label>
       <div class="progress-grid-wrap">
         <table class="progress-grid" id="progressGrid"></table>
       </div>
-      <div class="hint">Grau = noch nicht geübt, Rot → Grün = Lernstand.</div>
+      <div class="hint">Grau = noch nicht geübt, Rot → Grün = Lernstand. Blasse Aufgaben gehören nicht zu den aktiven Reihen.</div>
     </div>
 
     <div class="field" style="margin-top:24px;">
@@ -555,6 +711,7 @@
       </div>
       <input type="file" id="importFile" accept="application/json,.json" style="display:none;">
       <div class="hint">Sichert alle Profile als Datei bzw. lädt sie wieder ein (z.B. bei Gerätewechsel).</div>
+      <p class="backup-reminder" id="backupReminder"></p>
     </div>
 
     <button class="danger-btn" id="resetProgress">Gesamten Fortschritt zurücksetzen</button>
@@ -571,8 +728,11 @@
   var MAX_BOX = INTERVALS.length - 1;
   var FAST_MS = 3500;
   var SLOW_MS = 9000;
+  var INPUT_TIME_COMPENSATION_MS = 2000;
   var CORRECT_ADVANCE_DELAY_MS = 1400;
   var WRONG_TAP_DELAY_MS = 1200; // minimum time to look at the correct answer before a tap advances
+  var GAME_DURATION_MS = 2 * 60 * 1000;
+  var GAME_MAX_ATTEMPTS = 3;
 
   var GOOD_MESSAGES = ["Super gemacht! 🌟", "Klasse! 🎉", "Toll gemacht! 👏", "Weiter so! 💪", "Perfekt! ✨"];
   var BAD_MESSAGES_PREFIX = ["Fast geschafft!", "Kein Problem!", "Nächstes Mal klappt's!", "Schau nochmal genau hin!"];
@@ -603,8 +763,13 @@
     var today = todayStr();
     return {
       version: 1,
-      config: { min: 1, max: 10, tasksPerDay: 5, childName: "", sound: true, answerMode: "choice", gapTasks: false },
-      facts: {}, // key -> {a,b,box,dueDate,seen,correctCount,wrongCount}
+      config: {
+        min: 1, max: 10, tasksPerDay: 5, rewardEvery: 10,
+        childName: "", sound: true, answerMode: "adaptive", gapTasks: false,
+        enabledTables: [1,2,3,4,5,6,7,8,9,10], newFactsPerDay: 2,
+        autoUnlockTables: false
+      },
+      facts: {}, // key -> {a,b,box,dueDate,seen,correctCount,wrongCount,correctStreak,...}
       today: {
         date: today,
         queue: [],       // array of fact keys
@@ -612,25 +777,114 @@
         correct: 0,
         completed: false,
         bonus: false,
-        requeueCounts: {} // fact key -> times re-added to this session after a wrong answer
+        requeueCounts: {}, // fact key -> times re-added to this session after a wrong answer
+        newFactKeys: []   // distinct facts introduced today
       },
+      curriculum: { unlockedTables: [] },
+      history: {}, // date -> {attempts,correct,wrong,totalResponseMs}
       streak: 0,
       lastCompletedDate: null,
       stickers: [], // {date, emoji}, one per completed day
-      badges: []    // earned streak milestones (7, 14, 30, ...)
+      badges: [],   // earned streak milestones (7, 14, 30, ...)
+      reward: {
+        basis: "correctAnswers",
+        earnedMilestones: [], // legacy reward history; retained for backup compatibility
+        totalEarned: 0,
+        availablePlays: 0,
+        bestDinoScore: 0
+      }
     };
   }
 
+  function correctAnswersForProfile(profile){
+    var total = 0;
+    var facts = profile.facts || {};
+    for (var key in facts) total += Number(facts[key].correctCount) || 0;
+    return total;
+  }
+
   function normalizeProfile(p){
+    if (!p.config) p.config = defaultProfile().config;
     if (p.config.sound === undefined) p.config.sound = true;
     if (!p.config.answerMode) p.config.answerMode = "choice";
+    if (['choice','input','adaptive'].indexOf(p.config.answerMode) === -1) p.config.answerMode = 'choice';
+    var min = parseInt(p.config.min, 10) || 1;
+    var max = parseInt(p.config.max, 10) || 10;
+    if (min > max){ var rangeTemp = min; min = max; max = rangeTemp; }
+    p.config.min = Math.max(1, Math.min(20, min));
+    p.config.max = Math.max(p.config.min, Math.min(20, max));
+    var tables = Array.isArray(p.config.enabledTables) ? p.config.enabledTables : [];
+    tables = tables.map(function(v){ return parseInt(v, 10); }).filter(function(v, i, arr){
+      return v >= p.config.min && v <= p.config.max && arr.indexOf(v) === i;
+    }).sort(function(a, b){ return a - b; });
+    if (!tables.length){
+      for (var table = p.config.min; table <= p.config.max; table++) tables.push(table);
+    }
+    p.config.enabledTables = tables;
+    var newFactsPerDay = parseInt(p.config.newFactsPerDay, 10);
+    if (!newFactsPerDay || newFactsPerDay < 1) newFactsPerDay = 2;
+    p.config.newFactsPerDay = Math.min(10, newFactsPerDay);
+    p.config.autoUnlockTables = !!p.config.autoUnlockTables;
+    var rewardEvery = parseInt(p.config.rewardEvery, 10);
+    if (!rewardEvery || rewardEvery < 1) rewardEvery = 10;
+    p.config.rewardEvery = Math.min(100, rewardEvery);
+    if (!p.facts) p.facts = {};
+    for (var factId in p.facts){
+      var fact = p.facts[factId];
+      if (typeof fact.correctStreak !== 'number' || fact.correctStreak < 0) fact.correctStreak = 0;
+      if (typeof fact.totalResponseMs !== 'number' || fact.totalResponseMs < 0) fact.totalResponseMs = 0;
+      if (typeof fact.timedAttemptCount !== 'number' || fact.timedAttemptCount < 0) fact.timedAttemptCount = 0;
+      if (!fact.lastPracticedDate) fact.lastPracticedDate = null;
+    }
+    if (!p.today) p.today = defaultProfile().today;
+    if (!p.today.requeueCounts) p.today.requeueCounts = {};
+    if (!Array.isArray(p.today.newFactKeys)) p.today.newFactKeys = [];
+    if (!p.curriculum) p.curriculum = { unlockedTables: [] };
+    if (!Array.isArray(p.curriculum.unlockedTables)) p.curriculum.unlockedTables = [];
+    p.curriculum.unlockedTables = p.curriculum.unlockedTables.filter(function(v){
+      return tables.indexOf(v) !== -1;
+    });
+    if (p.config.autoUnlockTables && !p.curriculum.unlockedTables.length){
+      p.curriculum.unlockedTables = [tables[0]];
+    }
+    if (!p.history) p.history = {};
+    for (var historyDate in p.history){
+      var historyDay = p.history[historyDate] || {};
+      historyDay.attempts = Math.max(0, Number(historyDay.attempts) || 0);
+      historyDay.correct = Math.max(0, Number(historyDay.correct) || 0);
+      historyDay.wrong = Math.max(0, Number(historyDay.wrong) || 0);
+      historyDay.totalResponseMs = Math.max(0, Number(historyDay.totalResponseMs) || 0);
+      p.history[historyDate] = historyDay;
+    }
     if (!p.stickers) p.stickers = [];
     if (!p.badges) p.badges = [];
+    var hadRewardData = !!p.reward;
+    if (!p.reward){
+      p.reward = { basis: "correctAnswers", earnedMilestones: [], totalEarned: 0, availablePlays: 0 };
+    }
+    p.reward.basis = "correctAnswers";
+    if (!Array.isArray(p.reward.earnedMilestones)) p.reward.earnedMilestones = [];
+    if (typeof p.reward.totalEarned !== 'number' || p.reward.totalEarned < 0){
+      // Old reward data used irregular milestones (5, 10, 20, ...). Rebase
+      // its accounting without removing any unspent games.
+      p.reward.totalEarned = hadRewardData
+        ? Math.floor(correctAnswersForProfile(p) / p.config.rewardEvery)
+        : 0;
+    }
+    if (typeof p.reward.availablePlays !== 'number' || p.reward.availablePlays < 0){
+      p.reward.availablePlays = 0;
+    }
+    if (typeof p.reward.bestDinoScore !== 'number' || p.reward.bestDinoScore < 0){
+      p.reward.bestDinoScore = 0;
+    }
     return p;
   }
 
   function defaultRoot(){
-    return { version: 2, pin: "6969", activeProfileId: "p1", profiles: { p1: defaultProfile() } };
+    return {
+      version: 2, pin: "6969", activeProfileId: "p1", lastBackupDate: null,
+      profiles: { p1: defaultProfile() }
+    };
   }
 
   function loadRoot(){
@@ -641,6 +895,7 @@
         if (parsed && parsed.profiles && parsed.activeProfileId && parsed.profiles[parsed.activeProfileId]){
           for (var id in parsed.profiles) normalizeProfile(parsed.profiles[id]);
           if (!parsed.pin) parsed.pin = "6969";
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(parsed.lastBackupDate || '')) parsed.lastBackupDate = null;
           return parsed;
         }
       }
@@ -654,6 +909,7 @@
           return {
             version: 2,
             pin: legacy.config.pin || "6969",
+            lastBackupDate: null,
             activeProfileId: "p1",
             profiles: { p1: legacy }
           };
@@ -684,40 +940,114 @@
       for (var b = a; b <= cfg.max; b++){
         var key = factKey(a, b);
         if (!state.facts[key]){
-          state.facts[key] = { a:a, b:b, box:0, dueDate: today, seen:false, correctCount:0, wrongCount:0 };
+          state.facts[key] = {
+            a:a, b:b, box:0, dueDate:today, seen:false,
+            correctCount:0, wrongCount:0, correctStreak:0,
+            totalResponseMs:0, timedAttemptCount:0, lastPracticedDate:null
+          };
         }
       }
     }
   }
 
+  function configuredTables(){
+    return state.config.enabledTables.slice().sort(function(a, b){ return a - b; });
+  }
+
+  function activeTables(){
+    var planned = configuredTables();
+    if (!state.config.autoUnlockTables) return planned;
+    var unlocked = state.curriculum.unlockedTables.filter(function(v){ return planned.indexOf(v) !== -1; });
+    return unlocked.length ? unlocked : [planned[0]];
+  }
+
+  function factMatchesTables(f, tables){
+    return tables.indexOf(f.a) !== -1 || tables.indexOf(f.b) !== -1;
+  }
+
   function factsInRange(){
     var cfg = state.config;
+    var tables = activeTables();
     var list = [];
     for (var key in state.facts){
       var f = state.facts[key];
-      if (f.a >= cfg.min && f.a <= cfg.max && f.b >= cfg.min && f.b <= cfg.max && f.b >= f.a){
+      if (f.a >= cfg.min && f.a <= cfg.max && f.b >= cfg.min && f.b <= cfg.max &&
+          f.b >= f.a && factMatchesTables(f, tables)){
         list.push(f);
       }
     }
     return list;
   }
 
-  function buildQueue(size){
-    var today = todayStr();
-    var pool = shuffle(factsInRange());
-
-    var due = pool.filter(function(f){ return f.dueDate <= today; });
+  function selectDueReviews(due, size, today){
+    if (size <= 0) return [];
     due.sort(function(x, y){
       if (x.box !== y.box) return x.box - y.box;
       return x.dueDate < y.dueDate ? -1 : (x.dueDate > y.dueDate ? 1 : 0);
     });
 
-    var chosen = due.slice(0, size);
+    var reserved = null;
+    if (size > 1 && due.length){
+      var weakestDueBox = due[0].box;
+      var overdueHigher = due.filter(function(f){
+        return f.box > weakestDueBox && f.dueDate < today;
+      });
+      overdueHigher.sort(function(x, y){
+        return x.dueDate < y.dueDate ? -1 : (x.dueDate > y.dueDate ? 1 : 0);
+      });
+      if (overdueHigher.length) reserved = overdueHigher[0];
+    }
+
+    var result = due.filter(function(f){ return f !== reserved; }).slice(0, reserved ? size - 1 : size);
+    if (reserved) result.push(reserved);
+    return result;
+  }
+
+  function buildQueue(size, introducedKeys){
+    var today = todayStr();
+    var pool = shuffle(factsInRange());
+    introducedKeys = introducedKeys || [];
+    var introducedToday = introducedKeys.length;
+    var newLimit = Math.max(0, state.config.newFactsPerDay - introducedToday);
+    var dueReviews = pool.filter(function(f){ return f.seen && f.dueDate <= today; });
+    var newCandidates = pool.filter(function(f){
+      return !f.seen && introducedKeys.indexOf(factKey(f.a, f.b)) === -1;
+    });
+    var reviewSlots = Math.max(0, size - Math.min(newLimit, newCandidates.length));
+    var chosen = selectDueReviews(dueReviews, reviewSlots, today);
+
+    var needNew = Math.min(newLimit, size - chosen.length);
+    var newFacts = newCandidates.slice(0, needNew);
+    newFacts.forEach(function(f){
+      var key = factKey(f.a, f.b);
+      if (introducedKeys.indexOf(key) === -1) introducedKeys.push(key);
+    });
+    chosen = chosen.concat(newFacts);
+
     if (chosen.length < size){
-      var rest = pool.filter(function(f){ return f.dueDate > today; });
-      rest.sort(function(x, y){ return x.dueDate < y.dueDate ? -1 : 1; });
+      var remainingDue = dueReviews.filter(function(f){ return chosen.indexOf(f) === -1; });
+      chosen = chosen.concat(selectDueReviews(remainingDue, size - chosen.length, today));
+    }
+    if (chosen.length < size){
+      var rest = pool.filter(function(f){
+        return f.seen && f.dueDate > today && chosen.indexOf(f) === -1;
+      });
+      rest.sort(function(x, y){
+        return x.dueDate < y.dueDate ? -1 : (x.dueDate > y.dueDate ? 1 : 0);
+      });
       var need = size - chosen.length;
       chosen = chosen.concat(rest.slice(0, need));
+    }
+    // On a new profile, repeat the small set of introduced facts so the
+    // configured session length is still useful without introducing more.
+    var repeatable = newFacts.length ? newFacts.slice() : pool.filter(function(f){
+      return introducedKeys.indexOf(factKey(f.a, f.b)) !== -1;
+    });
+    if (!repeatable.length) repeatable = chosen.slice();
+    var repeatIndex = 0;
+    while (chosen.length < size && repeatable.length){
+      chosen.push(repeatable[repeatIndex % repeatable.length]);
+      repeatIndex++;
     }
     shuffle(chosen);
     return chosen.map(function(f){ return factKey(f.a, f.b); });
@@ -735,44 +1065,111 @@
       }
       state.today = {
         date: today,
-        queue: buildQueue(state.config.tasksPerDay),
+        queue: [],
         index: 0,
         correct: 0,
         completed: false,
         bonus: false,
-        requeueCounts: {}
+        requeueCounts: {},
+        newFactKeys: []
       };
+      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.newFactKeys);
       saveState();
     } else if (!state.today.queue || state.today.queue.length === 0){
-      state.today.queue = buildQueue(state.config.tasksPerDay);
+      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.newFactKeys);
       saveState();
     }
   }
 
   // Returns true when this answer just pushed the fact into "mastered".
-  function applyAnswerResult(key, isCorrect, elapsedMs){
+  function applyAnswerResult(key, isCorrect, elapsedMs, learningElapsedMs){
     var f = state.facts[key];
     if (!f) return false;
+    if (learningElapsedMs === undefined) learningElapsedMs = elapsedMs;
     f.seen = true;
     var today = todayStr();
     var wasMastered = f.box >= MAX_BOX - 1;
+    f.lastPracticedDate = today;
+    f.totalResponseMs = (Number(f.totalResponseMs) || 0) + elapsedMs;
+    f.timedAttemptCount = (Number(f.timedAttemptCount) || 0) + 1;
+    var day = state.history[today] || { attempts:0, correct:0, wrong:0, totalResponseMs:0 };
+    day.attempts++;
+    day.totalResponseMs += elapsedMs;
     if (isCorrect){
       f.correctCount++;
+      f.correctStreak = (Number(f.correctStreak) || 0) + 1;
+      day.correct++;
       var jump = 1;
-      if (elapsedMs <= FAST_MS) jump = 2;
-      else if (elapsedMs >= SLOW_MS) jump = 0;
-      f.box = Math.min(MAX_BOX, f.box + jump);
+      if (learningElapsedMs <= FAST_MS) jump = 2;
+      else if (learningElapsedMs >= SLOW_MS) jump = 0;
+      // A fact advances only after two correct recalls in a row. This avoids
+      // treating a single lucky multiple-choice answer as durable knowledge.
+      if (f.correctStreak >= 2 && jump > 0){
+        f.box = Math.min(MAX_BOX, f.box + jump);
+        f.correctStreak = 0;
+      }
     } else {
       f.wrongCount++;
+      f.correctStreak = 0;
+      day.wrong++;
       f.box = Math.max(0, f.box - 2);
     }
+    state.history[today] = day;
     f.dueDate = addDays(today, INTERVALS[f.box]);
     return isCorrect && !wasMastered && f.box >= MAX_BOX - 1;
+  }
+
+  function factsForTable(table){
+    var cfg = state.config;
+    var list = [];
+    for (var key in state.facts){
+      var f = state.facts[key];
+      if (f.a >= cfg.min && f.b <= cfg.max && (f.a === table || f.b === table)) list.push(f);
+    }
+    return list;
+  }
+
+  // Returns the newly unlocked table number, or null when the plan stays put.
+  function maybeUnlockNextTable(){
+    if (!state.config.autoUnlockTables) return null;
+    var planned = configuredTables();
+    var unlocked = state.curriculum.unlockedTables;
+    var current = unlocked[unlocked.length - 1];
+    var currentIndex = planned.indexOf(current);
+    if (currentIndex < 0 || currentIndex >= planned.length - 1) return null;
+    var facts = factsForTable(current);
+    if (!facts.length) return null;
+    var ready = facts.filter(function(f){ return f.seen && f.box >= 2; }).length;
+    if (ready / facts.length < 0.8) return null;
+    var next = planned[currentIndex + 1];
+    if (unlocked.indexOf(next) === -1) unlocked.push(next);
+    return next;
   }
 
   function masteredCount(){
     var pool = factsInRange();
     return pool.filter(function(f){ return f.box >= MAX_BOX - 1; }).length;
+  }
+
+  function totalCorrectAnswers(){
+    return correctAnswersForProfile(state);
+  }
+
+  function nextRewardMilestone(count){
+    var interval = state.config.rewardEvery;
+    return (Math.floor(count / interval) + 1) * interval;
+  }
+
+  // Returns the number of newly earned game sessions.
+  function syncRewardMilestones(){
+    var reward = state.reward;
+    var eligibleGames = Math.floor(totalCorrectAnswers() / state.config.rewardEvery);
+    var earnedNow = Math.max(0, eligibleGames - reward.totalEarned);
+    if (earnedNow){
+      reward.totalEarned = eligibleGames;
+      reward.availablePlays += earnedNow;
+    }
+    return earnedNow;
   }
 
   function genChoices(a, b){
@@ -811,13 +1208,14 @@
   // Choices for "shown × ▢ = product" tasks: the answer is the hidden factor.
   function genFactorChoices(shown, hidden){
     var correct = hidden;
+    var factorMax = Math.max(4, state.config.max);
     var candidates = new Set();
     [hidden - 1, hidden + 1, hidden - 2, hidden + 2, hidden - 3, hidden + 3, shown].forEach(function(v){
-      if (v >= 1 && v <= 12 && v !== correct) candidates.add(v);
+      if (v >= 1 && v <= factorMax && v !== correct) candidates.add(v);
     });
     var distractors = shuffle(Array.from(candidates)).slice(0, 3);
     while (distractors.length < 3){
-      var c = Math.floor(Math.random() * 12) + 1;
+      var c = Math.floor(Math.random() * factorMax) + 1;
       if (c !== correct && distractors.indexOf(c) === -1) distractors.push(c);
     }
     var options = distractors.concat([correct]);
@@ -904,6 +1302,8 @@
   var masteredVal = document.getElementById('masteredVal');
   var startBtn = document.getElementById('startBtn');
   var bonusBtn = document.getElementById('bonusBtn');
+  var rewardBtn = document.getElementById('rewardBtn');
+  var rewardNote = document.getElementById('rewardNote');
 
   var progressDots = document.getElementById('progressDots');
   var questionText = document.getElementById('questionText');
@@ -916,6 +1316,7 @@
   var doneBonusBtn = document.getElementById('doneBonusBtn');
   var doneHomeBtn = document.getElementById('doneHomeBtn');
   var doneReward = document.getElementById('doneReward');
+  var doneRewardGameBtn = document.getElementById('doneRewardGameBtn');
 
   var screenStickers = document.getElementById('screen-stickers');
   var stickersBtn = document.getElementById('stickersBtn');
@@ -923,6 +1324,21 @@
   var stickerCountLine = document.getElementById('stickerCountLine');
   var badgeRow = document.getElementById('badgeRow');
   var stickerGrid = document.getElementById('stickerGrid');
+
+  var screenGame = document.getElementById('screen-game');
+  var gameWrap = document.getElementById('gameWrap');
+  var gameCanvas = document.getElementById('gameCanvas');
+  var gameCtx = gameCanvas.getContext('2d');
+  var gameTime = document.getElementById('gameTime');
+  var gameAttempts = document.getElementById('gameAttempts');
+  var gameScore = document.getElementById('gameScore');
+  var gameLevel = document.getElementById('gameLevel');
+  var gameStars = document.getElementById('gameStars');
+  var gameCombo = document.getElementById('gameCombo');
+  var gameOverlay = document.getElementById('gameOverlay');
+  var gameOverlayTitle = document.getElementById('gameOverlayTitle');
+  var gameOverlayText = document.getElementById('gameOverlayText');
+  var gameHomeBtn = document.getElementById('gameHomeBtn');
 
   var gearBtn = document.getElementById('gearBtn');
   var profileBtn = document.getElementById('profileBtn');
@@ -943,7 +1359,12 @@
   var childNameInput = document.getElementById('childName');
   var rangeMinSel = document.getElementById('rangeMin');
   var rangeMaxSel = document.getElementById('rangeMax');
+  var tableChoices = document.getElementById('tableChoices');
   var tasksPerDayInput = document.getElementById('tasksPerDay');
+  var newFactsPerDayInput = document.getElementById('newFactsPerDay');
+  var autoUnlockTablesToggle = document.getElementById('autoUnlockTables');
+  var unlockStatus = document.getElementById('unlockStatus');
+  var rewardEveryInput = document.getElementById('rewardEvery');
   var soundToggle = document.getElementById('soundToggle');
   var answerModeSel = document.getElementById('answerMode');
   var gapToggle = document.getElementById('gapToggle');
@@ -954,13 +1375,21 @@
   var saveAdminBtn = document.getElementById('saveAdmin');
   var resetProgressBtn = document.getElementById('resetProgress');
   var progressGrid = document.getElementById('progressGrid');
+  var learningSummary = document.getElementById('learningSummary');
+  var historySummary = document.getElementById('historySummary');
+  var troubleList = document.getElementById('troubleList');
+  var factDetail = document.getElementById('factDetail');
+  var backupReminder = document.getElementById('backupReminder');
 
   var questionStartTime = 0;
   var answering = false;
+  var sessionRewardUnlocks = 0;
 
   function showScreen(el){
-    [screenHome, screenQuestion, screenDone, screenStickers].forEach(function(s){ s.classList.remove('active'); });
+    [screenHome, screenQuestion, screenDone, screenStickers, screenGame].forEach(function(s){ s.classList.remove('active'); });
     el.classList.add('active');
+    gearBtn.style.display = el === screenGame ? 'none' : '';
+    if (el === screenGame) profileBtn.style.display = 'none';
     window.scrollTo(0, 0);
   }
 
@@ -998,6 +1427,8 @@
 
   function renderHome(){
     refreshDailySessionIfNeeded();
+    var newlyGranted = syncRewardMilestones();
+    if (newlyGranted) saveState();
     var name = state.config.childName;
     homeGreeting.textContent = name ? ("Hallo, " + name + "! 👋") : "1×1 Trainer";
     var profileIds = Object.keys(root.profiles);
@@ -1012,6 +1443,20 @@
     var doneCount = state.today.completed ? state.config.tasksPerDay : state.today.index;
     todayVal.textContent = Math.min(doneCount, state.config.tasksPerDay) + "/" + state.config.tasksPerDay;
     masteredVal.textContent = masteredCount() + "/" + factsInRange().length;
+    var availablePlays = state.reward.availablePlays;
+    rewardBtn.style.display = availablePlays > 0 ? 'block' : 'none';
+    rewardBtn.textContent = availablePlays === 1
+      ? "Dino-Belohnung spielen 🦖"
+      : "Dino-Belohnung spielen 🦖 (" + availablePlays + ")";
+    var correctAnswers = totalCorrectAnswers();
+    var nextMilestone = nextRewardMilestone(correctAnswers);
+    var remainingAnswers = nextMilestone - correctAnswers;
+    var remainingText = "noch " + remainingAnswers + " richtige" +
+      (remainingAnswers === 1 ? " Antwort" : " Antworten") + " bis zum nächsten Dino-Spiel";
+    rewardNote.textContent = availablePlays > 0
+      ? availablePlays + (availablePlays === 1 ? " Spiel bereit" : " Spiele bereit") +
+        " · " + remainingText
+      : remainingText.charAt(0).toUpperCase() + remainingText.slice(1);
 
     if (state.today.completed){
       startBtn.style.display = 'none';
@@ -1025,8 +1470,9 @@
   }
 
   function startSession(bonus){
+    sessionRewardUnlocks = 0;
     if (bonus){
-      state.today.queue = buildQueue(state.config.tasksPerDay);
+      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.newFactKeys);
       state.today.index = 0;
       state.today.correct = 0;
       state.today.bonus = true;
@@ -1078,7 +1524,9 @@
     awaitTap = false;
 
     choicesWrap.innerHTML = '';
-    if (state.config.answerMode === 'input'){
+    var answerMode = state.config.answerMode;
+    if (answerMode === 'adaptive') answerMode = f.seen && f.box >= 2 ? 'input' : 'choice';
+    if (answerMode === 'input'){
       renderKeypad(key, fmt, gen.correct, placeholder);
     } else {
       choicesWrap.classList.remove('keypad');
@@ -1088,7 +1536,7 @@
         btn.textContent = opt;
         btn.addEventListener('click', function(){
           if (answering && gapTask) questionText.textContent = fmt(gen.correct);
-          onAnswer(key, opt, gen.correct, btn);
+          onAnswer(key, opt, gen.correct, btn, false);
         });
         choicesWrap.appendChild(btn);
       });
@@ -1117,7 +1565,7 @@
           if (typedAnswer === '') return;
           var chosen = parseInt(typedAnswer, 10);
           questionText.textContent = fmt(correct);
-          onAnswer(key, chosen, correct, null);
+          onAnswer(key, chosen, correct, null, true);
           return;
         } else if (typedAnswer.length < 3){
           typedAnswer += k;
@@ -1128,10 +1576,11 @@
     });
   }
 
-  function onAnswer(key, chosen, correct, btnEl){
+  function onAnswer(key, chosen, correct, btnEl, wasTyped){
     if (!answering) return;
     answering = false;
     var elapsed = Date.now() - questionStartTime;
+    var learningElapsed = wasTyped ? Math.max(0, elapsed - INPUT_TIME_COMPENSATION_MS) : elapsed;
     var isCorrect = chosen === correct;
 
     choicesWrap.querySelectorAll('.choice-btn').forEach(function(b){
@@ -1141,17 +1590,22 @@
     });
     choicesWrap.querySelectorAll('.key-btn').forEach(function(b){ b.classList.add('locked'); });
 
-    var newlyMastered = applyAnswerResult(key, isCorrect, elapsed);
+    var newlyMastered = applyAnswerResult(key, isCorrect, elapsed, learningElapsed);
 
     if (isCorrect){
       state.today.correct++;
+      var newGameRewards = syncRewardMilestones();
+      sessionRewardUnlocks += newGameRewards;
       if (newlyMastered){
         var mf = state.facts[key];
         playFanfareSound();
-        feedbackText.textContent = "⭐ " + mf.a + "×" + mf.b + " sitzt jetzt! Stark!";
+        feedbackText.textContent = "⭐ " + mf.a + "×" + mf.b + " sitzt jetzt! Stark!" +
+          (newGameRewards ? " 🦖 Dino-Spiel freigeschaltet!" : "");
       } else {
-        playCorrectSound();
-        feedbackText.textContent = GOOD_MESSAGES[Math.floor(Math.random() * GOOD_MESSAGES.length)];
+        if (newGameRewards) playFanfareSound();
+        else playCorrectSound();
+        feedbackText.textContent = GOOD_MESSAGES[Math.floor(Math.random() * GOOD_MESSAGES.length)] +
+          (newGameRewards ? " 🦖 Dino-Spiel freigeschaltet!" : "");
       }
       feedbackText.className = 'feedback good';
     } else {
@@ -1185,6 +1639,7 @@
     var wasBonus = state.today.bonus;
     var newSticker = null;
     var newBadge = null;
+    var unlockedTable = null;
     if (!wasBonus){
       state.today.completed = true;
       var today = state.today.date;
@@ -1211,14 +1666,20 @@
           newBadge = m;
         }
       });
+      unlockedTable = maybeUnlockNextTable();
     }
     saveState();
 
-    if (newSticker || newBadge){
+    if (newSticker || newBadge || unlockedTable){
       var parts = [];
       if (newSticker) parts.push("Dein Sticker für heute: " + newSticker);
       if (newBadge) parts.push("🏅 Neues Abzeichen: " + newBadge + "-Tage-Serie!");
+      if (unlockedTable) parts.push("🔓 Die " + unlockedTable + "er-Reihe ist jetzt freigeschaltet!");
+      if (sessionRewardUnlocks) parts.push("🦖 Dino-Spiel freigeschaltet!");
       doneReward.textContent = parts.join(" — ");
+      doneReward.style.display = 'block';
+    } else if (sessionRewardUnlocks){
+      doneReward.textContent = "🦖 Dino-Spiel freigeschaltet!";
       doneReward.style.display = 'block';
     } else {
       doneReward.style.display = 'none';
@@ -1229,6 +1690,8 @@
       : "Du hast alle Aufgaben für heute geschafft.";
     doneStreakVal.textContent = state.streak;
     doneCorrectVal.textContent = state.today.correct + "/" + state.today.queue.length;
+    doneRewardGameBtn.style.display = state.reward.availablePlays > 0 ? 'block' : 'none';
+    doneRewardGameBtn.style.marginBottom = state.reward.availablePlays > 0 ? '12px' : '';
     doneBonusBtn.style.display = 'block';
     showScreen(screenDone);
     playFanfareSound();
@@ -1254,6 +1717,479 @@
   doneHomeBtn.addEventListener('click', function(){ renderHome(); });
   stickersBtn.addEventListener('click', function(){ renderStickers(); });
   stickersBackBtn.addEventListener('click', function(){ renderHome(); });
+  rewardBtn.addEventListener('click', startRewardGame);
+  doneRewardGameBtn.addEventListener('click', startRewardGame);
+
+  // ---------- Dino reward game ----------
+  var rewardGame = null;
+  var rewardGameFrame = null;
+
+  function formatGameTime(ms){
+    var seconds = Math.max(0, Math.ceil(ms / 1000));
+    return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, '0');
+  }
+
+  function rewardGameDifficulty(elapsedMs){
+    var level = Math.min(6, Math.floor(elapsedMs / 20000) + 1);
+    var index = level - 1;
+    return {
+      level:level,
+      speed:[250, 300, 350, 400, 450, 500][index],
+      spawnBase:[1.08, 1.00, 0.94, 0.88, 0.82, 0.76][index],
+      spawnJitter:[0.82, 0.78, 0.74, 0.70, 0.66, 0.62][index],
+      closePairChance:[0.12, 0.18, 0.25, 0.32, 0.39, 0.46][index],
+      closeGapBase:[0.92, 0.88, 0.84, 0.80, 0.76, 0.72][index],
+      closeGapJitter:0.10,
+      doubleChance:[0, 0.05, 0.14, 0.24, 0.34, 0.44][index],
+      flyingChance:[0, 0, 0.10, 0.16, 0.22, 0.28][index],
+      collectibleChance:[0.12, 0.14, 0.16, 0.18, 0.20, 0.22][index],
+      minHeight:[28, 30, 32, 35, 38, 40][index],
+      maxHeight:[47, 50, 54, 58, 62, 65][index]
+    };
+  }
+
+  function rewardGameScore(){
+    if (!rewardGame) return 0;
+    var survivalPoints = Math.floor(Math.min(Date.now() - rewardGame.startedAt, GAME_DURATION_MS) / 1000);
+    return survivalPoints + rewardGame.bonusScore;
+  }
+
+  function updateGameHud(){
+    if (!rewardGame) return;
+    var elapsed = Date.now() - rewardGame.startedAt;
+    var remaining = GAME_DURATION_MS - elapsed;
+    var difficulty = rewardGameDifficulty(elapsed);
+    gameTime.textContent = remaining <= 0 ? "0:00 · letzter Versuch" : formatGameTime(remaining);
+    gameAttempts.textContent = "Versuch: " + Math.min(rewardGame.attempts + 1, rewardGame.maxAttempts) +
+      "/" + rewardGame.maxAttempts;
+    gameScore.textContent = "Punkte: " + rewardGameScore() + " · Rekord: " + state.reward.bestDinoScore;
+    gameLevel.textContent = "Stufe: " + difficulty.level + "/6";
+    var superRemaining = Math.max(0, rewardGame.superUntil - Date.now());
+    gameStars.textContent = superRemaining
+      ? "⭐ " + rewardGame.stars + " · 🌈 " + Math.ceil(superRemaining / 1000) + " s"
+      : "⭐ " + rewardGame.stars + " · Super " + rewardGame.powerStars + "/3";
+    gameCombo.textContent = "Combo ×" + rewardGame.multiplier + " (" + rewardGame.combo + ")";
+  }
+
+  function resetGameAttempt(){
+    if (!rewardGame) return;
+    rewardGame.dino = { x:58, y:188, w:34, h:38, vy:0, grounded:true };
+    rewardGame.obstacles = [];
+    rewardGame.collectibles = [];
+    rewardGame.spawnIn = 1.15;
+    rewardGame.compactNext = false;
+    rewardGame.combo = 0;
+    rewardGame.multiplier = 1;
+    rewardGame.superUntil = 0;
+  }
+
+  function startRewardGame(){
+    if (!state.reward || state.reward.availablePlays < 1) return;
+    state.reward.availablePlays--;
+    saveState();
+
+    rewardGame = {
+      active:true,
+      running:true,
+      startedAt:Date.now(),
+      lastFrame:performance.now(),
+      attempts:0,
+      maxAttempts:GAME_MAX_ATTEMPTS,
+      passed:0,
+      bonusScore:0,
+      combo:0,
+      bestCombo:0,
+      multiplier:1,
+      stars:0,
+      powerStars:0,
+      superUntil:0,
+      eggCollected:false,
+      eggSpawned:false,
+      timeExpired:false,
+      obstacles:[],
+      collectibles:[],
+      spawnIn:1.15,
+      dino:null
+    };
+    resetGameAttempt();
+    gameOverlay.hidden = true;
+    showScreen(screenGame);
+    updateGameHud();
+    drawRewardGame();
+    rewardGameFrame = requestAnimationFrame(runRewardGame);
+  }
+
+  function jumpRewardDino(){
+    if (!rewardGame || !rewardGame.active || !rewardGame.running) return;
+    var dino = rewardGame.dino;
+    if (dino.grounded){
+      dino.vy = -475;
+      dino.grounded = false;
+    }
+  }
+
+  function gameRectanglesOverlap(a, b){
+    var margin = 4;
+    return a.x + margin < b.x + b.w &&
+      a.x + a.w - margin > b.x &&
+      a.y + margin < b.y + b.h &&
+      a.y + a.h - margin > b.y;
+  }
+
+  function crashRewardDino(){
+    if (!rewardGame || !rewardGame.running) return;
+    rewardGame.running = false;
+    rewardGame.attempts++;
+    rewardGame.combo = 0;
+    rewardGame.multiplier = 1;
+    rewardGame.superUntil = 0;
+    updateGameHud();
+    playWrongSound();
+
+    if (rewardGame.attempts >= rewardGame.maxAttempts){
+      finishRewardGame(rewardGame.maxAttempts === GAME_MAX_ATTEMPTS ? "Drei Versuche gespielt!" : "Bonus-Versuch gespielt!",
+        "Stark gelaufen — deine nächste Belohnung wartet beim nächsten Lernziel.");
+      return;
+    }
+    if (rewardGame.timeExpired || Date.now() - rewardGame.startedAt >= GAME_DURATION_MS){
+      rewardGame.timeExpired = true;
+      finishRewardGame("Zeit geschafft!", "Dein letzter laufender Versuch ist jetzt beendet — super gespielt!");
+      return;
+    }
+
+    gameOverlayTitle.textContent = "Autsch! Noch " + (GAME_MAX_ATTEMPTS - rewardGame.attempts) +
+      (GAME_MAX_ATTEMPTS - rewardGame.attempts === 1 ? " Versuch" : " Versuche");
+    gameOverlayText.textContent = "Gleich geht es weiter …";
+    gameOverlay.hidden = false;
+    var currentGame = rewardGame;
+    setTimeout(function(){
+      if (rewardGame !== currentGame || !rewardGame.active) return;
+      if (Date.now() - rewardGame.startedAt >= GAME_DURATION_MS){
+        rewardGame.timeExpired = true;
+        finishRewardGame("Zeit geschafft!", "Nach zwei Minuten startet kein weiterer Versuch — super gespielt!");
+        return;
+      }
+      resetGameAttempt();
+      rewardGame.running = true;
+      rewardGame.lastFrame = performance.now();
+      gameOverlay.hidden = true;
+    }, 900);
+  }
+
+  function finishRewardGame(title, message){
+    if (!rewardGame || !rewardGame.active) return;
+    rewardGame.active = false;
+    if (rewardGameFrame) cancelAnimationFrame(rewardGameFrame);
+    rewardGameFrame = null;
+    var finalScore = rewardGameScore();
+    var isRecord = finalScore > state.reward.bestDinoScore;
+    if (isRecord){
+      state.reward.bestDinoScore = finalScore;
+      saveState();
+    }
+    updateGameHud();
+    gameOverlayTitle.textContent = title;
+    gameOverlayText.textContent = message + " ⭐ " + rewardGame.stars + " Sterne · beste Combo " +
+      rewardGame.bestCombo + " · " + finalScore + " Punkte" +
+      (isRecord ? " · Neuer Rekord! 🏆" : " · Rekord: " + state.reward.bestDinoScore);
+    gameOverlay.hidden = false;
+    playFanfareSound();
+    launchConfetti();
+  }
+
+  function stopRewardGame(){
+    if (rewardGame){
+      var score = rewardGameScore();
+      if (score > state.reward.bestDinoScore){
+        state.reward.bestDinoScore = score;
+        saveState();
+      }
+      rewardGame.active = false;
+    }
+    if (rewardGameFrame) cancelAnimationFrame(rewardGameFrame);
+    rewardGameFrame = null;
+    rewardGame = null;
+    gameOverlay.hidden = true;
+  }
+
+  function countPassedObstacle(obstacle, destroyed){
+    if (obstacle.counted) return;
+    obstacle.counted = true;
+    rewardGame.passed++;
+    rewardGame.combo++;
+    rewardGame.bestCombo = Math.max(rewardGame.bestCombo, rewardGame.combo);
+    rewardGame.multiplier = Math.min(5, 1 + Math.floor(rewardGame.combo / 3));
+    rewardGame.bonusScore += (destroyed ? 15 : 10) * rewardGame.multiplier;
+  }
+
+  function collectRewardItem(item){
+    if (item.collected) return;
+    item.collected = true;
+    if (item.type === 'egg'){
+      rewardGame.eggCollected = true;
+      rewardGame.maxAttempts = Math.min(GAME_MAX_ATTEMPTS + 1, rewardGame.maxAttempts + 1);
+      rewardGame.bonusScore += 100;
+      playFanfareSound();
+      return;
+    }
+    rewardGame.stars++;
+    rewardGame.powerStars++;
+    rewardGame.bonusScore += 25 * rewardGame.multiplier;
+    playCorrectSound();
+    if (rewardGame.powerStars >= 3){
+      rewardGame.powerStars = 0;
+      rewardGame.superUntil = Date.now() + 5000;
+      playFanfareSound();
+    }
+  }
+
+  function updateRewardGame(dt){
+    var game = rewardGame;
+    if (!game.running) return;
+    var dino = game.dino;
+    var groundY = 226;
+
+    dino.vy += 1250 * dt;
+    dino.y += dino.vy * dt;
+    if (dino.y + dino.h >= groundY){
+      dino.y = groundY - dino.h;
+      dino.vy = 0;
+      dino.grounded = true;
+    }
+
+    var difficulty = rewardGameDifficulty(Date.now() - game.startedAt);
+    var speed = difficulty.speed;
+    game.spawnIn -= dt;
+    if (game.spawnIn <= 0){
+      // Close pairs are generated deliberately. Their second cactus stays
+      // short and single so the small gap is demanding but still jumpable.
+      var compactObstacle = !!game.compactNext;
+      game.compactNext = false;
+      var isFlying = !compactObstacle && Math.random() < difficulty.flyingChance;
+      var obstacle;
+      if (isFlying){
+        obstacle = { x:500, y:150, w:38, h:24, type:'flying', double:false, counted:false };
+      } else {
+        var minHeight = compactObstacle ? 26 : difficulty.minHeight;
+        var maxHeight = compactObstacle ? Math.min(38, difficulty.maxHeight) : difficulty.maxHeight;
+        var height = minHeight + Math.random() * (maxHeight - minHeight);
+        var isDouble = !compactObstacle && Math.random() < difficulty.doubleChance;
+        var width = isDouble ? 40 + Math.random() * 8 : 20 + Math.random() * 8;
+        obstacle = {
+          x:500, y:groundY - height, w:width, h:height,
+          type:'cactus', double:isDouble, counted:false
+        };
+        if (!compactObstacle && Math.random() < difficulty.collectibleChance){
+          var itemType = !game.eggSpawned && Math.random() < 0.03 ? 'egg' : 'star';
+          if (itemType === 'egg') game.eggSpawned = true;
+          game.collectibles.push({
+            x:obstacle.x + obstacle.w / 2,
+            y:Math.max(105, obstacle.y - 24),
+            r:itemType === 'egg' ? 11 : 9,
+            type:itemType,
+            collected:false
+          });
+        }
+      }
+      game.obstacles.push(obstacle);
+      var startClosePair = !compactObstacle && !isFlying && !obstacle.double &&
+        Math.random() < difficulty.closePairChance;
+      if (startClosePair){
+        game.spawnIn = difficulty.closeGapBase + Math.random() * difficulty.closeGapJitter;
+        game.compactNext = true;
+      } else {
+        game.spawnIn = difficulty.spawnBase + Math.random() * difficulty.spawnJitter;
+      }
+    }
+
+    game.obstacles.forEach(function(obstacle){
+      if (!game.running) return;
+      obstacle.x -= speed * dt;
+      if (!obstacle.counted && obstacle.x + obstacle.w < dino.x){
+        countPassedObstacle(obstacle, false);
+      }
+      if (gameRectanglesOverlap(dino, obstacle)){
+        if (Date.now() < game.superUntil){
+          countPassedObstacle(obstacle, true);
+          obstacle.destroyed = true;
+        } else {
+          crashRewardDino();
+        }
+      }
+    });
+    game.obstacles = game.obstacles.filter(function(obstacle){
+      return !obstacle.destroyed && obstacle.x + obstacle.w > -10;
+    });
+
+    if (!game.running) return;
+    game.collectibles.forEach(function(item){
+      item.x -= speed * dt;
+      var hitbox = { x:item.x - item.r, y:item.y - item.r, w:item.r * 2, h:item.r * 2 };
+      if (gameRectanglesOverlap(dino, hitbox)) collectRewardItem(item);
+    });
+    game.collectibles = game.collectibles.filter(function(item){
+      return !item.collected && item.x + item.r > -10;
+    });
+  }
+
+  function drawGameStar(ctx, x, y, radius){
+    ctx.beginPath();
+    for (var point = 0; point < 10; point++){
+      var angle = -Math.PI / 2 + point * Math.PI / 5;
+      var distance = point % 2 === 0 ? radius : radius * 0.45;
+      var px = x + Math.cos(angle) * distance;
+      var py = y + Math.sin(angle) * distance;
+      if (point === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawRewardGame(){
+    var ctx = gameCtx;
+    var game = rewardGame;
+    ctx.clearRect(0, 0, 480, 270);
+
+    var sky = ctx.createLinearGradient(0, 0, 0, 230);
+    sky.addColorStop(0, '#dff6ff');
+    sky.addColorStop(1, '#fff7d6');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, 480, 270);
+
+    ctx.fillStyle = '#fdcb6e';
+    ctx.beginPath();
+    ctx.arc(415, 48, 24, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    [[65,48],[225,76],[355,105]].forEach(function(cloud){
+      ctx.beginPath();
+      ctx.arc(cloud[0], cloud[1], 14, 0, Math.PI * 2);
+      ctx.arc(cloud[0] + 17, cloud[1] - 5, 18, 0, Math.PI * 2);
+      ctx.arc(cloud[0] + 36, cloud[1], 13, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    ctx.fillStyle = '#c7e6a2';
+    ctx.fillRect(0, 226, 480, 44);
+    ctx.fillStyle = '#81b64c';
+    ctx.fillRect(0, 226, 480, 5);
+
+    if (!game || !game.dino) return;
+    game.obstacles.forEach(function(obstacle){
+      if (obstacle.type === 'flying'){
+        ctx.fillStyle = '#e17055';
+        ctx.beginPath();
+        ctx.ellipse(obstacle.x + 19, obstacle.y + 13, 15, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        var flap = Math.sin(Date.now() / 90) * 5;
+        ctx.moveTo(obstacle.x + 16, obstacle.y + 12);
+        ctx.lineTo(obstacle.x + 2, obstacle.y - 4 - flap);
+        ctx.lineTo(obstacle.x + 25, obstacle.y + 9);
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.fillRect(obstacle.x + 28, obstacle.y + 8, 4, 4);
+        ctx.fillStyle = '#2d2d3a';
+        ctx.fillRect(obstacle.x + 30, obstacle.y + 9, 2, 2);
+        return;
+      }
+      ctx.fillStyle = '#2e9b62';
+      if (obstacle.double){
+        var stemWidth = 18;
+        ctx.fillRect(obstacle.x, obstacle.y + 8, stemWidth, obstacle.h - 8);
+        ctx.fillRect(obstacle.x + obstacle.w - stemWidth, obstacle.y, stemWidth, obstacle.h);
+        ctx.fillRect(obstacle.x - 5, obstacle.y + 20, 6, 7);
+        ctx.fillRect(obstacle.x + obstacle.w - 1, obstacle.y + 14, 6, 7);
+      } else {
+        ctx.fillRect(obstacle.x, obstacle.y, obstacle.w, obstacle.h);
+        ctx.fillRect(obstacle.x - 6, obstacle.y + 10, 7, 7);
+        ctx.fillRect(obstacle.x - 6, obstacle.y + 4, 4, 12);
+        ctx.fillRect(obstacle.x + obstacle.w - 1, obstacle.y + 17, 7, 7);
+        ctx.fillRect(obstacle.x + obstacle.w + 3, obstacle.y + 10, 4, 14);
+      }
+    });
+
+    game.collectibles.forEach(function(item){
+      if (item.type === 'egg'){
+        ctx.fillStyle = '#ffeaa7';
+        ctx.strokeStyle = '#e1a800';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(item.x, item.y, 9, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#fd79a8';
+        ctx.beginPath();
+        ctx.arc(item.x - 2, item.y + 2, 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = '#f6c90e';
+        ctx.strokeStyle = '#d99a00';
+        ctx.lineWidth = 1.5;
+        drawGameStar(ctx, item.x, item.y, item.r + 2);
+        ctx.stroke();
+      }
+    });
+
+    var d = game.dino;
+    var superActive = Date.now() < game.superUntil;
+    if (superActive){
+      ['#e84393','#fdcb6e','#00b894','#0984e3'].forEach(function(color, index){
+        ctx.globalAlpha = 0.18 + index * 0.08;
+        ctx.fillStyle = color;
+        ctx.fillRect(d.x - 18 - index * 13, d.y + 12 + index * 2, 22, 16);
+      });
+      ctx.globalAlpha = 1;
+    }
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    ctx.fillStyle = superActive
+      ? ['#e84393','#fdcb6e','#00b894','#0984e3'][Math.floor(Date.now() / 100) % 4]
+      : '#6c5ce7';
+    ctx.fillRect(4, 10, 24, 22);
+    ctx.fillRect(18, 0, 25, 20);
+    ctx.fillRect(0, 18, 10, 8);
+    ctx.fillRect(5, 30, 7, 8);
+    ctx.fillRect(23, 30, 7, 8);
+    ctx.fillStyle = 'white';
+    ctx.fillRect(34, 4, 5, 5);
+    ctx.fillStyle = '#2d2d3a';
+    ctx.fillRect(36, 5, 2, 2);
+    ctx.restore();
+  }
+
+  function runRewardGame(now){
+    if (!rewardGame || !rewardGame.active) return;
+    var elapsed = Date.now() - rewardGame.startedAt;
+    if (elapsed >= GAME_DURATION_MS) rewardGame.timeExpired = true;
+
+    var dt = Math.min(0.04, (now - rewardGame.lastFrame) / 1000);
+    rewardGame.lastFrame = now;
+    updateRewardGame(dt);
+    drawRewardGame();
+    updateGameHud();
+    if (rewardGame && rewardGame.active) rewardGameFrame = requestAnimationFrame(runRewardGame);
+  }
+
+  gameWrap.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    jumpRewardDino();
+  });
+  ['contextmenu', 'selectstart', 'dragstart'].forEach(function(eventName){
+    gameWrap.addEventListener(eventName, function(e){ e.preventDefault(); });
+  });
+  document.addEventListener('keydown', function(e){
+    if ((e.key === ' ' || e.key === 'ArrowUp') && rewardGame && rewardGame.active){
+      e.preventDefault();
+      jumpRewardDino();
+    }
+  });
+  gameHomeBtn.addEventListener('click', function(){
+    stopRewardGame();
+    renderHome();
+  });
 
   // ---------- Profiles ----------
   function openProfileOverlay(){
@@ -1327,7 +2263,7 @@
   function populateRangeSelects(){
     rangeMinSel.innerHTML = '';
     rangeMaxSel.innerHTML = '';
-    for (var i = 1; i <= 12; i++){
+    for (var i = 1; i <= 20; i++){
       var o1 = document.createElement('option'); o1.value = i; o1.textContent = i;
       var o2 = document.createElement('option'); o2.value = i; o2.textContent = i;
       rangeMinSel.appendChild(o1);
@@ -1335,10 +2271,138 @@
     }
   }
 
+  function selectedTablesFromControls(){
+    var selected = [];
+    tableChoices.querySelectorAll('input[type=checkbox]').forEach(function(input){
+      if (input.checked) selected.push(parseInt(input.value, 10));
+    });
+    return selected;
+  }
+
+  function renderTableChoices(preferred){
+    var min = parseInt(rangeMinSel.value, 10);
+    var max = parseInt(rangeMaxSel.value, 10);
+    if (min > max){ var temp = min; min = max; max = temp; }
+    preferred = preferred || selectedTablesFromControls();
+    var hasPreferredInRange = preferred.some(function(v){ return v >= min && v <= max; });
+    tableChoices.innerHTML = '';
+    for (var table = min; table <= max; table++){
+      var label = document.createElement('label');
+      label.className = 'table-choice';
+      var input = document.createElement('input');
+      input.type = 'checkbox';
+      input.value = table;
+      input.checked = hasPreferredInRange ? preferred.indexOf(table) !== -1 : true;
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(table + 'er'));
+      tableChoices.appendChild(label);
+    }
+    updateUnlockStatus();
+  }
+
+  function updateUnlockStatus(){
+    var selected = selectedTablesFromControls();
+    if (!autoUnlockTablesToggle.checked){
+      unlockStatus.textContent = 'Alle gewählten Reihen sind sofort aktiv.';
+    } else if (selected.length){
+      var saved = configuredTables();
+      var reflectsSavedPlan = state.config.autoUnlockTables && selected.join(',') === saved.join(',');
+      if (reflectsSavedPlan){
+        var active = activeTables();
+        var nextIndex = selected.indexOf(active[active.length - 1]) + 1;
+        unlockStatus.textContent = 'Aktiv: ' + active.map(function(v){ return v + 'er'; }).join(', ') +
+          (nextIndex < selected.length ? ' · Als Nächstes: ' + selected[nextIndex] + 'er.' : ' · Alle Reihen freigeschaltet.');
+      } else {
+        unlockStatus.textContent = 'Startet mit der ' + selected[0] + 'er-Reihe; die nächsten werden bei 80 % Lernstand freigeschaltet.';
+      }
+    } else {
+      unlockStatus.textContent = 'Wähle mindestens eine Reihe aus.';
+    }
+  }
+
   var BOX_COLORS = ["#e74c3c", "#e67e22", "#f1c40f", "#a8d861", "#6dc06d", "#27ae60", "#1e8e5a", "#0f6b45"];
+
+  function renderFactDetail(key){
+    var f = state.facts[key];
+    if (!f) return;
+    var attempts = f.correctCount + f.wrongCount;
+    var accuracy = attempts ? Math.round(f.correctCount / attempts * 100) : 0;
+    var timedAttempts = Number(f.timedAttemptCount) || 0;
+    var average = timedAttempts ? (f.totalResponseMs / timedAttempts / 1000).toFixed(1) + ' s' : '–';
+    factDetail.textContent = f.a + ' × ' + f.b + ' = ' + (f.a * f.b) +
+      ' · Stufe ' + f.box + ' · ' + accuracy + ' % richtig · Ø ' + average +
+      ' · zuletzt ' + (f.lastPracticedDate || 'noch nie') + ' · fällig ' + f.dueDate;
+  }
+
+  function renderLearningDashboard(){
+    var today = todayStr();
+    var pool = factsInRange();
+    var newCount = pool.filter(function(f){ return !f.seen; }).length;
+    var dueCount = pool.filter(function(f){ return f.seen && f.dueDate === today; }).length;
+    var overdueCount = pool.filter(function(f){ return f.seen && f.dueDate < today; }).length;
+    var mastered = pool.filter(function(f){ return f.box >= MAX_BOX - 1; }).length;
+    learningSummary.innerHTML = '<div><strong>' + newCount + '</strong>Neu</div>' +
+      '<div><strong>' + dueCount + '</strong>Heute fällig</div>' +
+      '<div><strong>' + overdueCount + '</strong>Überfällig</div>' +
+      '<div><strong>' + mastered + '</strong>Gemeistert</div>';
+
+    historySummary.innerHTML = '<div class="hint">Letzte 7 Tage: Genauigkeit</div>';
+    for (var offset = 6; offset >= 0; offset--){
+      var date = addDays(today, -offset);
+      var day = state.history[date] || { attempts:0, correct:0 };
+      var percent = day.attempts ? Math.round(day.correct / day.attempts * 100) : 0;
+      var row = document.createElement('div');
+      row.className = 'history-row';
+      var label = document.createElement('span');
+      label.textContent = date.slice(8, 10) + '.' + date.slice(5, 7) + '.';
+      var bar = document.createElement('div');
+      bar.className = 'history-bar';
+      var fill = document.createElement('i');
+      fill.style.width = percent + '%';
+      bar.appendChild(fill);
+      var value = document.createElement('small');
+      value.textContent = day.attempts ? percent + '% (' + day.attempts + ')' : '–';
+      row.appendChild(label);
+      row.appendChild(bar);
+      row.appendChild(value);
+      historySummary.appendChild(row);
+    }
+
+    troubleList.innerHTML = '';
+    var trouble = pool.filter(function(f){ return f.seen && f.wrongCount > 0; });
+    trouble.sort(function(x, y){
+      var xAttempts = x.correctCount + x.wrongCount;
+      var yAttempts = y.correctCount + y.wrongCount;
+      var rateDiff = (y.wrongCount / yAttempts) - (x.wrongCount / xAttempts);
+      return rateDiff || y.wrongCount - x.wrongCount;
+    });
+    if (!trouble.length){
+      troubleList.textContent = 'Noch keine auffälligen Aufgaben.';
+    } else {
+      trouble.slice(0, 5).forEach(function(f){
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = f.a + '×' + f.b + ' · ' + f.wrongCount + '× falsch';
+        button.addEventListener('click', function(){ renderFactDetail(factKey(f.a, f.b)); });
+        troubleList.appendChild(button);
+      });
+    }
+  }
+
+  function renderBackupReminder(){
+    var last = root.lastBackupDate;
+    var old = !last || daysBetween(last, todayStr()) >= 30;
+    backupReminder.className = 'backup-reminder' + (old ? ' warning' : '');
+    backupReminder.textContent = !last
+      ? 'Noch kein Backup erstellt. Der Fortschritt liegt nur auf diesem Gerät.'
+      : old
+        ? 'Letztes Backup: ' + last + '. Bitte wieder sichern.'
+        : 'Letztes Backup: ' + last + '.';
+  }
 
   function renderProgressGridTable(){
     var cfg = state.config;
+    var tables = activeTables();
     var html = '<tr><th></th>';
     for (var b = cfg.min; b <= cfg.max; b++) html += '<th>' + b + '</th>';
     html += '</tr>';
@@ -1349,9 +2413,13 @@
         var f = state.facts[key];
         var box = f ? f.box : 0;
         var seen = f && f.seen;
+        var active = f && factMatchesTables(f, tables);
         var color = seen ? BOX_COLORS[Math.min(box, BOX_COLORS.length - 1)] : '#d7d6e0';
         var info = seen ? ('Stufe ' + box + ' | fällig ' + f.dueDate) : 'noch nicht geübt';
-        html += '<td><div class="box-cell" style="background:' + color + '" title="' + a + '×' + b2 + ' = ' + (a*b2) + ' | ' + info + '">&nbsp;</div></td>';
+        html += '<td><button type="button" class="box-cell' + (active ? '' : ' inactive') +
+          '" data-key="' + key + '" style="background:' + color + '" title="' +
+          a + '×' + b2 + ' = ' + (a*b2) + ' | ' + info + '" aria-label="' +
+          a + ' mal ' + b2 + ', ' + info + '">&nbsp;</button></td>';
       }
       html += '</tr>';
     }
@@ -1364,12 +2432,20 @@
     childNameInput.value = state.config.childName || '';
     rangeMinSel.value = state.config.min;
     rangeMaxSel.value = state.config.max;
+    renderTableChoices(configuredTables());
     tasksPerDayInput.value = state.config.tasksPerDay;
+    newFactsPerDayInput.value = state.config.newFactsPerDay;
+    autoUnlockTablesToggle.checked = state.config.autoUnlockTables;
+    updateUnlockStatus();
+    rewardEveryInput.value = state.config.rewardEvery;
     soundToggle.checked = state.config.sound !== false;
     answerModeSel.value = state.config.answerMode || 'choice';
     gapToggle.checked = !!state.config.gapTasks;
     newPinInput.value = '';
+    factDetail.textContent = 'Tippe auf eine Aufgabe, um Details zu sehen.';
+    renderLearningDashboard();
     renderProgressGridTable();
+    renderBackupReminder();
     adminOverlay.classList.add('active');
   }
   function closeAdminModal(){
@@ -1413,6 +2489,14 @@
   adminOverlay.addEventListener('click', function(e){
     if (e.target === adminOverlay) closeAdminModal();
   });
+  rangeMinSel.addEventListener('change', function(){ renderTableChoices(selectedTablesFromControls()); });
+  rangeMaxSel.addEventListener('change', function(){ renderTableChoices(selectedTablesFromControls()); });
+  tableChoices.addEventListener('change', updateUnlockStatus);
+  autoUnlockTablesToggle.addEventListener('change', updateUnlockStatus);
+  progressGrid.addEventListener('click', function(e){
+    var cell = e.target.closest && e.target.closest('.box-cell');
+    if (cell && cell.dataset.key) renderFactDetail(cell.dataset.key);
+  });
 
   saveAdminBtn.addEventListener('click', function(){
     var min = parseInt(rangeMinSel.value, 10);
@@ -1421,18 +2505,44 @@
     var tasks = parseInt(tasksPerDayInput.value, 10);
     if (!tasks || tasks < 1) tasks = 5;
     if (tasks > 20) tasks = 20;
+    var newFactsPerDay = parseInt(newFactsPerDayInput.value, 10);
+    if (!newFactsPerDay || newFactsPerDay < 1) newFactsPerDay = 2;
+    if (newFactsPerDay > 10) newFactsPerDay = 10;
+    var tables = selectedTablesFromControls().filter(function(v){ return v >= min && v <= max; });
+    if (!tables.length) tables = [min];
+    var rewardEvery = parseInt(rewardEveryInput.value, 10);
+    if (!rewardEvery || rewardEvery < 1) rewardEvery = 10;
+    if (rewardEvery > 100) rewardEvery = 100;
+    var rewardIntervalChanged = rewardEvery !== state.config.rewardEvery;
+    var wasAutoUnlocking = state.config.autoUnlockTables;
 
     state.config.min = min;
     state.config.max = max;
+    state.config.enabledTables = tables;
     state.config.tasksPerDay = tasks;
+    state.config.newFactsPerDay = newFactsPerDay;
+    state.config.autoUnlockTables = autoUnlockTablesToggle.checked;
+    state.config.rewardEvery = rewardEvery;
     state.config.childName = childNameInput.value.trim();
     state.config.sound = soundToggle.checked;
     state.config.answerMode = answerModeSel.value;
     state.config.gapTasks = gapToggle.checked;
+    state.curriculum.unlockedTables = state.curriculum.unlockedTables.filter(function(v){
+      return tables.indexOf(v) !== -1;
+    });
+    if (state.config.autoUnlockTables && (!wasAutoUnlocking || !state.curriculum.unlockedTables.length)){
+      state.curriculum.unlockedTables = [tables[0]];
+    }
     if (/^\d{4}$/.test(newPinInput.value)) root.pin = newPinInput.value;
+    if (rewardIntervalChanged){
+      // Preserve unlocked games, but rebase the counter so toggling this
+      // setting cannot grant duplicates or postpone the next interval.
+      state.reward.totalEarned = Math.floor(totalCorrectAnswers() / rewardEvery);
+    }
 
     ensureFactPool();
-    state.today.queue = buildQueue(tasks);
+    state.today.newFactKeys = state.today.newFactKeys || [];
+    state.today.queue = buildQueue(tasks, state.today.newFactKeys);
     state.today.index = 0;
     state.today.correct = 0;
     state.today.completed = false;
@@ -1445,6 +2555,8 @@
   });
 
   exportBtn.addEventListener('click', function(){
+    root.lastBackupDate = todayStr();
+    saveState();
     var blob = new Blob([JSON.stringify(root, null, 2)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -1454,6 +2566,7 @@
     a.click();
     a.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    renderBackupReminder();
   });
 
   importBtn.addEventListener('click', function(){ importFile.click(); });
@@ -1469,6 +2582,7 @@
         } else if (confirm('Backup einspielen? Der aktuelle Stand auf diesem Gerät wird überschrieben.')){
           for (var id in parsed.profiles) normalizeProfile(parsed.profiles[id]);
           if (!parsed.pin) parsed.pin = "6969";
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(parsed.lastBackupDate || '')) parsed.lastBackupDate = null;
           root = parsed;
           state = root.profiles[root.activeProfileId];
           ensureFactPool();
@@ -1490,6 +2604,7 @@
     var cfg = state.config;
     var fresh = defaultProfile();
     fresh.config = cfg;
+    normalizeProfile(fresh);
     root.profiles[root.activeProfileId] = fresh;
     state = fresh;
     ensureFactPool();

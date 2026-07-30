@@ -15,19 +15,40 @@ Dateien: `index.html`, `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`
 ## Features
 
 - Täglich eine konfigurierbare Anzahl Aufgaben (Standard: 5)
-- Multiple-Choice-Antworten
+- Konfigurierbarer Zahlenbereich von 1 bis 20
+- Einzelne Einmaleins-Reihen gezielt auswählbar; optional werden gewählte
+  Reihen schrittweise bei 80 % sicherem Lernstand freigeschaltet
+- Konfigurierbare Begrenzung neuer Aufgaben pro Tag; bekannte Wiederholungen
+  haben Vorrang, neue Aufgaben werden innerhalb der Runde erneut abgefragt
 - Adaptive Wiederholung: schnelle richtige Antworten -> längere Pause bis zur
-  nächsten Wiederholung; falsche/langsame Antworten -> kommen bald wieder
+  nächsten Wiederholung; falsche/langsame Antworten -> kommen bald wieder;
+  pro Runde wird eine ältere, überfällige Aufgabe aus einer höheren Lernstufe
+  berücksichtigt, damit bereits Gelerntes regelmäßig wiederholt wird; eine
+  Aufgabe steigt erst nach zwei richtigen Antworten in Folge auf
 - Serien-Zähler (Tage in Folge geübt) und Fortschrittsübersicht
 - Falsche Aufgaben werden noch in derselben Runde wiederholt
-- Antwort-Modus wählbar: Multiple-Choice oder Eintippen per Ziffernblock
+- Antwort-Modus wählbar: Multiple-Choice, Eintippen per Ziffernblock oder
+  adaptiv (neue Aufgaben antippen, ab Lernstufe 2 frei eintippen); bei
+  eingetippten Antworten werden für die Lernstufen-Bewertung zwei Sekunden
+  Eingabezeit abgezogen
 - Optionale Lückenaufgaben (7 × ▢ = 56)
 - Belohnungen: Sticker pro geübtem Tag, Abzeichen für Serien-Meilensteine,
   Konfetti und Soundeffekte (abschaltbar)
+- Dino-Sprungspiel als Lernbelohnung: Die benötigte Anzahl richtiger Antworten
+  pro Spiel ist im Eltern-Bereich konfigurierbar (Standard: 10); die Startseite
+  zeigt, wie viele richtige Antworten bis zum nächsten Spiel fehlen; nach 2 Minuten startet
+  kein neuer Versuch mehr, ein bereits laufender Versuch darf noch bis zum
+  nächsten Zusammenstoß fertiggespielt werden; spätestens nach 3 Versuchen ist
+  Schluss; riskant platzierte Sterne, Combo-Multiplikatoren, fünf Sekunden
+  Super-Dino nach jeweils drei Sternen, seltene Bonus-Versuch-Eier und ein
+  persönlicher Punkterekord sorgen für Abwechslung; das Spiel wird in sechs
+  Stufen zunehmend schneller und mischt unregelmäßige Abstände, kurze
+  Kakteen-Paare und niedrig fliegende Hindernisse, bei denen man am Boden bleibt
 - Mehrere Kind-Profile mit getrenntem Fortschritt
 - Eltern-Bereich (Zahnrad oben rechts, PIN-geschützt): Zahlenbereich,
-  Aufgaben pro Tag, Antwort-Modus, PIN ändern, Fortschritt einsehen,
-  Backup exportieren/importieren, Profile verwalten
+  Reihen, neue und gesamte Aufgaben, richtige Antworten pro Belohnung,
+  Antwort-Modus, PIN ändern, Fortschritt einsehen, Problemaufgaben und
+  7-Tage-Genauigkeit auswerten, Backup exportieren/importieren, Profile verwalten
 - Responsives Design – passt sich an iPhone, iPad und Desktop an
 - Als Home-Bildschirm-App installierbar (iOS "Zum Home-Bildschirm hinzufügen"),
   funktioniert dank Service Worker auch offline
