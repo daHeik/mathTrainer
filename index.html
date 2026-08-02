@@ -351,6 +351,26 @@
   .fact-detail{ min-height:38px; margin-top:9px; padding:9px; background:#fbfaff; border-radius:9px; font-size:0.82rem; }
   .backup-reminder{ font-size:0.8rem; margin:9px 0 0; color:var(--ink-soft); }
   .backup-reminder.warning{ color:#a04f00; font-weight:600; }
+  .admin-tabs{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;
+    margin:18px 0 24px; padding:5px; border-radius:14px; background:#f4f3ff;
+  }
+  .admin-tab{
+    min-width:0; padding:10px 5px; border:0; border-radius:10px;
+    background:transparent; color:var(--ink-soft); font:inherit;
+    font-size:0.88rem; font-weight:700; cursor:pointer;
+  }
+  .admin-tab[aria-selected="true"]{
+    background:white; color:var(--bg-1); box-shadow:0 3px 10px rgba(45,45,58,0.12);
+  }
+  .admin-tab:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
+  .admin-tab-panel[hidden]{ display:none; }
+  .admin-tab-panel.active{ animation:fadeIn .2s ease; }
+  .admin-save-actions{ margin-top:24px; }
+
+  @media (max-width:380px){
+    .admin-tab{ font-size:0.78rem; }
+  }
 
   .badge-row{ display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
   .badge{
@@ -593,9 +613,41 @@
 
 <!-- ADMIN MODAL -->
 <div class="modal-overlay" id="adminOverlay">
-  <div class="modal">
+  <div class="modal" aria-labelledby="adminTitle">
     <button class="close-x" id="closeAdmin">✕</button>
-    <h2>Eltern-Bereich ⚙️</h2>
+    <h2 id="adminTitle">Eltern-Bereich ⚙️</h2>
+
+    <div class="admin-tabs" role="tablist" aria-label="Bereiche im Eltern-Dashboard">
+      <button class="admin-tab" id="adminTabOverview" type="button" role="tab"
+              aria-selected="true" aria-controls="adminPanelOverview" tabindex="0">Übersicht</button>
+      <button class="admin-tab" id="adminTabLearning" type="button" role="tab"
+              aria-selected="false" aria-controls="adminPanelLearning" tabindex="-1">Lernen</button>
+      <button class="admin-tab" id="adminTabManage" type="button" role="tab"
+              aria-selected="false" aria-controls="adminPanelManage" tabindex="-1">Verwaltung</button>
+    </div>
+
+    <section class="admin-tab-panel active" id="adminPanelOverview" role="tabpanel"
+             aria-labelledby="adminTabOverview" tabindex="0">
+      <div class="field">
+        <label>Lernübersicht</label>
+        <div class="learning-summary" id="learningSummary"></div>
+        <div id="historySummary"></div>
+        <div class="hint" style="margin-top:10px;">Braucht Aufmerksamkeit</div>
+        <div class="trouble-list" id="troubleList"></div>
+        <div class="fact-detail" id="factDetail">Tippe auf eine Aufgabe, um Details zu sehen.</div>
+      </div>
+
+      <div class="field">
+        <label>Fortschritt (Kästchenfarbe = Lernstand)</label>
+        <div class="progress-grid-wrap">
+          <table class="progress-grid" id="progressGrid"></table>
+        </div>
+        <div class="hint">Grau = noch nicht geübt, Rot → Grün = Lernstand. Blasse Aufgaben gehören nicht zu den aktiven Reihen.</div>
+      </div>
+    </section>
+
+    <section class="admin-tab-panel" id="adminPanelLearning" role="tabpanel"
+             aria-labelledby="adminTabLearning" tabindex="0" hidden>
 
     <div class="field">
       <label>Profile</label>
@@ -624,9 +676,9 @@
     </div>
 
     <div class="field">
-      <label>Zu übende Reihen</label>
+      <label>Zahlen in den Aufgaben</label>
       <div class="table-choice-grid" id="tableChoices"></div>
-      <div class="hint">Wähle gezielt einzelne Reihen aus. Mindestens eine Reihe bleibt aktiv.</div>
+      <div class="hint">Nur Aufgaben, deren beide Zahlen ausgewählt sind, werden geübt. Mindestens eine Zahl bleibt aktiv.</div>
     </div>
 
     <div class="field">
@@ -637,7 +689,7 @@
 
     <div class="field">
       <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-        <input type="checkbox" id="autoUnlockTables"> Reihen automatisch freischalten
+        <input type="checkbox" id="autoUnlockTables"> Zahlen schrittweise freischalten
       </label>
       <div class="hint" id="unlockStatus">Beginnt mit der ersten gewählten Reihe und schaltet die nächste bei 80 % sicherem Lernstand frei.</div>
     </div>
@@ -676,31 +728,15 @@
       </label>
     </div>
 
+    </section>
+
+    <section class="admin-tab-panel" id="adminPanelManage" role="tabpanel"
+             aria-labelledby="adminTabManage" tabindex="0" hidden>
+
     <div class="field">
       <label for="newPin">PIN ändern (4 Ziffern)</label>
       <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4"
              id="newPin" placeholder="Leer lassen = PIN behalten" autocomplete="off">
-    </div>
-
-    <div class="modal-actions">
-      <button class="primary-btn" id="saveAdmin">Speichern</button>
-    </div>
-
-    <div class="field" style="margin-top:24px;">
-      <label>Lernübersicht</label>
-      <div class="learning-summary" id="learningSummary"></div>
-      <div id="historySummary"></div>
-      <div class="hint" style="margin-top:10px;">Braucht Aufmerksamkeit</div>
-      <div class="trouble-list" id="troubleList"></div>
-      <div class="fact-detail" id="factDetail">Tippe auf eine Aufgabe, um Details zu sehen.</div>
-    </div>
-
-    <div class="field">
-      <label>Fortschritt (Kästchenfarbe = Lernstand)</label>
-      <div class="progress-grid-wrap">
-        <table class="progress-grid" id="progressGrid"></table>
-      </div>
-      <div class="hint">Grau = noch nicht geübt, Rot → Grün = Lernstand. Blasse Aufgaben gehören nicht zu den aktiven Reihen.</div>
     </div>
 
     <div class="field" style="margin-top:24px;">
@@ -715,6 +751,11 @@
     </div>
 
     <button class="danger-btn" id="resetProgress">Gesamten Fortschritt zurücksetzen</button>
+    </section>
+
+    <div class="modal-actions admin-save-actions" id="adminSaveActions" hidden>
+      <button class="primary-btn" id="saveAdmin">Änderungen speichern</button>
+    </div>
   </div>
 </div>
 
@@ -759,6 +800,44 @@
     return arr;
   }
 
+  function spreadQueueKeys(keys){
+    var counts = {};
+    keys.forEach(function(key){ counts[key] = (counts[key] || 0) + 1; });
+    var result = [];
+    while (result.length < keys.length){
+      var last = result.length ? result[result.length - 1] : null;
+      var candidates = Object.keys(counts).filter(function(key){
+        return counts[key] > 0 && key !== last;
+      });
+      if (!candidates.length){
+        candidates = Object.keys(counts).filter(function(key){ return counts[key] > 0; });
+      }
+      var highestCount = Math.max.apply(null, candidates.map(function(key){ return counts[key]; }));
+      candidates = candidates.filter(function(key){ return counts[key] === highestCount; });
+      var picked = candidates[Math.floor(Math.random() * candidates.length)];
+      result.push(picked);
+      counts[picked]--;
+    }
+    return result;
+  }
+
+  function trimRepeatedQueueFacts(today){
+    if (!today || today.completed || !Array.isArray(today.queue)) return;
+    var index = Math.max(0, Math.min(Number(today.index) || 0, today.queue.length));
+    var completed = today.queue.slice(0, index);
+    var counts = {};
+    completed.forEach(function(key){ counts[key] = (counts[key] || 0) + 1; });
+    var pending = today.queue.slice(index).filter(function(key){
+      var retryCount = Math.min(2, Number((today.requeueCounts || {})[key]) || 0);
+      var limit = 2 + retryCount;
+      if ((counts[key] || 0) >= limit) return false;
+      counts[key] = (counts[key] || 0) + 1;
+      return true;
+    });
+    today.queue = completed.concat(pending);
+    today.index = index;
+  }
+
   function defaultProfile(){
     var today = todayStr();
     return {
@@ -784,6 +863,7 @@
       history: {}, // date -> {attempts,correct,wrong,totalResponseMs}
       streak: 0,
       lastCompletedDate: null,
+      streakRecovery: null, // {date, previousStreak, completedRounds}
       stickers: [], // {date, emoji}, one per completed day
       badges: [],   // earned streak milestones (7, 14, 30, ...)
       reward: {
@@ -839,6 +919,7 @@
     if (!p.today) p.today = defaultProfile().today;
     if (!p.today.requeueCounts) p.today.requeueCounts = {};
     if (!Array.isArray(p.today.newFactKeys)) p.today.newFactKeys = [];
+    trimRepeatedQueueFacts(p.today);
     if (!p.curriculum) p.curriculum = { unlockedTables: [] };
     if (!Array.isArray(p.curriculum.unlockedTables)) p.curriculum.unlockedTables = [];
     p.curriculum.unlockedTables = p.curriculum.unlockedTables.filter(function(v){
@@ -858,6 +939,16 @@
     }
     if (!p.stickers) p.stickers = [];
     if (!p.badges) p.badges = [];
+    if (p.streakRecovery){
+      var recovery = p.streakRecovery;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(recovery.date || '') ||
+          !Number(recovery.previousStreak) || Number(recovery.previousStreak) < 1){
+        p.streakRecovery = null;
+      } else {
+        recovery.previousStreak = Math.max(1, Number(recovery.previousStreak) || 1);
+        recovery.completedRounds = recovery.completedRounds > 0 ? 1 : 0;
+      }
+    }
     var hadRewardData = !!p.reward;
     if (!p.reward){
       p.reward = { basis: "correctAnswers", earnedMilestones: [], totalEarned: 0, availablePlays: 0 };
@@ -961,18 +1052,23 @@
     return unlocked.length ? unlocked : [planned[0]];
   }
 
-  function factMatchesTables(f, tables){
+  function factTouchesTables(f, tables){
     return tables.indexOf(f.a) !== -1 || tables.indexOf(f.b) !== -1;
+  }
+
+  function factUsesOnlyTables(f, tables){
+    return tables.indexOf(f.a) !== -1 && tables.indexOf(f.b) !== -1;
   }
 
   function factsInRange(){
     var cfg = state.config;
-    var tables = activeTables();
+    var planned = configuredTables();
+    var active = activeTables();
     var list = [];
     for (var key in state.facts){
       var f = state.facts[key];
       if (f.a >= cfg.min && f.a <= cfg.max && f.b >= cfg.min && f.b <= cfg.max &&
-          f.b >= f.a && factMatchesTables(f, tables)){
+          f.b >= f.a && factUsesOnlyTables(f, planned) && factTouchesTables(f, active)){
         list.push(f);
       }
     }
@@ -1007,6 +1103,14 @@
     var today = todayStr();
     var pool = shuffle(factsInRange());
     introducedKeys = introducedKeys || [];
+    var poolKeys = pool.map(function(f){ return factKey(f.a, f.b); });
+    // Changing the number range or selected tables must release today's new-
+    // fact allowance from tasks that are no longer part of the active pool.
+    for (var introducedIndex = introducedKeys.length - 1; introducedIndex >= 0; introducedIndex--){
+      if (poolKeys.indexOf(introducedKeys[introducedIndex]) === -1){
+        introducedKeys.splice(introducedIndex, 1);
+      }
+    }
     var introducedToday = introducedKeys.length;
     var newLimit = Math.max(0, state.config.newFactsPerDay - introducedToday);
     var dueReviews = pool.filter(function(f){ return f.seen && f.dueDate <= today; });
@@ -1038,31 +1142,111 @@
       var need = size - chosen.length;
       chosen = chosen.concat(rest.slice(0, need));
     }
-    // On a new profile, repeat the small set of introduced facts so the
-    // configured session length is still useful without introducing more.
+    // Newly introduced facts may appear once more for reinforcement, but a
+    // single eligible fact must never fill most of the session by itself.
     var repeatable = newFacts.length ? newFacts.slice() : pool.filter(function(f){
       return introducedKeys.indexOf(factKey(f.a, f.b)) !== -1;
     });
-    if (!repeatable.length) repeatable = chosen.slice();
-    var repeatIndex = 0;
-    while (chosen.length < size && repeatable.length){
-      chosen.push(repeatable[repeatIndex % repeatable.length]);
-      repeatIndex++;
+    var occurrenceCounts = {};
+    chosen.forEach(function(f){
+      var key = factKey(f.a, f.b);
+      occurrenceCounts[key] = (occurrenceCounts[key] || 0) + 1;
+    });
+    shuffle(repeatable);
+    repeatable.forEach(function(f){
+      if (chosen.length >= size) return;
+      var key = factKey(f.a, f.b);
+      if ((occurrenceCounts[key] || 0) < 2){
+        chosen.push(f);
+        occurrenceCounts[key] = (occurrenceCounts[key] || 0) + 1;
+      }
+    });
+    var queueKeys = chosen.map(function(f){ return factKey(f.a, f.b); });
+    return spreadQueueKeys(queueKeys);
+  }
+
+  function enqueueRetry(key){
+    var queue = state.today.queue;
+    var earliest = Math.min(queue.length, state.today.index + 2);
+    for (var position = queue.length; position >= earliest; position--){
+      if (queue[position - 1] !== key && queue[position] !== key){
+        queue.splice(position, 0, key);
+        return;
+      }
     }
-    shuffle(chosen);
-    return chosen.map(function(f){ return factKey(f.a, f.b); });
+    queue.push(key);
+  }
+
+  function stickerStreakEndingOn(date){
+    var dates = {};
+    (state.stickers || []).forEach(function(sticker){ dates[sticker.date] = true; });
+    var count = 0;
+    var cursor = date;
+    while (dates[cursor]){
+      count++;
+      cursor = addDays(cursor, -1);
+    }
+    return count;
+  }
+
+  function prepareStreakForDay(today){
+    if (state.streakRecovery && state.streakRecovery.date !== today){
+      var recoveryDayCompleted = state.streakRecovery.completedRounds > 0 &&
+        state.lastCompletedDate === state.streakRecovery.date;
+      state.streakRecovery = null;
+      state.streak = recoveryDayCompleted ? 1 : 0;
+    }
+    if (!state.lastCompletedDate) return;
+    var gap = daysBetween(state.lastCompletedDate, today);
+    if (gap === 2){
+      var previousStreak = Math.max(Number(state.streak) || 0,
+        stickerStreakEndingOn(state.lastCompletedDate));
+      if (previousStreak > 0){
+        state.streak = previousStreak;
+        state.streakRecovery = {
+          date:today,
+          previousStreak:previousStreak,
+          completedRounds:0
+        };
+      } else {
+        state.streak = 0;
+      }
+    } else if (gap > 2){
+      state.streakRecovery = null;
+      state.streak = 0;
+    }
+  }
+
+  function completeRegularStreak(today){
+    var recovery = state.streakRecovery;
+    if (recovery && recovery.date === today){
+      recovery.completedRounds = 1;
+      state.lastCompletedDate = today;
+      return;
+    }
+    if (state.lastCompletedDate){
+      var gap = daysBetween(state.lastCompletedDate, today);
+      if (gap === 1) state.streak++;
+      else if (gap !== 0) state.streak = 1;
+    } else {
+      state.streak = 1;
+    }
+    state.lastCompletedDate = today;
+  }
+
+  function completeStreakRecovery(today){
+    var recovery = state.streakRecovery;
+    if (!recovery || recovery.date !== today || recovery.completedRounds < 1) return false;
+    state.streak = recovery.previousStreak + 2;
+    state.streakRecovery = null;
+    return true;
   }
 
   function refreshDailySessionIfNeeded(){
     ensureFactPool();
     var today = todayStr();
     if (state.today.date !== today){
-      // The streak is broken as soon as more than one day passed since the
-      // last completed session — show that immediately, not only after the
-      // next completion.
-      if (!state.lastCompletedDate || daysBetween(state.lastCompletedDate, today) > 1){
-        state.streak = 0;
-      }
+      prepareStreakForDay(today);
       state.today = {
         date: today,
         queue: [],
@@ -1121,10 +1305,12 @@
 
   function factsForTable(table){
     var cfg = state.config;
+    var planned = configuredTables();
     var list = [];
     for (var key in state.facts){
       var f = state.facts[key];
-      if (f.a >= cfg.min && f.b <= cfg.max && (f.a === table || f.b === table)) list.push(f);
+      if (f.a >= cfg.min && f.b <= cfg.max && factUsesOnlyTables(f, planned) &&
+          (f.a === table || f.b === table)) list.push(f);
     }
     return list;
   }
@@ -1350,6 +1536,9 @@
   var addProfileBtn = document.getElementById('addProfileBtn');
   var adminOverlay = document.getElementById('adminOverlay');
   var closeAdmin = document.getElementById('closeAdmin');
+  var adminTabs = Array.from(adminOverlay.querySelectorAll('[role=tab]'));
+  var adminTabPanels = Array.from(adminOverlay.querySelectorAll('[role=tabpanel]'));
+  var adminSaveActions = document.getElementById('adminSaveActions');
   var pinOverlay = document.getElementById('pinOverlay');
   var pinModal = pinOverlay.querySelector('.pin-modal');
   var pinInput = document.getElementById('pinInput');
@@ -1430,6 +1619,7 @@
     var newlyGranted = syncRewardMilestones();
     if (newlyGranted) saveState();
     var name = state.config.childName;
+    var recoveryPending = state.streakRecovery && state.streakRecovery.date === state.today.date;
     homeGreeting.textContent = name ? ("Hallo, " + name + "! 👋") : "1×1 Trainer";
     var profileIds = Object.keys(root.profiles);
     if (profileIds.length > 1){
@@ -1438,7 +1628,9 @@
     } else {
       profileBtn.style.display = 'none';
     }
-    homeSubtitle.textContent = "Übe dein kleines Einmaleins!";
+    homeSubtitle.textContent = recoveryPending
+      ? "Heute kannst du deine Serie mit zwei Runden retten! 🔥"
+      : "Übe dein kleines Einmaleins!";
     streakVal.textContent = state.streak;
     var doneCount = state.today.completed ? state.config.tasksPerDay : state.today.index;
     todayVal.textContent = Math.min(doneCount, state.config.tasksPerDay) + "/" + state.config.tasksPerDay;
@@ -1461,10 +1653,13 @@
     if (state.today.completed){
       startBtn.style.display = 'none';
       bonusBtn.style.display = 'block';
+      bonusBtn.textContent = recoveryPending ? "Serie retten: zweite Runde 🔥" : "Bonus-Runde spielen ⭐";
     } else {
       startBtn.style.display = 'block';
       bonusBtn.style.display = 'none';
-      startBtn.textContent = state.today.index > 0 ? "Weiter üben! 🚀" : "Los geht's! 🚀";
+      startBtn.textContent = state.today.index > 0
+        ? "Weiter üben! 🚀"
+        : (recoveryPending ? "Erste Rettungsrunde starten 🔥" : "Los geht's! 🚀");
     }
     showScreen(screenHome);
   }
@@ -1618,7 +1813,7 @@
       var rq = state.today.requeueCounts = state.today.requeueCounts || {};
       if ((rq[key] || 0) < 2){
         rq[key] = (rq[key] || 0) + 1;
-        state.today.queue.push(key);
+        enqueueRetry(key);
       }
     }
 
@@ -1640,18 +1835,11 @@
     var newSticker = null;
     var newBadge = null;
     var unlockedTable = null;
+    var streakRecovered = false;
     if (!wasBonus){
       state.today.completed = true;
       var today = state.today.date;
-      if (state.lastCompletedDate){
-        var gap = daysBetween(state.lastCompletedDate, today);
-        if (gap === 1) state.streak++;
-        else if (gap === 0) { /* already counted */ }
-        else state.streak = 1;
-      } else {
-        state.streak = 1;
-      }
-      state.lastCompletedDate = today;
+      completeRegularStreak(today);
 
       state.stickers = state.stickers || [];
       var hasStickerToday = state.stickers.some(function(s){ return s.date === today; });
@@ -1659,20 +1847,23 @@
         newSticker = STICKER_POOL[Math.floor(Math.random() * STICKER_POOL.length)];
         state.stickers.push({ date: today, emoji: newSticker });
       }
-      state.badges = state.badges || [];
-      BADGE_MILESTONES.forEach(function(m){
-        if (state.streak >= m && state.badges.indexOf(m) === -1){
-          state.badges.push(m);
-          newBadge = m;
-        }
-      });
       unlockedTable = maybeUnlockNextTable();
+    } else {
+      streakRecovered = completeStreakRecovery(state.today.date);
     }
+    state.badges = state.badges || [];
+    BADGE_MILESTONES.forEach(function(m){
+      if (state.streak >= m && state.badges.indexOf(m) === -1){
+        state.badges.push(m);
+        newBadge = m;
+      }
+    });
     saveState();
 
-    if (newSticker || newBadge || unlockedTable){
+    if (newSticker || newBadge || unlockedTable || streakRecovered){
       var parts = [];
       if (newSticker) parts.push("Dein Sticker für heute: " + newSticker);
+      if (streakRecovered) parts.push("🔥 Serie gerettet: " + state.streak + " Tage!");
       if (newBadge) parts.push("🏅 Neues Abzeichen: " + newBadge + "-Tage-Serie!");
       if (unlockedTable) parts.push("🔓 Die " + unlockedTable + "er-Reihe ist jetzt freigeschaltet!");
       if (sessionRewardUnlocks) parts.push("🦖 Dino-Spiel freigeschaltet!");
@@ -1685,14 +1876,19 @@
       doneReward.style.display = 'none';
     }
 
-    doneSubtitle.textContent = wasBonus
-      ? "Bonus-Runde geschafft! Extra-Übung hilft immer. 🌈"
-      : "Du hast alle Aufgaben für heute geschafft.";
+    var recoveryPending = state.streakRecovery && state.streakRecovery.date === state.today.date;
+    doneSubtitle.textContent = streakRecovered
+      ? "Doppelte Runde geschafft — deine Serie ist wieder da! 🔥"
+      : (recoveryPending
+        ? "Eine zweite Runde noch, dann ist deine Serie gerettet! 💪"
+        : (wasBonus ? "Bonus-Runde geschafft! Extra-Übung hilft immer. 🌈"
+          : "Du hast alle Aufgaben für heute geschafft."));
     doneStreakVal.textContent = state.streak;
     doneCorrectVal.textContent = state.today.correct + "/" + state.today.queue.length;
     doneRewardGameBtn.style.display = state.reward.availablePlays > 0 ? 'block' : 'none';
     doneRewardGameBtn.style.marginBottom = state.reward.availablePlays > 0 ? '12px' : '';
     doneBonusBtn.style.display = 'block';
+    doneBonusBtn.textContent = recoveryPending ? "Serie retten: zweite Runde 🔥" : "Bonus-Runde spielen ⭐";
     showScreen(screenDone);
     playFanfareSound();
     launchConfetti();
@@ -1808,6 +2004,7 @@
       timeExpired:false,
       obstacles:[],
       collectibles:[],
+      clouds:[{ x:65, y:48 }, { x:225, y:76 }, { x:355, y:105 }],
       spawnIn:1.15,
       dino:null
     };
@@ -1959,6 +2156,10 @@
 
     var difficulty = rewardGameDifficulty(Date.now() - game.startedAt);
     var speed = difficulty.speed;
+    game.clouds.forEach(function(cloud){
+      cloud.x -= speed * 0.5 * dt;
+      if (cloud.x + 50 < 0) cloud.x = 494;
+    });
     game.spawnIn -= dt;
     if (game.spawnIn <= 0){
       // Close pairs are generated deliberately. Their second cactus stays
@@ -2063,11 +2264,11 @@
     ctx.fill();
 
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    [[65,48],[225,76],[355,105]].forEach(function(cloud){
+    game.clouds.forEach(function(cloud){
       ctx.beginPath();
-      ctx.arc(cloud[0], cloud[1], 14, 0, Math.PI * 2);
-      ctx.arc(cloud[0] + 17, cloud[1] - 5, 18, 0, Math.PI * 2);
-      ctx.arc(cloud[0] + 36, cloud[1], 13, 0, Math.PI * 2);
+      ctx.arc(cloud.x, cloud.y, 14, 0, Math.PI * 2);
+      ctx.arc(cloud.x + 17, cloud.y - 5, 18, 0, Math.PI * 2);
+      ctx.arc(cloud.x + 36, cloud.y, 13, 0, Math.PI * 2);
       ctx.fill();
     });
 
@@ -2403,6 +2604,7 @@
   function renderProgressGridTable(){
     var cfg = state.config;
     var tables = activeTables();
+    var planned = configuredTables();
     var html = '<tr><th></th>';
     for (var b = cfg.min; b <= cfg.max; b++) html += '<th>' + b + '</th>';
     html += '</tr>';
@@ -2413,7 +2615,7 @@
         var f = state.facts[key];
         var box = f ? f.box : 0;
         var seen = f && f.seen;
-        var active = f && factMatchesTables(f, tables);
+        var active = f && factUsesOnlyTables(f, planned) && factTouchesTables(f, tables);
         var color = seen ? BOX_COLORS[Math.min(box, BOX_COLORS.length - 1)] : '#d7d6e0';
         var info = seen ? ('Stufe ' + box + ' | fällig ' + f.dueDate) : 'noch nicht geübt';
         html += '<td><button type="button" class="box-cell' + (active ? '' : ' inactive') +
@@ -2424,6 +2626,21 @@
       html += '</tr>';
     }
     progressGrid.innerHTML = html;
+  }
+
+  function showAdminTab(panelId, moveFocus){
+    adminTabs.forEach(function(tab){
+      var selected = tab.getAttribute('aria-controls') === panelId;
+      tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+      tab.tabIndex = selected ? 0 : -1;
+      if (selected && moveFocus) tab.focus();
+    });
+    adminTabPanels.forEach(function(panel){
+      var selected = panel.id === panelId;
+      panel.hidden = !selected;
+      panel.classList.toggle('active', selected);
+    });
+    adminSaveActions.hidden = panelId === 'adminPanelOverview';
   }
 
   function openAdmin(){
@@ -2446,6 +2663,7 @@
     renderLearningDashboard();
     renderProgressGridTable();
     renderBackupReminder();
+    showAdminTab('adminPanelOverview', false);
     adminOverlay.classList.add('active');
   }
   function closeAdminModal(){
@@ -2488,6 +2706,21 @@
   closeAdmin.addEventListener('click', closeAdminModal);
   adminOverlay.addEventListener('click', function(e){
     if (e.target === adminOverlay) closeAdminModal();
+  });
+  adminTabs.forEach(function(tab, index){
+    tab.addEventListener('click', function(){
+      showAdminTab(tab.getAttribute('aria-controls'), false);
+    });
+    tab.addEventListener('keydown', function(e){
+      var nextIndex = index;
+      if (e.key === 'ArrowRight') nextIndex = (index + 1) % adminTabs.length;
+      else if (e.key === 'ArrowLeft') nextIndex = (index - 1 + adminTabs.length) % adminTabs.length;
+      else if (e.key === 'Home') nextIndex = 0;
+      else if (e.key === 'End') nextIndex = adminTabs.length - 1;
+      else return;
+      e.preventDefault();
+      showAdminTab(adminTabs[nextIndex].getAttribute('aria-controls'), true);
+    });
   });
   rangeMinSel.addEventListener('change', function(){ renderTableChoices(selectedTablesFromControls()); });
   rangeMaxSel.addEventListener('change', function(){ renderTableChoices(selectedTablesFromControls()); });

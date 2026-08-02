@@ -16,8 +16,9 @@ Dateien: `index.html`, `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`
 
 - Täglich eine konfigurierbare Anzahl Aufgaben (Standard: 5)
 - Konfigurierbarer Zahlenbereich von 1 bis 20
-- Einzelne Einmaleins-Reihen gezielt auswählbar; optional werden gewählte
-  Reihen schrittweise bei 80 % sicherem Lernstand freigeschaltet
+- Einzelne Zahlen gezielt auswählbar; abgewählte Zahlen kommen in keiner Aufgabe
+  als Faktor vor. Optional werden gewählte Reihen schrittweise bei 80 % sicherem
+  Lernstand freigeschaltet
 - Konfigurierbare Begrenzung neuer Aufgaben pro Tag; bekannte Wiederholungen
   haben Vorrang, neue Aufgaben werden innerhalb der Runde erneut abgefragt
 - Adaptive Wiederholung: schnelle richtige Antworten -> längere Pause bis zur
@@ -25,7 +26,8 @@ Dateien: `index.html`, `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`
   pro Runde wird eine ältere, überfällige Aufgabe aus einer höheren Lernstufe
   berücksichtigt, damit bereits Gelerntes regelmäßig wiederholt wird; eine
   Aufgabe steigt erst nach zwei richtigen Antworten in Folge auf
-- Serien-Zähler (Tage in Folge geübt) und Fortschrittsübersicht
+- Serien-Zähler (Tage in Folge geübt) und Fortschrittsübersicht; ein einzelner
+  ausgelassener Tag lässt sich am Folgetag durch zwei vollständige Runden nachholen
 - Falsche Aufgaben werden noch in derselben Runde wiederholt
 - Antwort-Modus wählbar: Multiple-Choice, Eintippen per Ziffernblock oder
   adaptiv (neue Aufgaben antippen, ab Lernstufe 2 frei eintippen); bei
@@ -48,7 +50,8 @@ Dateien: `index.html`, `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`
 - Eltern-Bereich (Zahnrad oben rechts, PIN-geschützt): Zahlenbereich,
   Reihen, neue und gesamte Aufgaben, richtige Antworten pro Belohnung,
   Antwort-Modus, PIN ändern, Fortschritt einsehen, Problemaufgaben und
-  7-Tage-Genauigkeit auswerten, Backup exportieren/importieren, Profile verwalten
+  7-Tage-Genauigkeit auswerten, Backup exportieren/importieren, Profile verwalten;
+  gegliedert in die Tabs „Übersicht“, „Lernen“ und „Verwaltung“
 - Responsives Design – passt sich an iPhone, iPad und Desktop an
 - Als Home-Bildschirm-App installierbar (iOS "Zum Home-Bildschirm hinzufügen"),
   funktioniert dank Service Worker auch offline

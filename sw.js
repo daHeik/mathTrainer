@@ -1,4 +1,4 @@
-var CACHE_NAME = "1x1-trainer-v9";
+var CACHE_NAME = "1x1-trainer-v10";
 var ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", function(e){
