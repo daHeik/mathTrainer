@@ -10,7 +10,10 @@ Alles läuft direkt im Browser, Fortschritt wird lokal gespeichert
 eine PWA mit Service Worker: Einmal geladen, funktioniert sie auch offline
 bzw. wenn der Server gerade nicht erreichbar ist.
 
-Dateien: `index.html`, `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`
+Die Oberfläche liegt in `index.html`, das Styling in `styles.css` und die
+Anwendungs- und Spiellogik in `app.js`. `flappy.html` und `tower.html` sind
+kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
+öffnen. Dadurch gibt es keine doppelte Spiellogik.
 
 ## Features
 
@@ -36,9 +39,10 @@ Dateien: `index.html`, `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`
 - Optionale Lückenaufgaben (7 × ▢ = 56)
 - Belohnungen: Sticker pro geübtem Tag, Abzeichen für Serien-Meilensteine,
   Konfetti und Soundeffekte (abschaltbar)
-- Dino-Sprungspiel als Lernbelohnung: Die benötigte Anzahl richtiger Antworten
-  pro Spiel ist im Eltern-Bereich konfigurierbar (Standard: 10); die Startseite
-  zeigt, wie viele richtige Antworten bis zum nächsten Spiel fehlen; nach 2 Minuten startet
+- Drei Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel und Turmbauer. Die benötigte
+  Anzahl richtiger Antworten pro Spiel ist im Eltern-Bereich konfigurierbar
+  (Standard: 10); die Startseite zeigt, wie viele richtige Antworten bis zum
+  nächsten Spiel fehlen; nach 2 Minuten startet
   kein neuer Versuch mehr, ein bereits laufender Versuch darf noch bis zum
   nächsten Zusammenstoß fertiggespielt werden; spätestens nach 3 Versuchen ist
   Schluss; riskant platzierte Sterne, Combo-Multiplikatoren, fünf Sekunden
@@ -46,6 +50,11 @@ Dateien: `index.html`, `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png`
   persönlicher Punkterekord sorgen für Abwechslung; das Spiel wird in sechs
   Stufen zunehmend schneller und mischt unregelmäßige Abstände, kurze
   Kakteen-Paare und niedrig fliegende Hindernisse, bei denen man am Boden bleibt
+- Flattervogel mit touchfreundlicher Ein-Tipp-Steuerung, zunehmend schnelleren
+  Röhren und kleiner werdenden Lücken sowie eigenem Punkterekord; das Spiel kann
+  zum Ausprobieren auch direkt über `flappy.html` gestartet werden
+- Turmbauer mit Ein-Tipp-Steuerung, schneller werdenden Bausteinen, perfekten
+  Platzierungen und eigenem Punkterekord; direkt über `tower.html` spielbar
 - Mehrere Kind-Profile mit getrenntem Fortschritt
 - Eltern-Bereich (Zahnrad oben rechts, PIN-geschützt): Zahlenbereich,
   Reihen, neue und gesamte Aufgaben, richtige Antworten pro Belohnung,
@@ -98,7 +107,7 @@ sudo systemctl enable --now mathserver
 
 ```bash
 sudo apt install nginx
-sudo cp index.html manifest.json sw.js icon-192.png icon-512.png /var/www/html/
+sudo cp index.html styles.css app.js flappy.html tower.html manifest.json sw.js icon-192.png icon-512.png /var/www/html/
 ```
 
 Danach ist die Seite über `http://<pi-ip>/` erreichbar.

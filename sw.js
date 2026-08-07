@@ -1,5 +1,5 @@
-var CACHE_NAME = "1x1-trainer-v10";
-var ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+var CACHE_NAME = "1x1-trainer-v13";
+var ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./flappy.html", "./tower.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", function(e){
   e.waitUntil(

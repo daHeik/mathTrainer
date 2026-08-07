@@ -12,7 +12,11 @@ static web server.
 
 ## Repository layout
 
-- `index.html` contains the complete application: markup, CSS, and JavaScript.
+- `index.html` contains the application markup.
+- `styles.css` contains the shared application styling.
+- `app.js` contains the trainer and reward-game logic.
+- `flappy.html` and `tower.html` are lightweight direct-play launchers that
+  open the corresponding shared implementation in `index.html` demo mode.
 - `sw.js` provides network-first caching and offline fallback.
 - `manifest.json` contains the PWA metadata.
 - `icon-192.png` and `icon-512.png` are the installable-app icons.
@@ -49,8 +53,8 @@ toolchain just for a small change unless the task specifically requires it.
 - Keep controls usable on both touch devices and desktop browsers.
 - Facts are stored canonically with `a <= b`; display order may be randomized.
   Preserve this invariant when changing question or progress logic.
-- Avoid unrelated formatting or large-scale reorganization of `index.html`;
-  small, focused changes make this single-file app easier to review.
+- Keep markup, styling, and behavior in their existing files; avoid unrelated
+  formatting or large-scale reorganization.
 
 ## Persistence and compatibility
 
