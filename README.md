@@ -75,7 +75,8 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   Antwort-Modus, Division aktivieren, PIN ändern, Fortschritt für Multiplikation
   und Division getrennt einsehen, Problemaufgaben und 7-Tage-Genauigkeit
   auswerten, Backup exportieren/importieren, Profile verwalten;
-  gegliedert in die Tabs „Übersicht“, „Lernen“ und „Verwaltung“
+  gegliedert in die Tabs „Übersicht“, „Lernen“ und „Verwaltung“. Der initiale
+  Elterncode lautet `6969` und sollte nach dem ersten Öffnen geändert werden
 - Responsives Design – passt sich an iPhone, iPad und Desktop an
 - Als Home-Bildschirm-App installierbar (iOS "Zum Home-Bildschirm hinzufügen"),
   funktioniert dank Service Worker auch offline
@@ -136,10 +137,12 @@ wie eine echte App.
 ## Veröffentlichung mit GitHub Pages
 
 Das Repository enthält unter `.github/workflows/pages.yml` einen Workflow für
-GitHub Pages. Nach dem ersten Push in den `main`-Branch muss im öffentlichen
-GitHub-Repository einmal unter **Settings → Pages → Build and deployment** die
-Quelle **GitHub Actions** gewählt werden. Danach veröffentlicht jeder Push auf
-`main` automatisch die aktuelle statische App.
+GitHub Pages. Im öffentlichen GitHub-Repository muss **vor dem ersten
+erfolgreichen Workflow-Lauf** einmal unter **Settings → Pages → Build and
+deployment** die Quelle **GitHub Actions** gewählt werden. Ohne diese einmalige
+Aktivierung meldet `configure-pages` den Fehler `Get Pages site failed: Not
+Found`. Danach veröffentlicht jeder Push auf `main` automatisch die aktuelle
+statische App.
 
 ## Hinweis zum Fortschritt
 
