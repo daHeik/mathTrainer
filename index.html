@@ -35,10 +35,6 @@
           <div class="val" id="todayVal">0/5</div>
           <div class="lbl">Heute</div>
         </div>
-        <div class="stat-pill">
-          <div class="val" id="masteredVal">0</div>
-          <div class="lbl">Gemeistert</div>
-        </div>
       </div>
 
       <button class="primary-btn" id="startBtn">Los geht's! 🚀</button>
@@ -218,6 +214,10 @@
 
     <section class="admin-tab-panel active" id="adminPanelOverview" role="tabpanel"
              aria-labelledby="adminTabOverview" tabindex="0">
+      <div class="operation-switch" id="operationSwitch" role="group" aria-label="Rechenart auswählen">
+        <button type="button" class="active" data-operation="multiply" aria-pressed="true">Multiplikation ×</button>
+        <button type="button" data-operation="divide" aria-pressed="false">Division ÷</button>
+      </div>
       <div class="field">
         <label>Lernübersicht</label>
         <div class="learning-summary" id="learningSummary"></div>
@@ -274,7 +274,7 @@
     <div class="field">
       <label for="newFactsPerDay">Neue Aufgaben pro Tag</label>
       <input type="number" id="newFactsPerDay" min="1" max="10" value="2">
-      <div class="hint">Begrenzt neue Malaufgaben; Wiederholungen haben Vorrang.</div>
+      <div class="hint">Begrenzt neue Aufgaben beider Rechenarten; Wiederholungen haben Vorrang.</div>
     </div>
 
     <div class="field">
@@ -307,9 +307,16 @@
 
     <div class="field">
       <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input type="checkbox" id="divisionToggle"> Division üben
+      </label>
+      <div class="hint">Schaltet zu Malaufgaben ab Lernstufe 4 passende Geteiltaufgaben frei. Bereits erreichter Divisionsfortschritt bleibt beim Ausschalten erhalten.</div>
+    </div>
+
+    <div class="field">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
         <input type="checkbox" id="gapToggle"> Lückenaufgaben (7 × ▢ = 56)
       </label>
-      <div class="hint">Mischt Aufgaben unter, bei denen der fehlende Faktor gesucht ist.</div>
+      <div class="hint">Mischt nur bei der Multiplikation Aufgaben mit einem fehlenden Faktor unter.</div>
     </div>
 
     <div class="field">

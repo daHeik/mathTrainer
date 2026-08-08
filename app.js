@@ -12,6 +12,7 @@
   var WRONG_TAP_DELAY_MS = 1200; // minimum time to look at the correct answer before a tap advances
   var GAME_DURATION_MS = 2 * 60 * 1000;
   var GAME_MAX_ATTEMPTS = 3;
+  var DIVISION_UNLOCK_BOX = 4;
 
   var GOOD_MESSAGES = ["Super gemacht! 🌟", "Klasse! 🎉", "Toll gemacht! 👏", "Weiter so! 💪", "Perfekt! ✨"];
   var BAD_MESSAGES_PREFIX = ["Fast geschafft!", "Kein Problem!", "Nächstes Mal klappt's!", "Schau nochmal genau hin!"];
@@ -30,6 +31,14 @@
     return Math.round((db - da) / 86400000);
   }
   function factKey(a, b){ return a + "x" + b; }
+  function divisionSkillKey(a, b){ return 'd:' + factKey(a, b); }
+  function divisionDefaults(today){
+    return {
+      unlocked:false, box:0, dueDate:today, seen:false,
+      correctCount:0, wrongCount:0, correctStreak:0,
+      totalResponseMs:0, timedAttemptCount:0, lastPracticedDate:null
+    };
+  }
   function shuffle(arr){
     for (var i = arr.length - 1; i > 0; i--){
       var j = Math.floor(Math.random() * (i + 1));
@@ -79,12 +88,12 @@
   function defaultProfile(){
     var today = todayStr();
     return {
-      version: 1,
+      version: 2,
       config: {
         min: 1, max: 10, tasksPerDay: 5, rewardEvery: 10,
         childName: "", sound: true, answerMode: "adaptive", gapTasks: false,
         enabledTables: [1,2,3,4,5,6,7,8,9,10], newFactsPerDay: 2,
-        autoUnlockTables: false
+        autoUnlockTables: false, divisionEnabled: false
       },
       facts: {}, // key -> {a,b,box,dueDate,seen,correctCount,wrongCount,correctStreak,...}
       today: {
@@ -95,7 +104,7 @@
         completed: false,
         bonus: false,
         requeueCounts: {}, // fact key -> times re-added to this session after a wrong answer
-        newFactKeys: []   // distinct facts introduced today
+        newFactKeys: []   // distinct multiplication/division skills introduced today
       },
       curriculum: { unlockedTables: [] },
       history: {}, // date -> {attempts,correct,wrong,totalResponseMs}
@@ -119,11 +128,27 @@
   function correctAnswersForProfile(profile){
     var total = 0;
     var facts = profile.facts || {};
-    for (var key in facts) total += Number(facts[key].correctCount) || 0;
+    for (var key in facts){
+      total += Number(facts[key].correctCount) || 0;
+      if (facts[key].division) total += Number(facts[key].division.correctCount) || 0;
+    }
     return total;
   }
 
+  function normalizeLearningRecord(record, today){
+    record.box = Math.max(0, Math.min(MAX_BOX, Number(record.box) || 0));
+    if (!record.dueDate) record.dueDate = today;
+    record.seen = !!record.seen;
+    record.correctCount = Math.max(0, Number(record.correctCount) || 0);
+    record.wrongCount = Math.max(0, Number(record.wrongCount) || 0);
+    if (typeof record.correctStreak !== 'number' || record.correctStreak < 0) record.correctStreak = 0;
+    if (typeof record.totalResponseMs !== 'number' || record.totalResponseMs < 0) record.totalResponseMs = 0;
+    if (typeof record.timedAttemptCount !== 'number' || record.timedAttemptCount < 0) record.timedAttemptCount = 0;
+    if (!record.lastPracticedDate) record.lastPracticedDate = null;
+  }
+
   function normalizeProfile(p){
+    p.version = 2;
     if (!p.config) p.config = defaultProfile().config;
     if (p.config.sound === undefined) p.config.sound = true;
     if (!p.config.answerMode) p.config.answerMode = "choice";
@@ -145,16 +170,18 @@
     if (!newFactsPerDay || newFactsPerDay < 1) newFactsPerDay = 2;
     p.config.newFactsPerDay = Math.min(10, newFactsPerDay);
     p.config.autoUnlockTables = !!p.config.autoUnlockTables;
+    p.config.divisionEnabled = !!p.config.divisionEnabled;
     var rewardEvery = parseInt(p.config.rewardEvery, 10);
     if (!rewardEvery || rewardEvery < 1) rewardEvery = 10;
     p.config.rewardEvery = Math.min(100, rewardEvery);
     if (!p.facts) p.facts = {};
+    var normalizationDate = todayStr();
     for (var factId in p.facts){
       var fact = p.facts[factId];
-      if (typeof fact.correctStreak !== 'number' || fact.correctStreak < 0) fact.correctStreak = 0;
-      if (typeof fact.totalResponseMs !== 'number' || fact.totalResponseMs < 0) fact.totalResponseMs = 0;
-      if (typeof fact.timedAttemptCount !== 'number' || fact.timedAttemptCount < 0) fact.timedAttemptCount = 0;
-      if (!fact.lastPracticedDate) fact.lastPracticedDate = null;
+      normalizeLearningRecord(fact, normalizationDate);
+      if (!fact.division || typeof fact.division !== 'object') fact.division = divisionDefaults(normalizationDate);
+      normalizeLearningRecord(fact.division, normalizationDate);
+      fact.division.unlocked = !!fact.division.unlocked || fact.box >= DIVISION_UNLOCK_BOX;
     }
     if (!p.today) p.today = defaultProfile().today;
     if (!p.today.requeueCounts) p.today.requeueCounts = {};
@@ -175,6 +202,23 @@
       historyDay.correct = Math.max(0, Number(historyDay.correct) || 0);
       historyDay.wrong = Math.max(0, Number(historyDay.wrong) || 0);
       historyDay.totalResponseMs = Math.max(0, Number(historyDay.totalResponseMs) || 0);
+      if (!historyDay.byOperation){
+        historyDay.byOperation = {
+          multiply:{
+            attempts:historyDay.attempts, correct:historyDay.correct,
+            wrong:historyDay.wrong, totalResponseMs:historyDay.totalResponseMs
+          },
+          divide:{ attempts:0, correct:0, wrong:0, totalResponseMs:0 }
+        };
+      }
+      ['multiply','divide'].forEach(function(operation){
+        var operationDay = historyDay.byOperation[operation] || {};
+        operationDay.attempts = Math.max(0, Number(operationDay.attempts) || 0);
+        operationDay.correct = Math.max(0, Number(operationDay.correct) || 0);
+        operationDay.wrong = Math.max(0, Number(operationDay.wrong) || 0);
+        operationDay.totalResponseMs = Math.max(0, Number(operationDay.totalResponseMs) || 0);
+        historyDay.byOperation[operation] = operationDay;
+      });
       p.history[historyDate] = historyDay;
     }
     if (!p.stickers) p.stickers = [];
@@ -280,9 +324,13 @@
           state.facts[key] = {
             a:a, b:b, box:0, dueDate:today, seen:false,
             correctCount:0, wrongCount:0, correctStreak:0,
-            totalResponseMs:0, timedAttemptCount:0, lastPracticedDate:null
+            totalResponseMs:0, timedAttemptCount:0, lastPracticedDate:null,
+            division:divisionDefaults(today)
           };
+        } else if (!state.facts[key].division){
+          state.facts[key].division = divisionDefaults(today);
         }
+        if (state.facts[key].box >= DIVISION_UNLOCK_BOX) state.facts[key].division.unlocked = true;
       }
     }
   }
@@ -321,21 +369,46 @@
     return list;
   }
 
+  function practiceSkill(key){
+    if (typeof key !== 'string') return null;
+    var isDivision = key.indexOf('d:') === 0;
+    var baseKey = isDivision ? key.slice(2) : key;
+    var fact = state.facts[baseKey];
+    if (!fact) return null;
+    return {
+      key:isDivision ? divisionSkillKey(fact.a, fact.b) : baseKey,
+      operation:isDivision ? 'divide' : 'multiply',
+      fact:fact,
+      record:isDivision ? fact.division : fact
+    };
+  }
+
+  function practiceSkillsInRange(){
+    var skills = [];
+    factsInRange().forEach(function(fact){
+      skills.push(practiceSkill(factKey(fact.a, fact.b)));
+      if (state.config.divisionEnabled && fact.division && fact.division.unlocked){
+        skills.push(practiceSkill(divisionSkillKey(fact.a, fact.b)));
+      }
+    });
+    return skills;
+  }
+
   function selectDueReviews(due, size, today){
     if (size <= 0) return [];
     due.sort(function(x, y){
-      if (x.box !== y.box) return x.box - y.box;
-      return x.dueDate < y.dueDate ? -1 : (x.dueDate > y.dueDate ? 1 : 0);
+      if (x.record.box !== y.record.box) return x.record.box - y.record.box;
+      return x.record.dueDate < y.record.dueDate ? -1 : (x.record.dueDate > y.record.dueDate ? 1 : 0);
     });
 
     var reserved = null;
     if (size > 1 && due.length){
-      var weakestDueBox = due[0].box;
+      var weakestDueBox = due[0].record.box;
       var overdueHigher = due.filter(function(f){
-        return f.box > weakestDueBox && f.dueDate < today;
+        return f.record.box > weakestDueBox && f.record.dueDate < today;
       });
       overdueHigher.sort(function(x, y){
-        return x.dueDate < y.dueDate ? -1 : (x.dueDate > y.dueDate ? 1 : 0);
+        return x.record.dueDate < y.record.dueDate ? -1 : (x.record.dueDate > y.record.dueDate ? 1 : 0);
       });
       if (overdueHigher.length) reserved = overdueHigher[0];
     }
@@ -347,9 +420,9 @@
 
   function buildQueue(size, introducedKeys){
     var today = todayStr();
-    var pool = shuffle(factsInRange());
+    var pool = shuffle(practiceSkillsInRange());
     introducedKeys = introducedKeys || [];
-    var poolKeys = pool.map(function(f){ return factKey(f.a, f.b); });
+    var poolKeys = pool.map(function(skill){ return skill.key; });
     // Changing the number range or selected tables must release today's new-
     // fact allowance from tasks that are no longer part of the active pool.
     for (var introducedIndex = introducedKeys.length - 1; introducedIndex >= 0; introducedIndex--){
@@ -359,17 +432,17 @@
     }
     var introducedToday = introducedKeys.length;
     var newLimit = Math.max(0, state.config.newFactsPerDay - introducedToday);
-    var dueReviews = pool.filter(function(f){ return f.seen && f.dueDate <= today; });
-    var newCandidates = pool.filter(function(f){
-      return !f.seen && introducedKeys.indexOf(factKey(f.a, f.b)) === -1;
+    var dueReviews = pool.filter(function(skill){ return skill.record.seen && skill.record.dueDate <= today; });
+    var newCandidates = pool.filter(function(skill){
+      return !skill.record.seen && introducedKeys.indexOf(skill.key) === -1;
     });
     var reviewSlots = Math.max(0, size - Math.min(newLimit, newCandidates.length));
     var chosen = selectDueReviews(dueReviews, reviewSlots, today);
 
     var needNew = Math.min(newLimit, size - chosen.length);
     var newFacts = newCandidates.slice(0, needNew);
-    newFacts.forEach(function(f){
-      var key = factKey(f.a, f.b);
+    newFacts.forEach(function(skill){
+      var key = skill.key;
       if (introducedKeys.indexOf(key) === -1) introducedKeys.push(key);
     });
     chosen = chosen.concat(newFacts);
@@ -379,35 +452,35 @@
       chosen = chosen.concat(selectDueReviews(remainingDue, size - chosen.length, today));
     }
     if (chosen.length < size){
-      var rest = pool.filter(function(f){
-        return f.seen && f.dueDate > today && chosen.indexOf(f) === -1;
+      var rest = pool.filter(function(skill){
+        return skill.record.seen && skill.record.dueDate > today && chosen.indexOf(skill) === -1;
       });
       rest.sort(function(x, y){
-        return x.dueDate < y.dueDate ? -1 : (x.dueDate > y.dueDate ? 1 : 0);
+        return x.record.dueDate < y.record.dueDate ? -1 : (x.record.dueDate > y.record.dueDate ? 1 : 0);
       });
       var need = size - chosen.length;
       chosen = chosen.concat(rest.slice(0, need));
     }
     // Newly introduced facts may appear once more for reinforcement, but a
     // single eligible fact must never fill most of the session by itself.
-    var repeatable = newFacts.length ? newFacts.slice() : pool.filter(function(f){
-      return introducedKeys.indexOf(factKey(f.a, f.b)) !== -1;
+    var repeatable = newFacts.length ? newFacts.slice() : pool.filter(function(skill){
+      return introducedKeys.indexOf(skill.key) !== -1;
     });
     var occurrenceCounts = {};
-    chosen.forEach(function(f){
-      var key = factKey(f.a, f.b);
+    chosen.forEach(function(skill){
+      var key = skill.key;
       occurrenceCounts[key] = (occurrenceCounts[key] || 0) + 1;
     });
     shuffle(repeatable);
-    repeatable.forEach(function(f){
+    repeatable.forEach(function(skill){
       if (chosen.length >= size) return;
-      var key = factKey(f.a, f.b);
+      var key = skill.key;
       if ((occurrenceCounts[key] || 0) < 2){
-        chosen.push(f);
+        chosen.push(skill);
         occurrenceCounts[key] = (occurrenceCounts[key] || 0) + 1;
       }
     });
-    var queueKeys = chosen.map(function(f){ return factKey(f.a, f.b); });
+    var queueKeys = chosen.map(function(skill){ return skill.key; });
     return spreadQueueKeys(queueKeys);
   }
 
@@ -511,10 +584,11 @@
     }
   }
 
-  // Returns true when this answer just pushed the fact into "mastered".
+  // Updates the selected operation and reports mastery/unlock transitions.
   function applyAnswerResult(key, isCorrect, elapsedMs, learningElapsedMs){
-    var f = state.facts[key];
-    if (!f) return false;
+    var skill = practiceSkill(key);
+    if (!skill) return { mastered:false, divisionUnlocked:false };
+    var f = skill.record;
     if (learningElapsedMs === undefined) learningElapsedMs = elapsedMs;
     f.seen = true;
     var today = todayStr();
@@ -523,12 +597,22 @@
     f.totalResponseMs = (Number(f.totalResponseMs) || 0) + elapsedMs;
     f.timedAttemptCount = (Number(f.timedAttemptCount) || 0) + 1;
     var day = state.history[today] || { attempts:0, correct:0, wrong:0, totalResponseMs:0 };
+    if (!day.byOperation){
+      day.byOperation = {
+        multiply:{ attempts:0, correct:0, wrong:0, totalResponseMs:0 },
+        divide:{ attempts:0, correct:0, wrong:0, totalResponseMs:0 }
+      };
+    }
+    var operationDay = day.byOperation[skill.operation] || { attempts:0, correct:0, wrong:0, totalResponseMs:0 };
     day.attempts++;
     day.totalResponseMs += elapsedMs;
+    operationDay.attempts++;
+    operationDay.totalResponseMs += elapsedMs;
     if (isCorrect){
       f.correctCount++;
       f.correctStreak = (Number(f.correctStreak) || 0) + 1;
       day.correct++;
+      operationDay.correct++;
       var jump = 1;
       if (learningElapsedMs <= FAST_MS) jump = 2;
       else if (learningElapsedMs >= SLOW_MS) jump = 0;
@@ -542,11 +626,21 @@
       f.wrongCount++;
       f.correctStreak = 0;
       day.wrong++;
+      operationDay.wrong++;
       f.box = Math.max(0, f.box - 2);
     }
+    day.byOperation[skill.operation] = operationDay;
     state.history[today] = day;
     f.dueDate = addDays(today, INTERVALS[f.box]);
-    return isCorrect && !wasMastered && f.box >= MAX_BOX - 1;
+    var divisionUnlocked = false;
+    if (skill.operation === 'multiply' && skill.fact.box >= DIVISION_UNLOCK_BOX && !skill.fact.division.unlocked){
+      skill.fact.division.unlocked = true;
+      divisionUnlocked = true;
+    }
+    return {
+      mastered:isCorrect && !wasMastered && f.box >= MAX_BOX - 1,
+      divisionUnlocked:divisionUnlocked
+    };
   }
 
   function factsForTable(table){
@@ -576,11 +670,6 @@
     var next = planned[currentIndex + 1];
     if (unlocked.indexOf(next) === -1) unlocked.push(next);
     return next;
-  }
-
-  function masteredCount(){
-    var pool = factsInRange();
-    return pool.filter(function(f){ return f.box >= MAX_BOX - 1; }).length;
   }
 
   function totalCorrectAnswers(){
@@ -653,6 +742,22 @@
     var options = distractors.concat([correct]);
     shuffle(options);
     return { correct: correct, options: options };
+  }
+
+  function genDivisionChoices(correct){
+    var factorMax = Math.max(4, state.config.max);
+    var candidates = new Set();
+    [correct - 1, correct + 1, correct - 2, correct + 2, correct - 3, correct + 3].forEach(function(v){
+      if (v >= 1 && v <= factorMax && v !== correct) candidates.add(v);
+    });
+    var distractors = shuffle(Array.from(candidates)).slice(0, 3);
+    while (distractors.length < 3){
+      var candidate = Math.floor(Math.random() * factorMax) + 1;
+      if (candidate !== correct && distractors.indexOf(candidate) === -1) distractors.push(candidate);
+    }
+    var options = distractors.concat([correct]);
+    shuffle(options);
+    return { correct:correct, options:options };
   }
 
   // ---------- Confetti ----------
@@ -731,7 +836,6 @@
   var homeSubtitle = document.getElementById('homeSubtitle');
   var streakVal = document.getElementById('streakVal');
   var todayVal = document.getElementById('todayVal');
-  var masteredVal = document.getElementById('masteredVal');
   var startBtn = document.getElementById('startBtn');
   var bonusBtn = document.getElementById('bonusBtn');
   var rewardBtn = document.getElementById('rewardBtn');
@@ -834,6 +938,7 @@
   var soundToggle = document.getElementById('soundToggle');
   var answerModeSel = document.getElementById('answerMode');
   var gapToggle = document.getElementById('gapToggle');
+  var divisionToggle = document.getElementById('divisionToggle');
   var newPinInput = document.getElementById('newPin');
   var exportBtn = document.getElementById('exportBtn');
   var importBtn = document.getElementById('importBtn');
@@ -846,6 +951,8 @@
   var troubleList = document.getElementById('troubleList');
   var factDetail = document.getElementById('factDetail');
   var backupReminder = document.getElementById('backupReminder');
+  var operationSwitch = document.getElementById('operationSwitch');
+  var dashboardOperation = 'multiply';
 
   var questionStartTime = 0;
   var answering = false;
@@ -908,11 +1015,10 @@
     }
     homeSubtitle.textContent = recoveryPending
       ? "Heute kannst du deine Serie mit zwei Runden retten! 🔥"
-      : "Übe dein kleines Einmaleins!";
+      : (state.config.divisionEnabled ? "Übe Mal- und Geteiltaufgaben!" : "Übe dein kleines Einmaleins!");
     streakVal.textContent = state.streak;
     var doneCount = state.today.completed ? state.config.tasksPerDay : state.today.index;
     todayVal.textContent = Math.min(doneCount, state.config.tasksPerDay) + "/" + state.config.tasksPerDay;
-    masteredVal.textContent = masteredCount() + "/" + factsInRange().length;
     var availablePlays = state.reward.availablePlays;
     rewardBtn.style.display = availablePlays > 0 ? 'block' : 'none';
     rewardBtn.textContent = availablePlays === 1
@@ -974,33 +1080,52 @@
     answering = true;
     renderProgressDots();
     var key = state.today.queue[state.today.index];
-    var f = state.facts[key];
-    // Facts are stored with a <= b; show both orders so 3×8 and 8×3 get practiced.
-    var swapFactors = Math.random() < 0.5;
-    var fx = swapFactors ? f.b : f.a;
-    var fy = swapFactors ? f.a : f.b;
-    // Occasionally ask for the missing factor (7 × ▢ = 56) when enabled.
-    var gapTask = state.config.gapTasks && Math.random() < 0.34;
-    var gen, fmt, placeholder;
-    if (gapTask){
-      gen = genFactorChoices(fx, fy);
-      fmt = function(val){ return fx + " × " + val + " = " + (fx * fy); };
-      placeholder = "▢";
-    } else {
-      gen = genChoices(fx, fy);
-      fmt = function(val){ return fx + " × " + fy + " = " + val; };
-      placeholder = "?";
+    var skill = practiceSkill(key);
+    if (!skill){
+      state.today.index++;
+      saveState();
+      renderQuestion();
+      return;
     }
-    questionText.textContent = gapTask ? fmt(placeholder) : (fx + " × " + fy);
+    var f = skill.fact;
+    var gapTask = false;
+    var gen, fmt, placeholder;
+    if (skill.operation === 'divide'){
+      var divideByA = f.a === f.b || Math.random() < 0.5;
+      var divisor = divideByA ? f.a : f.b;
+      var quotient = divideByA ? f.b : f.a;
+      var dividend = f.a * f.b;
+      gen = genDivisionChoices(quotient);
+      fmt = function(val){ return dividend + " ÷ " + divisor + " = " + val; };
+      placeholder = "?";
+      questionText.textContent = dividend + " ÷ " + divisor;
+    } else {
+      // Facts are stored with a <= b; show both orders so 3×8 and 8×3 get practiced.
+      var swapFactors = Math.random() < 0.5;
+      var fx = swapFactors ? f.b : f.a;
+      var fy = swapFactors ? f.a : f.b;
+      // Gap tasks remain multiplication-only.
+      gapTask = state.config.gapTasks && Math.random() < 0.34;
+      if (gapTask){
+        gen = genFactorChoices(fx, fy);
+        fmt = function(val){ return fx + " × " + val + " = " + (fx * fy); };
+        placeholder = "▢";
+      } else {
+        gen = genChoices(fx, fy);
+        fmt = function(val){ return fx + " × " + fy + " = " + val; };
+        placeholder = "?";
+      }
+      questionText.textContent = gapTask ? fmt(placeholder) : (fx + " × " + fy);
+    }
     feedbackText.textContent = '';
     feedbackText.className = 'feedback';
     awaitTap = false;
 
     choicesWrap.innerHTML = '';
     var answerMode = state.config.answerMode;
-    if (answerMode === 'adaptive') answerMode = f.seen && f.box >= 2 ? 'input' : 'choice';
+    if (answerMode === 'adaptive') answerMode = skill.record.seen && skill.record.box >= 2 ? 'input' : 'choice';
     if (answerMode === 'input'){
-      renderKeypad(key, fmt, gen.correct, placeholder);
+      renderKeypad(key, fmt, gen.correct, placeholder, fmt(gen.correct));
     } else {
       choicesWrap.classList.remove('keypad');
       gen.options.forEach(function(opt){
@@ -1009,7 +1134,7 @@
         btn.textContent = opt;
         btn.addEventListener('click', function(){
           if (answering && gapTask) questionText.textContent = fmt(gen.correct);
-          onAnswer(key, opt, gen.correct, btn, false);
+          onAnswer(key, opt, gen.correct, btn, false, fmt(gen.correct));
         });
         choicesWrap.appendChild(btn);
       });
@@ -1018,7 +1143,7 @@
     questionStartTime = Date.now();
   }
 
-  function renderKeypad(key, fmt, correct, placeholder){
+  function renderKeypad(key, fmt, correct, placeholder, masteryLabel){
     var typedAnswer = '';
     function updateEquation(){
       questionText.textContent = fmt(typedAnswer === '' ? placeholder : typedAnswer);
@@ -1038,7 +1163,7 @@
           if (typedAnswer === '') return;
           var chosen = parseInt(typedAnswer, 10);
           questionText.textContent = fmt(correct);
-          onAnswer(key, chosen, correct, null, true);
+          onAnswer(key, chosen, correct, null, true, masteryLabel);
           return;
         } else if (typedAnswer.length < 3){
           typedAnswer += k;
@@ -1049,7 +1174,7 @@
     });
   }
 
-  function onAnswer(key, chosen, correct, btnEl, wasTyped){
+  function onAnswer(key, chosen, correct, btnEl, wasTyped, masteryLabel){
     if (!answering) return;
     answering = false;
     var elapsed = Date.now() - questionStartTime;
@@ -1063,22 +1188,25 @@
     });
     choicesWrap.querySelectorAll('.key-btn').forEach(function(b){ b.classList.add('locked'); });
 
-    var newlyMastered = applyAnswerResult(key, isCorrect, elapsed, learningElapsed);
+    var answerResult = applyAnswerResult(key, isCorrect, elapsed, learningElapsed);
+    var newlyMastered = answerResult.mastered;
 
     if (isCorrect){
       state.today.correct++;
       var newGameRewards = syncRewardMilestones();
       sessionRewardUnlocks += newGameRewards;
       if (newlyMastered){
-        var mf = state.facts[key];
         playFanfareSound();
-        feedbackText.textContent = "⭐ " + mf.a + "×" + mf.b + " sitzt jetzt! Stark!" +
+        feedbackText.textContent = "⭐ " + masteryLabel + " sitzt jetzt! Stark!" +
           (newGameRewards ? " 🎮 Belohnungsspiel freigeschaltet!" : "");
       } else {
         if (newGameRewards) playFanfareSound();
         else playCorrectSound();
         feedbackText.textContent = GOOD_MESSAGES[Math.floor(Math.random() * GOOD_MESSAGES.length)] +
           (newGameRewards ? " 🎮 Belohnungsspiel freigeschaltet!" : "");
+      }
+      if (answerResult.divisionUnlocked && state.config.divisionEnabled){
+        feedbackText.textContent += " ➗ Division freigeschaltet!";
       }
       feedbackText.className = 'feedback good';
     } else {
@@ -1959,10 +2087,7 @@
 
   function towerGameScore(){
     if (!towerGame) return 0;
-    var survival = towerGame.startedAt
-      ? Math.floor(Math.min(Date.now() - towerGame.startedAt, GAME_DURATION_MS) / 1000)
-      : 0;
-    return survival + towerGame.totalPlaced * 20 + towerGame.perfects * 10;
+    return towerGame.totalPlaced * 20 + towerGame.perfects * 10;
   }
 
   function updateTowerHud(){
@@ -2336,33 +2461,54 @@
   var BOX_COLORS = ["#e74c3c", "#e67e22", "#f1c40f", "#a8d861", "#6dc06d", "#27ae60", "#1e8e5a", "#0f6b45"];
 
   function renderFactDetail(key){
-    var f = state.facts[key];
-    if (!f) return;
-    var attempts = f.correctCount + f.wrongCount;
-    var accuracy = attempts ? Math.round(f.correctCount / attempts * 100) : 0;
-    var timedAttempts = Number(f.timedAttemptCount) || 0;
-    var average = timedAttempts ? (f.totalResponseMs / timedAttempts / 1000).toFixed(1) + ' s' : '–';
-    factDetail.textContent = f.a + ' × ' + f.b + ' = ' + (f.a * f.b) +
-      ' · Stufe ' + f.box + ' · ' + accuracy + ' % richtig · Ø ' + average +
-      ' · zuletzt ' + (f.lastPracticedDate || 'noch nie') + ' · fällig ' + f.dueDate;
+    var skill = practiceSkill(key);
+    if (!skill) return;
+    var f = skill.fact;
+    var record = skill.record;
+    var attempts = record.correctCount + record.wrongCount;
+    var accuracy = attempts ? Math.round(record.correctCount / attempts * 100) : 0;
+    var timedAttempts = Number(record.timedAttemptCount) || 0;
+    var average = timedAttempts ? (record.totalResponseMs / timedAttempts / 1000).toFixed(1) + ' s' : '–';
+    var label;
+    if (skill.operation === 'divide'){
+      label = (f.a * f.b) + ' ÷ ' + f.a + ' = ' + f.b;
+      if (f.a !== f.b) label += ' / ' + (f.a * f.b) + ' ÷ ' + f.b + ' = ' + f.a;
+    } else {
+      label = f.a + ' × ' + f.b + ' = ' + (f.a * f.b);
+    }
+    var lockText = skill.operation === 'divide' && !record.unlocked ? ' · noch gesperrt' : '';
+    factDetail.textContent = label + ' · Stufe ' + record.box + ' · ' + accuracy + ' % richtig · Ø ' + average +
+      ' · zuletzt ' + (record.lastPracticedDate || 'noch nie') + ' · fällig ' + record.dueDate + lockText;
   }
 
   function renderLearningDashboard(){
     var today = todayStr();
-    var pool = factsInRange();
-    var newCount = pool.filter(function(f){ return !f.seen; }).length;
-    var dueCount = pool.filter(function(f){ return f.seen && f.dueDate === today; }).length;
-    var overdueCount = pool.filter(function(f){ return f.seen && f.dueDate < today; }).length;
-    var mastered = pool.filter(function(f){ return f.box >= MAX_BOX - 1; }).length;
+    var pool = factsInRange().map(function(f){
+      return practiceSkill(dashboardOperation === 'divide' ? divisionSkillKey(f.a, f.b) : factKey(f.a, f.b));
+    });
+    var available = pool.filter(function(skill){
+      return dashboardOperation === 'multiply' || skill.record.unlocked;
+    });
+    var newCount = available.filter(function(skill){ return !skill.record.seen; }).length;
+    var dueCount = available.filter(function(skill){ return skill.record.seen && skill.record.dueDate === today; }).length;
+    var overdueCount = available.filter(function(skill){ return skill.record.seen && skill.record.dueDate < today; }).length;
+    var mastered = available.filter(function(skill){ return skill.record.box >= MAX_BOX - 1; }).length;
     learningSummary.innerHTML = '<div><strong>' + newCount + '</strong>Neu</div>' +
       '<div><strong>' + dueCount + '</strong>Heute fällig</div>' +
       '<div><strong>' + overdueCount + '</strong>Überfällig</div>' +
-      '<div><strong>' + mastered + '</strong>Gemeistert</div>';
+      '<div><strong>' + mastered + '</strong>Gemeistert</div>' +
+      (dashboardOperation === 'divide'
+        ? '<div><strong>' + (pool.length - available.length) + '</strong>Gesperrt</div>'
+        : '');
 
-    historySummary.innerHTML = '<div class="hint">Letzte 7 Tage: Genauigkeit</div>';
+    historySummary.innerHTML = '<div class="hint">Letzte 7 Tage: Genauigkeit ' +
+      (dashboardOperation === 'divide' ? 'Division' : 'Multiplikation') + '</div>';
     for (var offset = 6; offset >= 0; offset--){
       var date = addDays(today, -offset);
-      var day = state.history[date] || { attempts:0, correct:0 };
+      var historyDay = state.history[date] || {};
+      var day = historyDay.byOperation && historyDay.byOperation[dashboardOperation]
+        ? historyDay.byOperation[dashboardOperation]
+        : { attempts:0, correct:0 };
       var percent = day.attempts ? Math.round(day.correct / day.attempts * 100) : 0;
       var row = document.createElement('div');
       row.className = 'history-row';
@@ -2382,21 +2528,24 @@
     }
 
     troubleList.innerHTML = '';
-    var trouble = pool.filter(function(f){ return f.seen && f.wrongCount > 0; });
+    var trouble = available.filter(function(skill){ return skill.record.seen && skill.record.wrongCount > 0; });
     trouble.sort(function(x, y){
-      var xAttempts = x.correctCount + x.wrongCount;
-      var yAttempts = y.correctCount + y.wrongCount;
-      var rateDiff = (y.wrongCount / yAttempts) - (x.wrongCount / xAttempts);
-      return rateDiff || y.wrongCount - x.wrongCount;
+      var xAttempts = x.record.correctCount + x.record.wrongCount;
+      var yAttempts = y.record.correctCount + y.record.wrongCount;
+      var rateDiff = (y.record.wrongCount / yAttempts) - (x.record.wrongCount / xAttempts);
+      return rateDiff || y.record.wrongCount - x.record.wrongCount;
     });
     if (!trouble.length){
       troubleList.textContent = 'Noch keine auffälligen Aufgaben.';
     } else {
-      trouble.slice(0, 5).forEach(function(f){
+      trouble.slice(0, 5).forEach(function(skill){
         var button = document.createElement('button');
         button.type = 'button';
-        button.textContent = f.a + '×' + f.b + ' · ' + f.wrongCount + '× falsch';
-        button.addEventListener('click', function(){ renderFactDetail(factKey(f.a, f.b)); });
+        var f = skill.fact;
+        button.textContent = (skill.operation === 'divide'
+          ? (f.a * f.b) + '÷' + f.a + '/' + f.b
+          : f.a + '×' + f.b) + ' · ' + skill.record.wrongCount + '× falsch';
+        button.addEventListener('click', function(){ renderFactDetail(skill.key); });
         troubleList.appendChild(button);
       });
     }
@@ -2425,19 +2574,39 @@
       for (var b2 = cfg.min; b2 <= cfg.max; b2++){
         var key = factKey(Math.min(a,b2), Math.max(a,b2));
         var f = state.facts[key];
-        var box = f ? f.box : 0;
-        var seen = f && f.seen;
-        var active = f && factUsesOnlyTables(f, planned) && factTouchesTables(f, tables);
+        var record = f ? (dashboardOperation === 'divide' ? f.division : f) : null;
+        var skillKey = dashboardOperation === 'divide' ? 'd:' + key : key;
+        var box = record ? record.box : 0;
+        var seen = record && record.seen;
+        var baseActive = f && factUsesOnlyTables(f, planned) && factTouchesTables(f, tables);
+        var unlocked = dashboardOperation === 'multiply' || (record && record.unlocked);
+        var active = baseActive && unlocked && (dashboardOperation === 'multiply' || state.config.divisionEnabled);
+        var cellClass = 'box-cell' + (active ? '' : ' inactive') + (!unlocked ? ' locked' : '');
         var color = seen ? BOX_COLORS[Math.min(box, BOX_COLORS.length - 1)] : '#d7d6e0';
-        var info = seen ? ('Stufe ' + box + ' | fällig ' + f.dueDate) : 'noch nicht geübt';
-        html += '<td><button type="button" class="box-cell' + (active ? '' : ' inactive') +
-          '" data-key="' + key + '" style="background:' + color + '" title="' +
-          a + '×' + b2 + ' = ' + (a*b2) + ' | ' + info + '" aria-label="' +
-          a + ' mal ' + b2 + ', ' + info + '">&nbsp;</button></td>';
+        var info = !unlocked ? 'gesperrt bis Multiplikationsstufe 4'
+          : (seen ? ('Stufe ' + box + ' | fällig ' + record.dueDate) : 'noch nicht geübt');
+        html += '<td><button type="button" class="' + cellClass +
+          '" data-key="' + skillKey + '" style="background:' + color + '" title="' +
+          (dashboardOperation === 'divide'
+            ? (a*b2) + '÷' + a + ' = ' + b2
+            : a + '×' + b2 + ' = ' + (a*b2)) + ' | ' + info + '" aria-label="' +
+          (dashboardOperation === 'divide' ? 'Division ' : 'Multiplikation ') + a + ' und ' + b2 + ', ' + info + '">&nbsp;</button></td>';
       }
       html += '</tr>';
     }
     progressGrid.innerHTML = html;
+  }
+
+  function selectDashboardOperation(operation){
+    dashboardOperation = operation === 'divide' ? 'divide' : 'multiply';
+    operationSwitch.querySelectorAll('button').forEach(function(button){
+      var selected = button.dataset.operation === dashboardOperation;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+    factDetail.textContent = 'Tippe auf eine Aufgabe, um Details zu sehen.';
+    renderLearningDashboard();
+    renderProgressGridTable();
   }
 
   function showAdminTab(panelId, moveFocus){
@@ -2470,10 +2639,9 @@
     soundToggle.checked = state.config.sound !== false;
     answerModeSel.value = state.config.answerMode || 'choice';
     gapToggle.checked = !!state.config.gapTasks;
+    divisionToggle.checked = !!state.config.divisionEnabled;
     newPinInput.value = '';
-    factDetail.textContent = 'Tippe auf eine Aufgabe, um Details zu sehen.';
-    renderLearningDashboard();
-    renderProgressGridTable();
+    selectDashboardOperation('multiply');
     renderBackupReminder();
     showAdminTab('adminPanelOverview', false);
     adminOverlay.classList.add('active');
@@ -2538,6 +2706,10 @@
   rangeMaxSel.addEventListener('change', function(){ renderTableChoices(selectedTablesFromControls()); });
   tableChoices.addEventListener('change', updateUnlockStatus);
   autoUnlockTablesToggle.addEventListener('change', updateUnlockStatus);
+  operationSwitch.addEventListener('click', function(e){
+    var button = e.target.closest && e.target.closest('button[data-operation]');
+    if (button) selectDashboardOperation(button.dataset.operation);
+  });
   progressGrid.addEventListener('click', function(e){
     var cell = e.target.closest && e.target.closest('.box-cell');
     if (cell && cell.dataset.key) renderFactDetail(cell.dataset.key);
@@ -2572,6 +2744,7 @@
     state.config.sound = soundToggle.checked;
     state.config.answerMode = answerModeSel.value;
     state.config.gapTasks = gapToggle.checked;
+    state.config.divisionEnabled = divisionToggle.checked;
     state.curriculum.unlockedTables = state.curriculum.unlockedTables.filter(function(v){
       return tables.indexOf(v) !== -1;
     });

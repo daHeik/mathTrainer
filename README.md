@@ -1,6 +1,12 @@
 # mathServer – 1×1 Trainer
 
-Eine kleine Web-App zum Üben des kleinen Einmaleins mit Spaced Repetition:
+[![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-blue.svg)](LICENSE)
+
+<p align="center">
+  <img src="icon-192.png" width="128" height="128" alt="App-Icon des 1×1 Trainers">
+</p>
+
+Eine kleine Web-App zum Üben von Multiplikation und optional Division mit Spaced Repetition:
 Aufgaben, bei denen dein Kind schnell und richtig antwortet, kommen seltener
 dran. Falsche oder langsame Antworten kommen öfter wieder – so wird gezielt
 das geübt, was noch nicht sitzt.
@@ -9,6 +15,9 @@ Alles läuft direkt im Browser, Fortschritt wird lokal gespeichert
 (`localStorage`). Es ist kein Backend und keine Datenbank nötig. Die App ist
 eine PWA mit Service Worker: Einmal geladen, funktioniert sie auch offline
 bzw. wenn der Server gerade nicht erreichbar ist.
+
+Die App kommt ohne Werbung, Benutzerkonto, Tracker oder Telemetrie aus. Sie
+überträgt selbst keine Lernstände oder Profildaten an einen Server.
 
 Die Oberfläche liegt in `index.html`, das Styling in `styles.css` und die
 Anwendungs- und Spiellogik in `app.js`. `flappy.html` und `tower.html` sind
@@ -37,6 +46,11 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   eingetippten Antworten werden für die Lernstufen-Bewertung zwei Sekunden
   Eingabezeit abgezogen
 - Optionale Lückenaufgaben (7 × ▢ = 56)
+- Optionales Divisionstraining: Eltern können Division pro Profil aktivieren;
+  zu einer Malaufgabe werden ab Lernstufe 4 die beiden passenden exakten
+  Geteiltaufgaben freigeschaltet (z.B. 56 ÷ 7 und 56 ÷ 8). Multiplikation und
+  Division behalten getrennte Lernstufen und Auswertungen, teilen sich aber
+  Tagesumfang, neue Aufgaben und Belohnungsfortschritt
 - Belohnungen: Sticker pro geübtem Tag, Abzeichen für Serien-Meilensteine,
   Konfetti und Soundeffekte (abschaltbar)
 - Drei Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel und Turmbauer. Die benötigte
@@ -58,8 +72,9 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 - Mehrere Kind-Profile mit getrenntem Fortschritt
 - Eltern-Bereich (Zahnrad oben rechts, PIN-geschützt): Zahlenbereich,
   Reihen, neue und gesamte Aufgaben, richtige Antworten pro Belohnung,
-  Antwort-Modus, PIN ändern, Fortschritt einsehen, Problemaufgaben und
-  7-Tage-Genauigkeit auswerten, Backup exportieren/importieren, Profile verwalten;
+  Antwort-Modus, Division aktivieren, PIN ändern, Fortschritt für Multiplikation
+  und Division getrennt einsehen, Problemaufgaben und 7-Tage-Genauigkeit
+  auswerten, Backup exportieren/importieren, Profile verwalten;
   gegliedert in die Tabs „Übersicht“, „Lernen“ und „Verwaltung“
 - Responsives Design – passt sich an iPhone, iPad und Desktop an
 - Als Home-Bildschirm-App installierbar (iOS "Zum Home-Bildschirm hinzufügen"),
@@ -118,7 +133,36 @@ Im Safari-Browser die Seite öffnen, auf "Teilen" tippen, dann
 "Zum Home-Bildschirm" wählen. Die App startet danach ohne Browser-Leiste,
 wie eine echte App.
 
+## Veröffentlichung mit GitHub Pages
+
+Das Repository enthält unter `.github/workflows/pages.yml` einen Workflow für
+GitHub Pages. Nach dem ersten Push in den `main`-Branch muss im öffentlichen
+GitHub-Repository einmal unter **Settings → Pages → Build and deployment** die
+Quelle **GitHub Actions** gewählt werden. Danach veröffentlicht jeder Push auf
+`main` automatisch die aktuelle statische App.
+
 ## Hinweis zum Fortschritt
 
 Der Fortschritt wird pro Gerät/Browser lokal gespeichert. Übt dein Kind auf
 mehreren Geräten, gibt es entsprechend getrennte Fortschritte.
+
+## Datenschutz
+
+Profile, Einstellungen, Lernstände und Statistiken werden ausschließlich im
+`localStorage` des verwendeten Browsers gespeichert. Die App enthält keine
+Analyse- oder Werbedienste und sendet diese Daten nicht an Dritte. Beim
+Exportieren eines Backups wird eine JSON-Datei lokal im Browser erzeugt; beim
+Importieren wird nur die vom Nutzer ausgewählte Datei verarbeitet.
+
+Wer die App öffentlich hostet, muss unabhängig davon die Datenschutz- und
+Protokollierungsbedingungen des gewählten Hosting-Anbieters beachten.
+
+## Lizenz und Assets
+
+Der Quellcode und die mitgelieferten Projekt-Assets stehen unter der
+[MIT-Lizenz](LICENSE). Die Herkunft der Bilddateien und die Erzeugung des
+eigenständigen App-Icons sind in [ASSET_PROVENANCE.md](ASSET_PROVENANCE.md)
+dokumentiert.
+
+Beiträge und Verbesserungsvorschläge sind über Issues und Pull Requests
+willkommen.
