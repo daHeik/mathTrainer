@@ -157,6 +157,14 @@ Importieren wird nur die vom Nutzer ausgewählte Datei verarbeitet.
 Wer die App öffentlich hostet, muss unabhängig davon die Datenschutz- und
 Protokollierungsbedingungen des gewählten Hosting-Anbieters beachten.
 
+Bei einer Bereitstellung über GitHub Pages wird die Website von GitHub, Inc.
+ausgeliefert. GitHub protokolliert dabei nach eigenen Angaben die IP-Adressen
+der Besucher zu Sicherheitszwecken – unabhängig davon, ob sie bei GitHub
+angemeldet sind. Die App selbst hat keinen Zugriff auf diese Serverprotokolle
+und übermittelt weiterhin keine Lernstände, Profile oder Nutzungsstatistiken
+an GitHub. Weitere Informationen enthält die
+[GitHub-Datenschutzerklärung](https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement).
+
 ## Lizenz und Assets
 
 Der Quellcode und die mitgelieferten Projekt-Assets stehen unter der
