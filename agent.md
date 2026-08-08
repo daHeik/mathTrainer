@@ -53,10 +53,16 @@ toolchain just for a small change unless the task specifically requires it.
 - Keep controls usable on both touch devices and desktop browsers.
 - Facts are stored canonically with `a <= b`; display order may be randomized.
   Preserve this invariant when changing question or progress logic.
+- The new-fact limit applies independently to every round. The legacy
+  `newFactsPerDay` config value is retained only as a backup-compatibility
+  mirror of `newFactsPerRound`.
 - Multiplication queue keys use the canonical fact key (for example `3x8`).
   Division queue keys prefix the same family with `d:` (for example `d:3x8`).
   Division progress is stored in the fact's nested `division` record and is
   unlocked permanently when multiplication reaches box 4.
+- When division is enabled and eligible division facts exist, each newly built
+  round reserves one division slot so the setting has an immediate visible
+  effect.
 - Keep markup, styling, and behavior in their existing files; avoid unrelated
   formatting or large-scale reorganization.
 

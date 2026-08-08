@@ -31,8 +31,9 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 - Einzelne Zahlen gezielt auswählbar; abgewählte Zahlen kommen in keiner Aufgabe
   als Faktor vor. Optional werden gewählte Reihen schrittweise bei 80 % sicherem
   Lernstand freigeschaltet
-- Konfigurierbare Begrenzung neuer Aufgaben pro Tag; bekannte Wiederholungen
-  haben Vorrang, neue Aufgaben werden innerhalb der Runde erneut abgefragt
+- Konfigurierbare Begrenzung neuer Aufgaben pro Runde; bekannte Wiederholungen
+  haben Vorrang, neue Aufgaben werden innerhalb der Runde erneut abgefragt und
+  die nächste Runde führt weitere neue Aufgaben ein
 - Adaptive Wiederholung: schnelle richtige Antworten -> längere Pause bis zur
   nächsten Wiederholung; falsche/langsame Antworten -> kommen bald wieder;
   pro Runde wird eine ältere, überfällige Aufgabe aus einer höheren Lernstufe
@@ -50,7 +51,9 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   zu einer Malaufgabe werden ab Lernstufe 4 die beiden passenden exakten
   Geteiltaufgaben freigeschaltet (z.B. 56 ÷ 7 und 56 ÷ 8). Multiplikation und
   Division behalten getrennte Lernstufen und Auswertungen, teilen sich aber
-  Tagesumfang, neue Aufgaben und Belohnungsfortschritt
+  Rundenumfang, neue Aufgaben und Belohnungsfortschritt. Sobald mindestens eine
+  Geteiltaufgabe freigeschaltet ist, enthält jede neu gestartete Runde eine
+  Divisionsaufgabe
 - Belohnungen: Sticker pro geübtem Tag, Abzeichen für Serien-Meilensteine,
   Konfetti und Soundeffekte (abschaltbar)
 - Drei Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel und Turmbauer. Die benötigte
@@ -78,6 +81,7 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   gegliedert in die Tabs „Übersicht“, „Lernen“ und „Verwaltung“. Der initiale
   Elterncode lautet `6969` und sollte nach dem ersten Öffnen geändert werden
 - Responsives Design – passt sich an iPhone, iPad und Desktop an
+- Pro Profil auswählbare Akzentfarbe: Lila, Blau, Grün, Orange oder Pink
 - Als Home-Bildschirm-App installierbar (iOS "Zum Home-Bildschirm hinzufügen"),
   funktioniert dank Service Worker auch offline
 

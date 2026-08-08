@@ -191,7 +191,7 @@
     <h2>🔒 Eltern-Bereich</h2>
     <p class="hint" style="margin-bottom:18px;">Bitte PIN eingeben, um Einstellungen zu ändern.</p>
     <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4"
-           id="pinInput" class="pin-input" placeholder="••••" autocomplete="off">
+           id="pinInput" class="pin-input" placeholder="••••" autocomplete="off" autofocus>
     <div class="pin-error" id="pinError"></div>
     <button class="primary-btn" id="pinSubmit" style="margin-top:18px;">Entsperren</button>
   </div>
@@ -244,7 +244,7 @@
       <div id="adminProfileList"></div>
       <div class="range-row" style="margin-top:8px;">
         <input type="text" id="newProfileName" placeholder="Name des neuen Kindes"
-               style="flex:1; padding:10px 12px; font-size:1rem; border:2px solid #e4e2fb; border-radius:10px; background:#fbfaff;">
+               style="flex:1; padding:10px 12px; font-size:1rem; border:2px solid var(--theme-border); border-radius:10px; background:var(--theme-surface);">
         <button class="secondary-btn" id="addProfileBtn" style="width:auto; margin-top:0; padding:10px 14px;">+ Hinzufügen</button>
       </div>
       <div class="hint">Die Einstellungen unten gelten für das aktive Profil.</div>
@@ -253,6 +253,18 @@
     <div class="field">
       <label for="childName">Name des Kindes</label>
       <input type="text" id="childName" placeholder="z.B. Mia">
+    </div>
+
+    <div class="field">
+      <label for="accentTheme">Akzentfarbe</label>
+      <select id="accentTheme">
+        <option value="purple">Lila</option>
+        <option value="blue">Blau</option>
+        <option value="green">Grün</option>
+        <option value="orange">Orange</option>
+        <option value="pink">Pink</option>
+      </select>
+      <div class="hint">Gilt für dieses Profil und wird beim Profilwechsel automatisch übernommen.</div>
     </div>
 
     <div class="field">
@@ -272,9 +284,9 @@
     </div>
 
     <div class="field">
-      <label for="newFactsPerDay">Neue Aufgaben pro Tag</label>
-      <input type="number" id="newFactsPerDay" min="1" max="10" value="2">
-      <div class="hint">Begrenzt neue Aufgaben beider Rechenarten; Wiederholungen haben Vorrang.</div>
+      <label for="newFactsPerRound">Neue Aufgaben pro Runde</label>
+      <input type="number" id="newFactsPerRound" min="1" max="10" value="2">
+      <div class="hint">Begrenzt neue Aufgaben in jeder Runde; fällige Wiederholungen haben Vorrang.</div>
     </div>
 
     <div class="field">

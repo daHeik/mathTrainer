@@ -14,6 +14,19 @@
   var GAME_MAX_ATTEMPTS = 3;
   var DIVISION_UNLOCK_BOX = 4;
 
+  var ACCENT_THEMES = {
+    purple:{ primary:'#6c5ce7', secondary:'#a29bfe', accent:'#fdcb6e',
+      soft:'#f4f3ff', border:'#e4e2fb', surface:'#fbfaff', shadow:'rgba(108,92,231,0.4)' },
+    blue:{ primary:'#2563eb', secondary:'#60a5fa', accent:'#fbbf24',
+      soft:'#eff6ff', border:'#bfdbfe', surface:'#f8fbff', shadow:'rgba(37,99,235,0.4)' },
+    green:{ primary:'#047857', secondary:'#34d399', accent:'#fbbf24',
+      soft:'#ecfdf5', border:'#a7f3d0', surface:'#f5fffa', shadow:'rgba(4,120,87,0.4)' },
+    orange:{ primary:'#c2410c', secondary:'#fb923c', accent:'#fde047',
+      soft:'#fff7ed', border:'#fed7aa', surface:'#fffaf5', shadow:'rgba(194,65,12,0.4)' },
+    pink:{ primary:'#be185d', secondary:'#f472b6', accent:'#facc15',
+      soft:'#fdf2f8', border:'#fbcfe8', surface:'#fff8fc', shadow:'rgba(190,24,93,0.4)' }
+  };
+
   var GOOD_MESSAGES = ["Super gemacht! 🌟", "Klasse! 🎉", "Toll gemacht! 👏", "Weiter so! 💪", "Perfekt! ✨"];
   var BAD_MESSAGES_PREFIX = ["Fast geschafft!", "Kein Problem!", "Nächstes Mal klappt's!", "Schau nochmal genau hin!"];
 
@@ -92,8 +105,8 @@
       config: {
         min: 1, max: 10, tasksPerDay: 5, rewardEvery: 10,
         childName: "", sound: true, answerMode: "adaptive", gapTasks: false,
-        enabledTables: [1,2,3,4,5,6,7,8,9,10], newFactsPerDay: 2,
-        autoUnlockTables: false, divisionEnabled: false
+        enabledTables: [1,2,3,4,5,6,7,8,9,10], newFactsPerRound: 2,
+        autoUnlockTables: false, divisionEnabled: false, accentTheme: 'purple'
       },
       facts: {}, // key -> {a,b,box,dueDate,seen,correctCount,wrongCount,correctStreak,...}
       today: {
@@ -104,7 +117,7 @@
         completed: false,
         bonus: false,
         requeueCounts: {}, // fact key -> times re-added to this session after a wrong answer
-        newFactKeys: []   // distinct multiplication/division skills introduced today
+        newFactKeys: []   // legacy field retained when loading older backups
       },
       curriculum: { unlockedTables: [] },
       history: {}, // date -> {attempts,correct,wrong,totalResponseMs}
@@ -166,11 +179,16 @@
       for (var table = p.config.min; table <= p.config.max; table++) tables.push(table);
     }
     p.config.enabledTables = tables;
-    var newFactsPerDay = parseInt(p.config.newFactsPerDay, 10);
-    if (!newFactsPerDay || newFactsPerDay < 1) newFactsPerDay = 2;
-    p.config.newFactsPerDay = Math.min(10, newFactsPerDay);
+    var newFactsPerRound = parseInt(p.config.newFactsPerRound, 10);
+    if (!newFactsPerRound || newFactsPerRound < 1){
+      newFactsPerRound = parseInt(p.config.newFactsPerDay, 10) || 2;
+    }
+    p.config.newFactsPerRound = Math.min(10, newFactsPerRound);
+    // Keep the old field as a compatibility mirror for older backup readers.
+    p.config.newFactsPerDay = p.config.newFactsPerRound;
     p.config.autoUnlockTables = !!p.config.autoUnlockTables;
     p.config.divisionEnabled = !!p.config.divisionEnabled;
+    if (!ACCENT_THEMES[p.config.accentTheme]) p.config.accentTheme = 'purple';
     var rewardEvery = parseInt(p.config.rewardEvery, 10);
     if (!rewardEvery || rewardEvery < 1) rewardEvery = 10;
     p.config.rewardEvery = Math.min(100, rewardEvery);
@@ -303,6 +321,20 @@
   var root = loadRoot();
   var state = root.profiles[root.activeProfileId];
 
+  function applyAccentTheme(themeName){
+    var theme = ACCENT_THEMES[themeName] || ACCENT_THEMES.purple;
+    var style = document.documentElement.style;
+    style.setProperty('--bg-1', theme.primary);
+    style.setProperty('--bg-2', theme.secondary);
+    style.setProperty('--accent', theme.accent);
+    style.setProperty('--theme-soft', theme.soft);
+    style.setProperty('--theme-border', theme.border);
+    style.setProperty('--theme-surface', theme.surface);
+    style.setProperty('--primary-shadow', theme.shadow);
+    var themeMeta = document.querySelector('meta[name=theme-color]');
+    if (themeMeta) themeMeta.setAttribute('content', theme.primary);
+  }
+
   function saveState(){
     localStorage.setItem(ROOT_KEY, JSON.stringify(root));
   }
@@ -311,6 +343,7 @@
     root.activeProfileId = id;
     state = root.profiles[id];
     ensureFactPool();
+    applyAccentTheme(state.config.accentTheme);
     saveState();
   }
 
@@ -418,34 +451,44 @@
     return result;
   }
 
-  function buildQueue(size, introducedKeys){
+  function buildQueue(size){
     var today = todayStr();
     var pool = shuffle(practiceSkillsInRange());
-    introducedKeys = introducedKeys || [];
-    var poolKeys = pool.map(function(skill){ return skill.key; });
-    // Changing the number range or selected tables must release today's new-
-    // fact allowance from tasks that are no longer part of the active pool.
-    for (var introducedIndex = introducedKeys.length - 1; introducedIndex >= 0; introducedIndex--){
-      if (poolKeys.indexOf(introducedKeys[introducedIndex]) === -1){
-        introducedKeys.splice(introducedIndex, 1);
+    var newLimit = Math.min(size, state.config.newFactsPerRound);
+    var dueReviews = pool.filter(function(skill){ return skill.record.seen && skill.record.dueDate <= today; });
+    var newCandidates = pool.filter(function(skill){ return !skill.record.seen; });
+
+    // When division is enabled, every round with eligible division facts gets
+    // one division slot. Prefer a due review, then a new division, and only
+    // bring a future review forward when neither is available.
+    var reservedDivision = null;
+    if (state.config.divisionEnabled && size > 0){
+      reservedDivision = dueReviews.filter(function(skill){ return skill.operation === 'divide'; })[0] ||
+        newCandidates.filter(function(skill){ return skill.operation === 'divide'; })[0] || null;
+      if (!reservedDivision){
+        var futureDivisions = pool.filter(function(skill){
+          return skill.operation === 'divide' && skill.record.seen && skill.record.dueDate > today;
+        }).sort(function(x, y){
+          return x.record.dueDate < y.record.dueDate ? -1 : (x.record.dueDate > y.record.dueDate ? 1 : 0);
+        });
+        reservedDivision = futureDivisions[0] || null;
       }
     }
-    var introducedToday = introducedKeys.length;
-    var newLimit = Math.max(0, state.config.newFactsPerDay - introducedToday);
-    var dueReviews = pool.filter(function(skill){ return skill.record.seen && skill.record.dueDate <= today; });
-    var newCandidates = pool.filter(function(skill){
-      return !skill.record.seen && introducedKeys.indexOf(skill.key) === -1;
-    });
-    var reviewSlots = Math.max(0, size - Math.min(newLimit, newCandidates.length));
-    var chosen = selectDueReviews(dueReviews, reviewSlots, today);
 
-    var needNew = Math.min(newLimit, size - chosen.length);
-    var newFacts = newCandidates.slice(0, needNew);
-    newFacts.forEach(function(skill){
-      var key = skill.key;
-      if (introducedKeys.indexOf(key) === -1) introducedKeys.push(key);
-    });
-    chosen = chosen.concat(newFacts);
+    var reservedIsNew = reservedDivision && !reservedDivision.record.seen;
+    var remainingNewLimit = Math.max(0, newLimit - (reservedIsNew ? 1 : 0));
+    newCandidates = newCandidates.filter(function(skill){ return skill !== reservedDivision; });
+    dueReviews = dueReviews.filter(function(skill){ return skill !== reservedDivision; });
+    var plannedNew = Math.min(remainingNewLimit, newCandidates.length);
+    var reviewSlots = Math.max(0, size - (reservedDivision ? 1 : 0) - plannedNew);
+    var chosen = reservedDivision ? [reservedDivision] : [];
+    chosen = chosen.concat(selectDueReviews(dueReviews, reviewSlots, today));
+
+    var needNew = Math.min(remainingNewLimit, size - chosen.length);
+    var selectedNewFacts = newCandidates.slice(0, needNew);
+    chosen = chosen.concat(selectedNewFacts);
+    var newFacts = selectedNewFacts.slice();
+    if (reservedIsNew) newFacts.unshift(reservedDivision);
 
     if (chosen.length < size){
       var remainingDue = dueReviews.filter(function(f){ return chosen.indexOf(f) === -1; });
@@ -463,9 +506,7 @@
     }
     // Newly introduced facts may appear once more for reinforcement, but a
     // single eligible fact must never fill most of the session by itself.
-    var repeatable = newFacts.length ? newFacts.slice() : pool.filter(function(skill){
-      return introducedKeys.indexOf(skill.key) !== -1;
-    });
+    var repeatable = newFacts.length ? newFacts.slice() : pool.slice();
     var occurrenceCounts = {};
     chosen.forEach(function(skill){
       var key = skill.key;
@@ -576,10 +617,17 @@
         requeueCounts: {},
         newFactKeys: []
       };
-      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.newFactKeys);
+      state.today.queue = buildQueue(state.config.tasksPerDay);
       saveState();
     } else if (!state.today.queue || state.today.queue.length === 0){
-      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.newFactKeys);
+      state.today.queue = buildQueue(state.config.tasksPerDay);
+      saveState();
+    } else if (state.today.index === 0 && state.config.divisionEnabled &&
+               state.today.queue.every(function(key){ return key.indexOf('d:') !== 0; }) &&
+               practiceSkillsInRange().some(function(skill){ return skill.operation === 'divide'; })){
+      // Repair a not-yet-started queue created by older versions that could
+      // omit division even though eligible facts existed.
+      state.today.queue = buildQueue(state.config.tasksPerDay);
       saveState();
     }
   }
@@ -927,11 +975,12 @@
   var pinSubmit = document.getElementById('pinSubmit');
   var pinClose = document.getElementById('pinClose');
   var childNameInput = document.getElementById('childName');
+  var accentThemeSel = document.getElementById('accentTheme');
   var rangeMinSel = document.getElementById('rangeMin');
   var rangeMaxSel = document.getElementById('rangeMax');
   var tableChoices = document.getElementById('tableChoices');
   var tasksPerDayInput = document.getElementById('tasksPerDay');
-  var newFactsPerDayInput = document.getElementById('newFactsPerDay');
+  var newFactsPerRoundInput = document.getElementById('newFactsPerRound');
   var autoUnlockTablesToggle = document.getElementById('autoUnlockTables');
   var unlockStatus = document.getElementById('unlockStatus');
   var rewardEveryInput = document.getElementById('rewardEvery');
@@ -1051,7 +1100,7 @@
   function startSession(bonus){
     sessionRewardUnlocks = 0;
     if (bonus){
-      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.newFactKeys);
+      state.today.queue = buildQueue(state.config.tasksPerDay);
       state.today.index = 0;
       state.today.correct = 0;
       state.today.bonus = true;
@@ -1762,7 +1811,7 @@
     ctx.translate(d.x, d.y);
     ctx.fillStyle = superActive
       ? ['#e84393','#fdcb6e','#00b894','#0984e3'][Math.floor(Date.now() / 100) % 4]
-      : '#6c5ce7';
+      : ACCENT_THEMES[state.config.accentTheme].primary;
     ctx.fillRect(4, 10, 24, 22);
     ctx.fillRect(18, 0, 25, 20);
     ctx.fillRect(0, 18, 10, 8);
@@ -2104,13 +2153,17 @@
   function createTowerMovingBlock(){
     var top = towerGame.blocks[towerGame.blocks.length - 1];
     var direction = towerGame.height % 2 === 0 ? 1 : -1;
+    var colorIndex = (towerGame.totalPlaced + 1) % TOWER_COLORS.length;
+    var blockColor = colorIndex === 0
+      ? ACCENT_THEMES[state.config.accentTheme].primary
+      : TOWER_COLORS[colorIndex];
     towerGame.moving = {
       x:direction > 0 ? 8 : 472 - top.w,
       y:top.y - TOWER_BLOCK_HEIGHT,
       w:top.w,
       h:TOWER_BLOCK_HEIGHT,
       vx:direction * (145 + Math.min(170, towerGame.totalPlaced * 9)),
-      color:TOWER_COLORS[(towerGame.totalPlaced + 1) % TOWER_COLORS.length]
+      color:blockColor
     };
   }
 
@@ -2118,7 +2171,10 @@
     if (!towerGame) return;
     towerGame.height = 0;
     towerGame.flash = 0;
-    towerGame.blocks = [{ x:140, y:438, w:200, h:TOWER_BLOCK_HEIGHT, color:'#5145bd' }];
+    towerGame.blocks = [{
+      x:140, y:438, w:200, h:TOWER_BLOCK_HEIGHT,
+      color:ACCENT_THEMES[state.config.accentTheme].primary
+    }];
     towerGame.moving = null;
     towerGame.running = false;
     towerGame.awaitingStart = true;
@@ -2628,11 +2684,12 @@
     populateRangeSelects();
     renderAdminProfiles();
     childNameInput.value = state.config.childName || '';
+    accentThemeSel.value = state.config.accentTheme || 'purple';
     rangeMinSel.value = state.config.min;
     rangeMaxSel.value = state.config.max;
     renderTableChoices(configuredTables());
     tasksPerDayInput.value = state.config.tasksPerDay;
-    newFactsPerDayInput.value = state.config.newFactsPerDay;
+    newFactsPerRoundInput.value = state.config.newFactsPerRound;
     autoUnlockTablesToggle.checked = state.config.autoUnlockTables;
     updateUnlockStatus();
     rewardEveryInput.value = state.config.rewardEvery;
@@ -2654,7 +2711,11 @@
     pinInput.value = '';
     pinError.textContent = '';
     pinOverlay.classList.add('active');
-    setTimeout(function(){ pinInput.focus(); }, 50);
+    // Keep focus inside the original tap gesture so mobile browsers open the
+    // numeric keyboard immediately. The animation-frame retry covers slower
+    // modal rendering without delaying the primary focus call.
+    pinInput.focus();
+    requestAnimationFrame(function(){ pinInput.focus(); });
   }
   function closePinPrompt(){
     pinOverlay.classList.remove('active');
@@ -2722,9 +2783,9 @@
     var tasks = parseInt(tasksPerDayInput.value, 10);
     if (!tasks || tasks < 1) tasks = 5;
     if (tasks > 20) tasks = 20;
-    var newFactsPerDay = parseInt(newFactsPerDayInput.value, 10);
-    if (!newFactsPerDay || newFactsPerDay < 1) newFactsPerDay = 2;
-    if (newFactsPerDay > 10) newFactsPerDay = 10;
+    var newFactsPerRound = parseInt(newFactsPerRoundInput.value, 10);
+    if (!newFactsPerRound || newFactsPerRound < 1) newFactsPerRound = 2;
+    if (newFactsPerRound > 10) newFactsPerRound = 10;
     var tables = selectedTablesFromControls().filter(function(v){ return v >= min && v <= max; });
     if (!tables.length) tables = [min];
     var rewardEvery = parseInt(rewardEveryInput.value, 10);
@@ -2737,10 +2798,12 @@
     state.config.max = max;
     state.config.enabledTables = tables;
     state.config.tasksPerDay = tasks;
-    state.config.newFactsPerDay = newFactsPerDay;
+    state.config.newFactsPerRound = newFactsPerRound;
+    state.config.newFactsPerDay = newFactsPerRound;
     state.config.autoUnlockTables = autoUnlockTablesToggle.checked;
     state.config.rewardEvery = rewardEvery;
     state.config.childName = childNameInput.value.trim();
+    state.config.accentTheme = ACCENT_THEMES[accentThemeSel.value] ? accentThemeSel.value : 'purple';
     state.config.sound = soundToggle.checked;
     state.config.answerMode = answerModeSel.value;
     state.config.gapTasks = gapToggle.checked;
@@ -2759,13 +2822,14 @@
     }
 
     ensureFactPool();
-    state.today.newFactKeys = state.today.newFactKeys || [];
-    state.today.queue = buildQueue(tasks, state.today.newFactKeys);
+    state.today.newFactKeys = [];
+    state.today.queue = buildQueue(tasks);
     state.today.index = 0;
     state.today.correct = 0;
     state.today.completed = false;
     state.today.bonus = false;
     state.today.requeueCounts = {};
+    applyAccentTheme(state.config.accentTheme);
     saveState();
 
     closeAdminModal();
@@ -2804,6 +2868,7 @@
           root = parsed;
           state = root.profiles[root.activeProfileId];
           ensureFactPool();
+          applyAccentTheme(state.config.accentTheme);
           saveState();
           renderHome();
           openAdmin();
@@ -2826,6 +2891,7 @@
     root.profiles[root.activeProfileId] = fresh;
     state = fresh;
     ensureFactPool();
+    applyAccentTheme(state.config.accentTheme);
     saveState();
     renderProgressGridTable();
     renderHome();
@@ -2833,6 +2899,7 @@
 
   // ---------- init ----------
   ensureFactPool();
+  applyAccentTheme(state.config.accentTheme);
   saveState();
   renderHome();
 
