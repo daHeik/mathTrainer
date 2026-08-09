@@ -1006,6 +1006,7 @@
   var questionStartTime = 0;
   var answering = false;
   var sessionRewardUnlocks = 0;
+  var rewardGameChoiceOrigin = null;
 
   function showScreen(el){
     [screenHome, screenQuestion, screenDone, screenStickers, screenGameChoice, screenGame, screenFlappy, screenTower].forEach(function(s){ s.classList.remove('active'); });
@@ -1049,6 +1050,13 @@
   }
 
   function renderHome(){
+    // Restore the active profile's colors after leaving a reward game and
+    // release the previously tapped button. Mobile Safari can otherwise keep
+    // a native focus/active tint when the hidden game screen is replaced.
+    applyAccentTheme(state.config.accentTheme);
+    if (document.activeElement && typeof document.activeElement.blur === 'function'){
+      document.activeElement.blur();
+    }
     refreshDailySessionIfNeeded();
     var newlyGranted = syncRewardMilestones();
     if (newlyGranted) saveState();
@@ -1370,6 +1378,7 @@
   stickersBackBtn.addEventListener('click', function(){ renderHome(); });
   function openRewardGameChoice(){
     if (!state.reward || state.reward.availablePlays < 1) return;
+    rewardGameChoiceOrigin = screenDone.classList.contains('active') ? screenDone : screenHome;
     showScreen(screenGameChoice);
   }
   rewardBtn.addEventListener('click', openRewardGameChoice);
@@ -1377,7 +1386,18 @@
   chooseDinoBtn.addEventListener('click', startRewardGame);
   chooseFlappyBtn.addEventListener('click', startFlappyGame);
   chooseTowerBtn.addEventListener('click', startTowerGame);
-  gameChoiceBackBtn.addEventListener('click', function(){ renderHome(); });
+  gameChoiceBackBtn.addEventListener('click', function(){
+    if (rewardGameChoiceOrigin === screenDone){
+      applyAccentTheme(state.config.accentTheme);
+      if (document.activeElement && typeof document.activeElement.blur === 'function'){
+        document.activeElement.blur();
+      }
+      showScreen(screenDone);
+    } else {
+      renderHome();
+    }
+    rewardGameChoiceOrigin = null;
+  });
 
   // ---------- Dino reward game ----------
   var rewardGame = null;
@@ -2162,7 +2182,7 @@
       y:top.y - TOWER_BLOCK_HEIGHT,
       w:top.w,
       h:TOWER_BLOCK_HEIGHT,
-      vx:direction * (145 + Math.min(170, towerGame.totalPlaced * 9)),
+      vx:direction * (145 + Math.min(170, towerGame.totalPlaced * 4.5)),
       color:blockColor
     };
   }

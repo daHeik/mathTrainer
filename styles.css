@@ -21,6 +21,10 @@
   /* Zoom stays allowed (accessibility); buttons opt out of double-tap zoom
      so fast tapping during practice doesn't zoom the page. */
   button, input, select{ touch-action: manipulation; }
+  button{
+    -webkit-appearance:none;
+    appearance:none;
+  }
   html,body{height:100%;}
   /* Solid fallback on the canvas so overscroll / stale scroll positions on
      iOS never reveal white outside the body gradient. */

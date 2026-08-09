@@ -81,7 +81,7 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   gegliedert in die Tabs „Übersicht“, „Lernen“ und „Verwaltung“. Der initiale
   Elterncode lautet `6969` und sollte nach dem ersten Öffnen geändert werden
 - Responsives Design – passt sich an iPhone, iPad und Desktop an
-- Pro Profil auswählbare Akzentfarbe: Lila, Blau, Grün, Orange oder Pink
+- Pro Profil auswählbare Akzentfarbe: Lila, Blau, Grün, Orange oder Rosa
 - Als Home-Bildschirm-App installierbar (iOS "Zum Home-Bildschirm hinzufügen"),
   funktioniert dank Service Worker auch offline
 
