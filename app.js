@@ -927,6 +927,7 @@
   var gameOverlay = document.getElementById('gameOverlay');
   var gameOverlayTitle = document.getElementById('gameOverlayTitle');
   var gameOverlayText = document.getElementById('gameOverlayText');
+  var gameAgainBtn = document.getElementById('gameAgainBtn');
   var gameHomeBtn = document.getElementById('gameHomeBtn');
 
   var screenFlappy = document.getElementById('screen-flappy');
@@ -940,6 +941,7 @@
   var flappyOverlay = document.getElementById('flappyOverlay');
   var flappyOverlayTitle = document.getElementById('flappyOverlayTitle');
   var flappyOverlayText = document.getElementById('flappyOverlayText');
+  var flappyAgainBtn = document.getElementById('flappyAgainBtn');
   var flappyHomeBtn = document.getElementById('flappyHomeBtn');
 
   var screenTower = document.getElementById('screen-tower');
@@ -953,6 +955,7 @@
   var towerOverlay = document.getElementById('towerOverlay');
   var towerOverlayTitle = document.getElementById('towerOverlayTitle');
   var towerOverlayText = document.getElementById('towerOverlayText');
+  var towerAgainBtn = document.getElementById('towerAgainBtn');
   var towerHomeBtn = document.getElementById('towerHomeBtn');
 
   var gearBtn = document.getElementById('gearBtn');
@@ -1412,6 +1415,12 @@
     return true;
   }
 
+  function updatePlayAgainButton(button, isDemo){
+    var remaining = state.reward ? state.reward.availablePlays : 0;
+    button.textContent = 'Nochmal spielen (' + remaining + ' übrig)';
+    button.style.display = !isDemo && remaining > 0 ? 'block' : 'none';
+  }
+
   function formatGameTime(ms){
     var seconds = Math.max(0, Math.ceil(ms / 1000));
     return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, '0');
@@ -1474,6 +1483,7 @@
 
   function startRewardGame(){
     if (!state.reward || state.reward.availablePlays < 1) return;
+    gameAgainBtn.style.display = 'none';
 
     rewardGame = {
       active:true,
@@ -1598,6 +1608,7 @@
       rewardGame.bestCombo + " · " + finalScore + " Punkte" +
       (isRecord ? " · Neuer Rekord! 🏆" : " · Rekord: " + state.reward.bestDinoScore);
     gameOverlay.hidden = false;
+    updatePlayAgainButton(gameAgainBtn, false);
     playFanfareSound();
     launchConfetti();
   }
@@ -1905,6 +1916,10 @@
     stopRewardGame();
     renderHome();
   });
+  gameAgainBtn.addEventListener('click', function(){
+    stopRewardGame();
+    openRewardGameChoice();
+  });
 
   // ---------- Flattervogel reward game ----------
   var flappyGame = null;
@@ -1946,6 +1961,7 @@
   function startFlappyGame(demoMode){
     var isDemo = demoMode === true;
     if (!isDemo && (!state.reward || state.reward.availablePlays < 1)) return;
+    flappyAgainBtn.style.display = 'none';
     flappyGame = {
       active:true,
       running:false,
@@ -2033,6 +2049,7 @@
       (flappyGame.passed === 1 ? ' Röhre' : ' Röhren') + ' · ' + finalScore + ' Punkte' +
       (isRecord ? ' · Neuer Rekord! 🏆' : ' · Rekord: ' + state.reward.bestFlappyScore);
     flappyOverlay.hidden = false;
+    updatePlayAgainButton(flappyAgainBtn, flappyGame.isDemo);
     playFanfareSound();
     launchConfetti();
   }
@@ -2173,6 +2190,10 @@
     stopFlappyGame();
     renderHome();
   });
+  flappyAgainBtn.addEventListener('click', function(){
+    stopFlappyGame();
+    openRewardGameChoice();
+  });
 
   // ---------- Turmbauer reward game ----------
   var towerGame = null;
@@ -2230,6 +2251,7 @@
   function startTowerGame(demoMode){
     var isDemo = demoMode === true;
     if (!isDemo && (!state.reward || state.reward.availablePlays < 1)) return;
+    towerAgainBtn.style.display = 'none';
     towerGame = {
       active:true,
       running:false,
@@ -2345,6 +2367,7 @@
       ' perfekt · ' + finalScore + ' Punkte' +
       (isRecord ? ' · Neuer Rekord! 🏆' : ' · Rekord: ' + state.reward.bestTowerScore);
     towerOverlay.hidden = false;
+    updatePlayAgainButton(towerAgainBtn, towerGame.isDemo);
     playFanfareSound();
     launchConfetti();
   }
@@ -2430,6 +2453,10 @@
   towerHomeBtn.addEventListener('click', function(){
     stopTowerGame();
     renderHome();
+  });
+  towerAgainBtn.addEventListener('click', function(){
+    stopTowerGame();
+    openRewardGameChoice();
   });
 
   // ---------- Profiles ----------

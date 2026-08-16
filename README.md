@@ -66,7 +66,9 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   Super-Dino nach jeweils drei Sternen, seltene Bonus-Versuch-Eier und ein
   persönlicher Punkterekord sorgen für Abwechslung; das Spiel wird in sechs
   Stufen zunehmend schneller und mischt unregelmäßige Abstände, kurze
-  Kakteen-Paare und niedrig fliegende Hindernisse, bei denen man am Boden bleibt
+  Kakteen-Paare und niedrig fliegende Hindernisse, bei denen man am Boden bleibt;
+  nach Spielende kann bei vorhandenem Kontingent direkt das nächste
+  Belohnungsspiel gewählt werden
 - Flattervogel mit touchfreundlicher Ein-Tipp-Steuerung, zunehmend schnelleren
   Röhren und kleiner werdenden Lücken sowie eigenem Punkterekord; das Spiel kann
   zum Ausprobieren auch direkt über `flappy.html` gestartet werden
