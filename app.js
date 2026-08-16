@@ -1403,6 +1403,15 @@
   var rewardGame = null;
   var rewardGameFrame = null;
 
+  function consumeRewardPlay(game){
+    if (game.rewardConsumed) return true;
+    if (!state.reward || state.reward.availablePlays < 1) return false;
+    state.reward.availablePlays--;
+    game.rewardConsumed = true;
+    saveState();
+    return true;
+  }
+
   function formatGameTime(ms){
     var seconds = Math.max(0, Math.ceil(ms / 1000));
     return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, '0');
@@ -1429,13 +1438,14 @@
 
   function rewardGameScore(){
     if (!rewardGame) return 0;
-    var survivalPoints = Math.floor(Math.min(Date.now() - rewardGame.startedAt, GAME_DURATION_MS) / 1000);
+    var elapsed = rewardGame.startedAt ? Date.now() - rewardGame.startedAt : 0;
+    var survivalPoints = Math.floor(Math.min(elapsed, GAME_DURATION_MS) / 1000);
     return survivalPoints + rewardGame.bonusScore;
   }
 
   function updateGameHud(){
     if (!rewardGame) return;
-    var elapsed = Date.now() - rewardGame.startedAt;
+    var elapsed = rewardGame.startedAt ? Date.now() - rewardGame.startedAt : 0;
     var remaining = GAME_DURATION_MS - elapsed;
     var difficulty = rewardGameDifficulty(elapsed);
     gameTime.textContent = remaining <= 0 ? "0:00 · letzter Versuch" : formatGameTime(remaining);
@@ -1464,13 +1474,13 @@
 
   function startRewardGame(){
     if (!state.reward || state.reward.availablePlays < 1) return;
-    state.reward.availablePlays--;
-    saveState();
 
     rewardGame = {
       active:true,
-      running:true,
-      startedAt:Date.now(),
+      running:false,
+      awaitingStart:true,
+      rewardConsumed:false,
+      startedAt:null,
       lastFrame:performance.now(),
       attempts:0,
       maxAttempts:GAME_MAX_ATTEMPTS,
@@ -1492,15 +1502,30 @@
       dino:null
     };
     resetGameAttempt();
-    gameOverlay.hidden = true;
+    gameOverlayTitle.textContent = 'Bereit?';
+    gameOverlayText.textContent = 'Tippe zum Loslaufen und Springen!';
+    gameOverlay.hidden = false;
     showScreen(screenGame);
     updateGameHud();
     drawRewardGame();
     rewardGameFrame = requestAnimationFrame(runRewardGame);
   }
 
+  function beginRewardGame(){
+    if (!rewardGame || !rewardGame.active || !rewardGame.awaitingStart) return false;
+    if (!consumeRewardPlay(rewardGame)) return false;
+    rewardGame.startedAt = Date.now();
+    rewardGame.awaitingStart = false;
+    rewardGame.running = true;
+    rewardGame.lastFrame = performance.now();
+    gameOverlay.hidden = true;
+    return true;
+  }
+
   function jumpRewardDino(){
-    if (!rewardGame || !rewardGame.active || !rewardGame.running) return;
+    if (!rewardGame || !rewardGame.active) return;
+    if (rewardGame.awaitingStart && !beginRewardGame()) return;
+    if (!rewardGame.running) return;
     var dino = rewardGame.dino;
     if (dino.grounded){
       dino.vy = -475;
@@ -1846,7 +1871,7 @@
 
   function runRewardGame(now){
     if (!rewardGame || !rewardGame.active) return;
-    var elapsed = Date.now() - rewardGame.startedAt;
+    var elapsed = rewardGame.startedAt ? Date.now() - rewardGame.startedAt : 0;
     if (elapsed >= GAME_DURATION_MS) rewardGame.timeExpired = true;
 
     var dt = Math.min(0.04, (now - rewardGame.lastFrame) / 1000);
@@ -1921,14 +1946,12 @@
   function startFlappyGame(demoMode){
     var isDemo = demoMode === true;
     if (!isDemo && (!state.reward || state.reward.availablePlays < 1)) return;
-    if (!isDemo){
-      state.reward.availablePlays--;
-      saveState();
-    }
     flappyGame = {
       active:true,
       running:false,
       awaitingStart:true,
+      isDemo:isDemo,
+      rewardConsumed:false,
       startedAt:null,
       lastFrame:performance.now(),
       attempts:0,
@@ -1955,7 +1978,10 @@
         finishFlappyGame('Zeit geschafft!', 'Nach zwei Minuten startet kein weiterer Versuch — super gespielt!');
         return;
       }
-      if (!flappyGame.startedAt) flappyGame.startedAt = Date.now();
+      if (!flappyGame.startedAt){
+        if (!flappyGame.isDemo && !consumeRewardPlay(flappyGame)) return;
+        flappyGame.startedAt = Date.now();
+      }
       flappyGame.awaitingStart = false;
       flappyGame.running = true;
       flappyGame.lastFrame = performance.now();
@@ -2204,14 +2230,12 @@
   function startTowerGame(demoMode){
     var isDemo = demoMode === true;
     if (!isDemo && (!state.reward || state.reward.availablePlays < 1)) return;
-    if (!isDemo){
-      state.reward.availablePlays--;
-      saveState();
-    }
     towerGame = {
       active:true,
       running:false,
       awaitingStart:true,
+      isDemo:isDemo,
+      rewardConsumed:false,
       startedAt:null,
       lastFrame:performance.now(),
       attempts:0,
@@ -2238,7 +2262,10 @@
       finishTowerGame('Zeit geschafft!', 'Nach zwei Minuten startet kein weiterer Versuch — super gebaut!');
       return false;
     }
-    if (!towerGame.startedAt) towerGame.startedAt = Date.now();
+    if (!towerGame.startedAt){
+      if (!towerGame.isDemo && !consumeRewardPlay(towerGame)) return false;
+      towerGame.startedAt = Date.now();
+    }
     towerGame.awaitingStart = false;
     towerGame.running = true;
     towerGame.lastFrame = performance.now();
