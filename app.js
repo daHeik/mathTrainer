@@ -116,6 +116,7 @@
         correct: 0,
         completed: false,
         bonus: false,
+        focusTable: null,
         requeueCounts: {}, // fact key -> times re-added to this session after a wrong answer
         newFactKeys: []   // legacy field retained when loading older backups
       },
@@ -204,6 +205,8 @@
     if (!p.today) p.today = defaultProfile().today;
     if (!p.today.requeueCounts) p.today.requeueCounts = {};
     if (!Array.isArray(p.today.newFactKeys)) p.today.newFactKeys = [];
+    var focusTable = parseInt(p.today.focusTable, 10);
+    p.today.focusTable = tables.indexOf(focusTable) !== -1 ? focusTable : null;
     trimRepeatedQueueFacts(p.today);
     if (!p.curriculum) p.curriculum = { unlockedTables: [] };
     if (!Array.isArray(p.curriculum.unlockedTables)) p.curriculum.unlockedTables = [];
@@ -416,9 +419,22 @@
     };
   }
 
-  function practiceSkillsInRange(){
+  function focusedFactsForTable(table){
+    var cfg = state.config;
+    var facts = [];
+    for (var factor = cfg.min; factor <= cfg.max; factor++){
+      var a = Math.min(table, factor);
+      var b = Math.max(table, factor);
+      var fact = state.facts[factKey(a, b)];
+      if (fact) facts.push(fact);
+    }
+    return facts;
+  }
+
+  function practiceSkillsInRange(focusTable){
     var skills = [];
-    factsInRange().forEach(function(fact){
+    var facts = focusTable ? focusedFactsForTable(focusTable) : factsInRange();
+    facts.forEach(function(fact){
       skills.push(practiceSkill(factKey(fact.a, fact.b)));
       if (state.config.divisionEnabled && fact.division && fact.division.unlocked){
         skills.push(practiceSkill(divisionSkillKey(fact.a, fact.b)));
@@ -451,10 +467,13 @@
     return result;
   }
 
-  function buildQueue(size){
+  function buildQueue(size, focusTable){
     var today = todayStr();
-    var pool = shuffle(practiceSkillsInRange());
-    var newLimit = Math.min(size, state.config.newFactsPerRound);
+    var pool = shuffle(practiceSkillsInRange(focusTable));
+    // A focused table round should cover as many different members of the
+    // selected row as its configured size permits. Mixed rounds keep the
+    // normal limit for newly introduced facts.
+    var newLimit = Math.min(size, focusTable ? size : state.config.newFactsPerRound);
     var dueReviews = pool.filter(function(skill){ return skill.record.seen && skill.record.dueDate <= today; });
     var newCandidates = pool.filter(function(skill){ return !skill.record.seen; });
 
@@ -479,7 +498,15 @@
     var remainingNewLimit = Math.max(0, newLimit - (reservedIsNew ? 1 : 0));
     newCandidates = newCandidates.filter(function(skill){ return skill !== reservedDivision; });
     dueReviews = dueReviews.filter(function(skill){ return skill !== reservedDivision; });
-    var plannedNew = Math.min(remainingNewLimit, newCandidates.length);
+    var plannedNew;
+    if (focusTable){
+      var availableFocusedSlots = Math.max(0, size - (reservedDivision ? 1 : 0));
+      var focusedReviewSlots = Math.min(dueReviews.length, availableFocusedSlots);
+      plannedNew = Math.min(remainingNewLimit, newCandidates.length,
+        availableFocusedSlots - focusedReviewSlots);
+    } else {
+      plannedNew = Math.min(remainingNewLimit, newCandidates.length);
+    }
     var reviewSlots = Math.max(0, size - (reservedDivision ? 1 : 0) - plannedNew);
     var chosen = reservedDivision ? [reservedDivision] : [];
     chosen = chosen.concat(selectDueReviews(dueReviews, reviewSlots, today));
@@ -504,8 +531,8 @@
       var need = size - chosen.length;
       chosen = chosen.concat(rest.slice(0, need));
     }
-    // Newly introduced facts may appear once more for reinforcement, but a
-    // single eligible fact must never fill most of the session by itself.
+    // Fill the configured round size by distributing repetitions as evenly
+    // as possible without introducing more distinct new facts than allowed.
     var repeatable = newFacts.length ? newFacts.slice() : pool.slice();
     var occurrenceCounts = {};
     chosen.forEach(function(skill){
@@ -521,6 +548,17 @@
         occurrenceCounts[key] = (occurrenceCounts[key] || 0) + 1;
       }
     });
+    while (chosen.length < size && repeatable.length){
+      var lowestCount = Math.min.apply(null, repeatable.map(function(skill){
+        return occurrenceCounts[skill.key] || 0;
+      }));
+      var fillers = repeatable.filter(function(skill){
+        return (occurrenceCounts[skill.key] || 0) === lowestCount;
+      });
+      var filler = fillers[Math.floor(Math.random() * fillers.length)];
+      chosen.push(filler);
+      occurrenceCounts[filler.key] = (occurrenceCounts[filler.key] || 0) + 1;
+    }
     var queueKeys = chosen.map(function(skill){ return skill.key; });
     return spreadQueueKeys(queueKeys);
   }
@@ -614,20 +652,21 @@
         correct: 0,
         completed: false,
         bonus: false,
+        focusTable: null,
         requeueCounts: {},
         newFactKeys: []
       };
-      state.today.queue = buildQueue(state.config.tasksPerDay);
+      state.today.queue = buildQueue(state.config.tasksPerDay, null);
       saveState();
     } else if (!state.today.queue || state.today.queue.length === 0){
-      state.today.queue = buildQueue(state.config.tasksPerDay);
+      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.focusTable);
       saveState();
     } else if (state.today.index === 0 && state.config.divisionEnabled &&
                state.today.queue.every(function(key){ return key.indexOf('d:') !== 0; }) &&
-               practiceSkillsInRange().some(function(skill){ return skill.operation === 'divide'; })){
+               practiceSkillsInRange(state.today.focusTable).some(function(skill){ return skill.operation === 'divide'; })){
       // Repair a not-yet-started queue created by older versions that could
       // omit division even though eligible facts existed.
-      state.today.queue = buildQueue(state.config.tasksPerDay);
+      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.focusTable);
       saveState();
     }
   }
@@ -877,6 +916,7 @@
 
   // ---------- DOM refs ----------
   var screenHome = document.getElementById('screen-home');
+  var screenTablePractice = document.getElementById('screen-table-practice');
   var screenQuestion = document.getElementById('screen-question');
   var screenDone = document.getElementById('screen-done');
 
@@ -886,6 +926,9 @@
   var todayVal = document.getElementById('todayVal');
   var startBtn = document.getElementById('startBtn');
   var bonusBtn = document.getElementById('bonusBtn');
+  var tablePracticeBtn = document.getElementById('tablePracticeBtn');
+  var practiceTableGrid = document.getElementById('practiceTableGrid');
+  var tablePracticeBackBtn = document.getElementById('tablePracticeBackBtn');
   var rewardBtn = document.getElementById('rewardBtn');
   var rewardNote = document.getElementById('rewardNote');
 
@@ -1012,7 +1055,10 @@
   var rewardGameChoiceOrigin = null;
 
   function showScreen(el){
-    [screenHome, screenQuestion, screenDone, screenStickers, screenGameChoice, screenGame, screenFlappy, screenTower].forEach(function(s){ s.classList.remove('active'); });
+    [screenHome, screenTablePractice, screenQuestion, screenDone, screenStickers,
+      screenGameChoice, screenGame, screenFlappy, screenTower].forEach(function(s){
+      s.classList.remove('active');
+    });
     el.classList.add('active');
     var gameOpen = el === screenGameChoice || el === screenGame || el === screenFlappy || el === screenTower;
     gearBtn.style.display = gameOpen ? 'none' : '';
@@ -1050,6 +1096,13 @@
       stickerGrid.appendChild(d);
     });
     showScreen(screenStickers);
+  }
+
+  function repeatRoundLabel(recoveryPending){
+    if (recoveryPending) return 'Serie retten: zweite Runde 🔥';
+    return state.today.focusTable
+      ? 'Noch einmal: ' + state.today.focusTable + 'er-Reihe 🔁'
+      : 'Noch einmal 🔁';
   }
 
   function renderHome(){
@@ -1097,7 +1150,7 @@
     if (state.today.completed){
       startBtn.style.display = 'none';
       bonusBtn.style.display = 'block';
-      bonusBtn.textContent = recoveryPending ? "Serie retten: zweite Runde 🔥" : "Bonus-Runde spielen ⭐";
+      bonusBtn.textContent = repeatRoundLabel(recoveryPending);
     } else {
       startBtn.style.display = 'block';
       bonusBtn.style.display = 'none';
@@ -1108,13 +1161,16 @@
     showScreen(screenHome);
   }
 
-  function startSession(bonus){
+  function startSession(bonus, focusTable){
     sessionRewardUnlocks = 0;
-    if (bonus){
-      state.today.queue = buildQueue(state.config.tasksPerDay);
+    var selectedTable = parseInt(focusTable, 10);
+    var focused = configuredTables().indexOf(selectedTable) !== -1;
+    if (bonus || focused){
+      state.today.focusTable = focused ? selectedTable : null;
+      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.focusTable);
       state.today.index = 0;
       state.today.correct = 0;
-      state.today.bonus = true;
+      state.today.bonus = !!bonus;
       state.today.requeueCounts = {};
       saveState();
     }
@@ -1151,7 +1207,9 @@
     var gapTask = false;
     var gen, fmt, placeholder;
     if (skill.operation === 'divide'){
-      var divideByA = f.a === f.b || Math.random() < 0.5;
+      var divideByA = state.today.focusTable === f.a
+        ? true
+        : (state.today.focusTable === f.b ? false : (f.a === f.b || Math.random() < 0.5));
       var divisor = divideByA ? f.a : f.b;
       var quotient = divideByA ? f.b : f.a;
       var dividend = f.a * f.b;
@@ -1161,7 +1219,9 @@
       questionText.textContent = dividend + " ÷ " + divisor;
     } else {
       // Facts are stored with a <= b; show both orders so 3×8 and 8×3 get practiced.
-      var swapFactors = Math.random() < 0.5;
+      var swapFactors = state.today.focusTable === f.b
+        ? true
+        : (state.today.focusTable === f.a ? false : Math.random() < 0.5);
       var fx = swapFactors ? f.b : f.a;
       var fy = swapFactors ? f.a : f.b;
       // Gap tasks remain multiplication-only.
@@ -1298,6 +1358,7 @@
 
   function finishSession(){
     var wasBonus = state.today.bonus;
+    var focusedTable = state.today.focusTable;
     var newSticker = null;
     var newBadge = null;
     var unlockedTable = null;
@@ -1347,14 +1408,18 @@
       ? "Doppelte Runde geschafft — deine Serie ist wieder da! 🔥"
       : (recoveryPending
         ? "Eine zweite Runde noch, dann ist deine Serie gerettet! 💪"
-        : (wasBonus ? "Bonus-Runde geschafft! Extra-Übung hilft immer. 🌈"
-          : "Du hast alle Aufgaben für heute geschafft."));
+        : (focusedTable
+          ? (wasBonus
+            ? "Du hast die " + focusedTable + "er-Reihe noch einmal geschafft! 🌈"
+            : "Du hast die " + focusedTable + "er-Reihe geschafft!")
+          : (wasBonus ? "Noch eine Runde geschafft! Extra-Übung hilft immer. 🌈"
+            : "Du hast alle Aufgaben für heute geschafft.")));
     doneStreakVal.textContent = state.streak;
     doneCorrectVal.textContent = state.today.correct + "/" + state.today.queue.length;
     doneRewardGameBtn.style.display = state.reward.availablePlays > 0 ? 'block' : 'none';
     doneRewardGameBtn.style.marginBottom = state.reward.availablePlays > 0 ? '12px' : '';
     doneBonusBtn.style.display = 'block';
-    doneBonusBtn.textContent = recoveryPending ? "Serie retten: zweite Runde 🔥" : "Bonus-Runde spielen ⭐";
+    doneBonusBtn.textContent = repeatRoundLabel(recoveryPending);
     showScreen(screenDone);
     playFanfareSound();
     launchConfetti();
@@ -1374,8 +1439,23 @@
   document.addEventListener('touchstart', tapAdvance, { passive: true });
 
   startBtn.addEventListener('click', function(){ startSession(false); });
-  bonusBtn.addEventListener('click', function(){ startSession(true); });
-  doneBonusBtn.addEventListener('click', function(){ startSession(true); });
+  bonusBtn.addEventListener('click', function(){ startSession(true, state.today.focusTable); });
+  doneBonusBtn.addEventListener('click', function(){ startSession(true, state.today.focusTable); });
+  tablePracticeBtn.addEventListener('click', function(){
+    practiceTableGrid.innerHTML = '';
+    configuredTables().forEach(function(table){
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'practice-table-btn';
+      button.textContent = table + 'er-Reihe';
+      button.addEventListener('click', function(){
+        startSession(state.today.completed, table);
+      });
+      practiceTableGrid.appendChild(button);
+    });
+    showScreen(screenTablePractice);
+  });
+  tablePracticeBackBtn.addEventListener('click', function(){ renderHome(); });
   doneHomeBtn.addEventListener('click', function(){ renderHome(); });
   stickersBtn.addEventListener('click', function(){ renderStickers(); });
   stickersBackBtn.addEventListener('click', function(){ renderHome(); });
@@ -2897,7 +2977,8 @@
 
     ensureFactPool();
     state.today.newFactKeys = [];
-    state.today.queue = buildQueue(tasks);
+    state.today.focusTable = null;
+    state.today.queue = buildQueue(tasks, null);
     state.today.index = 0;
     state.today.correct = 0;
     state.today.completed = false;

@@ -28,9 +28,17 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 
 - Täglich eine konfigurierbare Anzahl Aufgaben (Standard: 5)
 - Konfigurierbarer Zahlenbereich von 1 bis 20
-- Einzelne Zahlen gezielt auswählbar; abgewählte Zahlen kommen in keiner Aufgabe
-  als Faktor vor. Optional werden gewählte Reihen schrittweise bei 80 % sicherem
-  Lernstand freigeschaltet
+- Einzelne Zahlen gezielt auswählbar; in normalen gemischten Runden kommen
+  abgewählte Zahlen in keiner Aufgabe als Faktor vor. Optional werden gewählte
+  Reihen schrittweise bei 80 % sicherem Lernstand freigeschaltet
+- Gezielte Zahlenreihen-Runden: Auf der Startseite kann eine der konfigurierten
+  Reihen ausgewählt werden. Die Runde nutzt die eingestellte Aufgabenanzahl und
+  den normalen Lernfortschritt, enthält aber ausschließlich Aufgabenfamilien
+  dieser Reihe. Der jeweils andere Faktor darf aus dem gesamten eingestellten
+  Zahlenbereich stammen, auch wenn er nicht als eigene Reihe aktiviert ist.
+  Freie Rundenplätze werden mit unterschiedlichen Aufgaben der Reihe gefüllt;
+  das allgemeine Limit für neue Aufgaben gilt nur für gemischte Runden. Mit
+  „Noch einmal“ wird anschließend dieselbe Zahlenreihe erneut gestartet
 - Konfigurierbare Begrenzung neuer Aufgaben pro Runde; bekannte Wiederholungen
   haben Vorrang, neue Aufgaben werden innerhalb der Runde erneut abgefragt und
   die nächste Runde führt weitere neue Aufgaben ein

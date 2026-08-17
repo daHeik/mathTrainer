@@ -53,6 +53,13 @@ toolchain just for a small change unless the task specifically requires it.
 - Keep controls usable on both touch devices and desktop browsers.
 - Facts are stored canonically with `a <= b`; display order may be randomized.
   Preserve this invariant when changing question or progress logic.
+- Focused table rounds persist their selected row in `today.focusTable`. Their
+  available row buttons come from `enabledTables`, while the other factor spans
+  the complete configured `min` to `max` range even when that factor is not in
+  `enabledTables`. Display the focused row as the multiplication factor or
+  division divisor. Focused rounds prioritize due reviews, then use distinct
+  row members to fill available slots; `newFactsPerRound` only limits mixed
+  rounds.
 - The new-fact limit applies independently to every round. The legacy
   `newFactsPerDay` config value is retained only as a backup-compatibility
   mirror of `newFactsPerRound`.
@@ -93,6 +100,9 @@ browser-local data or the PIN as secure storage.
 - Keep the `ASSETS` list synchronized with files required offline.
 - Bump `CACHE_NAME` when a release needs to invalidate previously cached
   content.
+- While changes are still uncommitted, keep `CACHE_NAME` exactly one version
+  above the value in `HEAD`. Do not increment it again for every additional
+  edit that will be part of the same commit.
 - Verify both an online load and a reload while offline.
 - Keep service-worker registration guarded so direct `file://` use does not
   fail.

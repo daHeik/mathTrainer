@@ -121,6 +121,28 @@
   .stat-pill .val{ font-size:1.4rem; font-weight:800; color:var(--bg-1); }
   .stat-pill .lbl{ font-size:0.72rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; }
 
+  .practice-table-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(105px, 1fr));
+    gap:12px;
+    margin:20px 0 24px;
+  }
+  .practice-table-btn{
+    min-height:72px;
+    padding:12px 8px;
+    border:0;
+    border-radius:16px;
+    background:var(--bg-1);
+    color:white;
+    box-shadow:0 7px 16px var(--primary-shadow);
+    font:inherit;
+    font-size:1.08rem;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .practice-table-btn:active{ transform:scale(.97); }
+  .practice-table-btn:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
+
   .progress-dots{
     display:flex;
     justify-content:center;
