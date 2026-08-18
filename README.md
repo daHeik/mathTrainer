@@ -38,7 +38,9 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   Zahlenbereich stammen, auch wenn er nicht als eigene Reihe aktiviert ist.
   Freie Rundenplätze werden mit unterschiedlichen Aufgaben der Reihe gefüllt;
   das allgemeine Limit für neue Aufgaben gilt nur für gemischte Runden. Mit
-  „Noch einmal“ wird anschließend dieselbe Zahlenreihe erneut gestartet
+  „Noch einmal“ wird auf dem Abschlussbildschirm dieselbe Zahlenreihe erneut
+  gestartet. Nach „Fertig für heute“ bietet die Startseite wieder eine
+  gemischte Runde oder die Auswahl einer anderen Zahlenreihe an
 - Konfigurierbare Begrenzung neuer Aufgaben pro Runde; bekannte Wiederholungen
   haben Vorrang, neue Aufgaben werden innerhalb der Runde erneut abgefragt und
   die nächste Runde führt weitere neue Aufgaben ein

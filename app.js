@@ -1150,7 +1150,9 @@
     if (state.today.completed){
       startBtn.style.display = 'none';
       bonusBtn.style.display = 'block';
-      bonusBtn.textContent = repeatRoundLabel(recoveryPending);
+      bonusBtn.textContent = recoveryPending
+        ? 'Serie retten: zweite Runde 🔥'
+        : 'Gemischte Runde spielen 🚀';
     } else {
       startBtn.style.display = 'block';
       bonusBtn.style.display = 'none';
@@ -1439,7 +1441,7 @@
   document.addEventListener('touchstart', tapAdvance, { passive: true });
 
   startBtn.addEventListener('click', function(){ startSession(false); });
-  bonusBtn.addEventListener('click', function(){ startSession(true, state.today.focusTable); });
+  bonusBtn.addEventListener('click', function(){ startSession(true, null); });
   doneBonusBtn.addEventListener('click', function(){ startSession(true, state.today.focusTable); });
   tablePracticeBtn.addEventListener('click', function(){
     practiceTableGrid.innerHTML = '';
