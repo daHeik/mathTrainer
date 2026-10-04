@@ -89,6 +89,7 @@
     transition:transform .1s ease, box-shadow .1s ease;
   }
   .primary-btn:active{ transform:scale(0.97); box-shadow:0 6px 14px var(--primary-shadow); }
+  .extra-round-btn{ margin-top:12px; font-size:clamp(0.95rem, 3.2vw, 1.1rem); padding:14px; }
   .secondary-btn{
     display:block;
     width:100%;
@@ -169,6 +170,8 @@
     grid-template-columns: 1fr 1fr;
     gap:clamp(10px, 3vw, 16px);
   }
+  .question.word-question{ font-size:clamp(1.35rem, 5.5vw, 2rem); line-height:1.4; letter-spacing:normal; }
+  .word-choices .choice-btn{ font-size:clamp(0.9rem, 3.5vw, 1.25rem); overflow-wrap:anywhere; }
   .choice-btn{
     padding:clamp(18px, 5vw, 26px) 8px;
     font-size:clamp(1.4rem, 6vw, 2rem);

@@ -13,6 +13,24 @@
   var GAME_DURATION_MS = 2 * 60 * 1000;
   var GAME_MAX_ATTEMPTS = 3;
   var DIVISION_UNLOCK_BOX = 4;
+  var STICKER_POOL = [
+    '🦄','🐬','🦊','🐢','🚀','🌈','🍦','🐼','🦖','⚽','🎨','🐙','🌟','🧁','🐨','🎸','🦋','🍩','🤖','🐳',
+    '🐶','🐱','🐰','🐹','🐻','🐯','🦁','🐸','🐵','🐷',
+    '🐧','🐥','🦉','🦅','🦆','🦜','🦩','🦚','🦢','🐝',
+    '🐞','🐌','🦀','🦈','🐠','🦑','🦔','🦒','🐘','🦓',
+    '🌻','🌷','🌹','🌵','🌴','🍀','🍄','🌙','☀️','❄️',
+    '🍓','🍒','🍉','🍍','🍎','🍌','🥝','🍇','🍪','🍿',
+    '🏀','🎾','🏓','🎯','🪁','🎈','🎁','👑','💎','🏰'
+  ];
+  var SESSION_MODES = ['mixed', 'table', 'hundreds', 'terms', 'riddles'];
+  var RIDDLE_TYPES = ['halfAdd', 'doubleAdd', 'halfSubtract', 'doubleSubtract',
+    'sumDouble', 'differenceHalf', 'productAdd', 'quotientAdd'];
+  var TERM_CONCEPTS = ['addition', 'subtraction', 'multiplication', 'division',
+    'sum', 'difference', 'product', 'quotient'];
+  var TERM_LABELS = {
+    addition:'Addition', subtraction:'Subtraktion', multiplication:'Multiplikation',
+    division:'Division', sum:'Summe', difference:'Differenz', product:'Produkt', quotient:'Quotient'
+  };
 
   var ACCENT_THEMES = {
     purple:{ primary:'#6c5ce7', secondary:'#a29bfe', accent:'#fdcb6e',
@@ -45,12 +63,21 @@
   }
   function factKey(a, b){ return a + "x" + b; }
   function divisionSkillKey(a, b){ return 'd:' + factKey(a, b); }
-  function divisionDefaults(today){
+  function hundredsSkillKey(operation, a, b){
+    return 'h:' + (operation === 'divide' ? 'd:' : 'm:') + factKey(a, b);
+  }
+  function termSkillKey(concept){ return 't:' + concept; }
+  function learningDefaults(today){
     return {
-      unlocked:false, box:0, dueDate:today, seen:false,
+      box:0, dueDate:today, seen:false,
       correctCount:0, wrongCount:0, correctStreak:0,
       totalResponseMs:0, timedAttemptCount:0, lastPracticedDate:null
     };
+  }
+  function divisionDefaults(today){
+    var record = learningDefaults(today);
+    record.unlocked = false;
+    return record;
   }
   function shuffle(arr){
     for (var i = arr.length - 1; i > 0; i--){
@@ -116,10 +143,13 @@
         correct: 0,
         completed: false,
         bonus: false,
+        mode: 'mixed',
         focusTable: null,
         requeueCounts: {}, // fact key -> times re-added to this session after a wrong answer
         newFactKeys: []   // legacy field retained when loading older backups
       },
+      termSkills: {},
+      riddleSkills: {},
       curriculum: { unlockedTables: [] },
       history: {}, // date -> {attempts,correct,wrong,totalResponseMs}
       streak: 0,
@@ -145,7 +175,19 @@
     for (var key in facts){
       total += Number(facts[key].correctCount) || 0;
       if (facts[key].division) total += Number(facts[key].division.correctCount) || 0;
+      if (facts[key].hundreds){
+        total += Number(facts[key].hundreds.multiply.correctCount) || 0;
+        total += Number(facts[key].hundreds.divide.correctCount) || 0;
+      }
     }
+    var termSkills = profile.termSkills || {};
+    TERM_CONCEPTS.forEach(function(concept){
+      if (termSkills[concept]) total += Number(termSkills[concept].correctCount) || 0;
+    });
+    var riddleSkills = profile.riddleSkills || {};
+    RIDDLE_TYPES.forEach(function(type){
+      if (riddleSkills[type]) total += Number(riddleSkills[type].correctCount) || 0;
+    });
     return total;
   }
 
@@ -201,13 +243,31 @@
       if (!fact.division || typeof fact.division !== 'object') fact.division = divisionDefaults(normalizationDate);
       normalizeLearningRecord(fact.division, normalizationDate);
       fact.division.unlocked = !!fact.division.unlocked || fact.box >= DIVISION_UNLOCK_BOX;
+      if (!fact.hundreds || typeof fact.hundreds !== 'object') fact.hundreds = {};
+      if (!fact.hundreds.multiply) fact.hundreds.multiply = learningDefaults(normalizationDate);
+      if (!fact.hundreds.divide) fact.hundreds.divide = learningDefaults(normalizationDate);
+      normalizeLearningRecord(fact.hundreds.multiply, normalizationDate);
+      normalizeLearningRecord(fact.hundreds.divide, normalizationDate);
     }
+    if (!p.termSkills || typeof p.termSkills !== 'object') p.termSkills = {};
+    TERM_CONCEPTS.forEach(function(concept){
+      if (!p.termSkills[concept]) p.termSkills[concept] = learningDefaults(normalizationDate);
+      normalizeLearningRecord(p.termSkills[concept], normalizationDate);
+    });
+    if (!p.riddleSkills || typeof p.riddleSkills !== 'object') p.riddleSkills = {};
+    RIDDLE_TYPES.forEach(function(type){
+      if (!p.riddleSkills[type]) p.riddleSkills[type] = learningDefaults(normalizationDate);
+      normalizeLearningRecord(p.riddleSkills[type], normalizationDate);
+    });
     if (!p.today) p.today = defaultProfile().today;
     if (!p.today.requeueCounts) p.today.requeueCounts = {};
     if (!Array.isArray(p.today.newFactKeys)) p.today.newFactKeys = [];
     var focusTable = parseInt(p.today.focusTable, 10);
     p.today.focusTable = tables.indexOf(focusTable) !== -1 ? focusTable : null;
-    trimRepeatedQueueFacts(p.today);
+    if (SESSION_MODES.indexOf(p.today.mode) === -1) p.today.mode = p.today.focusTable ? 'table' : 'mixed';
+    if (p.today.mode === 'table' && !p.today.focusTable) p.today.mode = 'mixed';
+    if (p.today.focusTable) p.today.mode = 'table';
+    if (p.today.mode === 'mixed' || p.today.mode === 'table') trimRepeatedQueueFacts(p.today);
     if (!p.curriculum) p.curriculum = { unlockedTables: [] };
     if (!Array.isArray(p.curriculum.unlockedTables)) p.curriculum.unlockedTables = [];
     p.curriculum.unlockedTables = p.curriculum.unlockedTables.filter(function(v){
@@ -232,7 +292,7 @@
           divide:{ attempts:0, correct:0, wrong:0, totalResponseMs:0 }
         };
       }
-      ['multiply','divide'].forEach(function(operation){
+      ['multiply','divide','hundredsMultiply','hundredsDivide','terms','riddles'].forEach(function(operation){
         var operationDay = historyDay.byOperation[operation] || {};
         operationDay.attempts = Math.max(0, Number(operationDay.attempts) || 0);
         operationDay.correct = Math.max(0, Number(operationDay.correct) || 0);
@@ -243,6 +303,7 @@
       p.history[historyDate] = historyDay;
     }
     if (!p.stickers) p.stickers = [];
+    replaceDuplicateStickers(p.stickers);
     if (!p.badges) p.badges = [];
     if (p.streakRecovery){
       var recovery = p.streakRecovery;
@@ -353,22 +414,35 @@
   function ensureFactPool(){
     var cfg = state.config;
     var today = todayStr();
-    for (var a = cfg.min; a <= cfg.max; a++){
-      for (var b = a; b <= cfg.max; b++){
+    var poolMax = Math.max(10, cfg.max);
+    for (var a = 1; a <= poolMax; a++){
+      for (var b = a; b <= poolMax; b++){
         var key = factKey(a, b);
         if (!state.facts[key]){
           state.facts[key] = {
             a:a, b:b, box:0, dueDate:today, seen:false,
             correctCount:0, wrongCount:0, correctStreak:0,
             totalResponseMs:0, timedAttemptCount:0, lastPracticedDate:null,
-            division:divisionDefaults(today)
+            division:divisionDefaults(today),
+            hundreds:{ multiply:learningDefaults(today), divide:learningDefaults(today) }
           };
         } else if (!state.facts[key].division){
           state.facts[key].division = divisionDefaults(today);
         }
+        if (!state.facts[key].hundreds) state.facts[key].hundreds = {};
+        if (!state.facts[key].hundreds.multiply) state.facts[key].hundreds.multiply = learningDefaults(today);
+        if (!state.facts[key].hundreds.divide) state.facts[key].hundreds.divide = learningDefaults(today);
         if (state.facts[key].box >= DIVISION_UNLOCK_BOX) state.facts[key].division.unlocked = true;
       }
     }
+    if (!state.termSkills) state.termSkills = {};
+    TERM_CONCEPTS.forEach(function(concept){
+      if (!state.termSkills[concept]) state.termSkills[concept] = learningDefaults(today);
+    });
+    if (!state.riddleSkills) state.riddleSkills = {};
+    RIDDLE_TYPES.forEach(function(type){
+      if (!state.riddleSkills[type]) state.riddleSkills[type] = learningDefaults(today);
+    });
   }
 
   function configuredTables(){
@@ -407,12 +481,39 @@
 
   function practiceSkill(key){
     if (typeof key !== 'string') return null;
+    if (key.indexOf('r:') === 0){
+      var riddleType = key.slice(2);
+      if (RIDDLE_TYPES.indexOf(riddleType) === -1 || !state.riddleSkills[riddleType]) return null;
+      return { key:key, kind:'riddle', riddleType:riddleType, operation:'riddles', fact:null,
+        record:state.riddleSkills[riddleType] };
+    }
+    if (key.indexOf('t:') === 0){
+      var concept = key.slice(2);
+      if (TERM_CONCEPTS.indexOf(concept) === -1 || !state.termSkills[concept]) return null;
+      return {
+        key:key, kind:'term', concept:concept, operation:'terms', fact:null,
+        record:state.termSkills[concept]
+      };
+    }
+    if (key.indexOf('h:') === 0){
+      var hundredsParts = key.split(':');
+      if (hundredsParts.length !== 3 || ['m', 'd'].indexOf(hundredsParts[1]) === -1) return null;
+      var hundredsOperation = hundredsParts[1] === 'd' ? 'divide' : 'multiply';
+      var hundredsFact = state.facts[hundredsParts.slice(2).join(':')];
+      if (!hundredsFact || !hundredsFact.hundreds) return null;
+      return {
+        key:key, kind:'hundreds', operation:hundredsOperation === 'divide' ? 'hundredsDivide' : 'hundredsMultiply',
+        displayOperation:hundredsOperation, fact:hundredsFact,
+        record:hundredsFact.hundreds[hundredsOperation]
+      };
+    }
     var isDivision = key.indexOf('d:') === 0;
     var baseKey = isDivision ? key.slice(2) : key;
     var fact = state.facts[baseKey];
     if (!fact) return null;
     return {
       key:isDivision ? divisionSkillKey(fact.a, fact.b) : baseKey,
+      kind:'fact',
       operation:isDivision ? 'divide' : 'multiply',
       fact:fact,
       record:isDivision ? fact.division : fact
@@ -431,7 +532,26 @@
     return facts;
   }
 
-  function practiceSkillsInRange(focusTable){
+  function hundredsPracticeSkills(){
+    var skills = [];
+    for (var a = 1; a <= 10; a++){
+      for (var b = a; b <= 10; b++){
+        skills.push(practiceSkill(hundredsSkillKey('multiply', a, b)));
+        skills.push(practiceSkill(hundredsSkillKey('divide', a, b)));
+      }
+    }
+    return skills.filter(function(skill){ return !!skill; });
+  }
+
+  function termPracticeSkills(){
+    return TERM_CONCEPTS.map(function(concept){ return practiceSkill(termSkillKey(concept)); })
+      .filter(function(skill){ return !!skill; });
+  }
+
+  function practiceSkillsInRange(focusTable, mode){
+    if (mode === 'hundreds') return hundredsPracticeSkills();
+    if (mode === 'terms') return termPracticeSkills();
+    if (mode === 'riddles') return RIDDLE_TYPES.map(function(type){ return practiceSkill('r:' + type); });
     var skills = [];
     var facts = focusTable ? focusedFactsForTable(focusTable) : factsInRange();
     facts.forEach(function(fact){
@@ -467,13 +587,19 @@
     return result;
   }
 
-  function buildQueue(size, focusTable){
+  function skillIsDivision(skill){
+    return skill.operation === 'divide' || skill.operation === 'hundredsDivide';
+  }
+
+  function buildQueue(size, focusTable, mode){
     var today = todayStr();
-    var pool = shuffle(practiceSkillsInRange(focusTable));
+    mode = SESSION_MODES.indexOf(mode) === -1 ? (focusTable ? 'table' : 'mixed') : mode;
+    var pool = shuffle(practiceSkillsInRange(focusTable, mode));
     // A focused table round should cover as many different members of the
     // selected row as its configured size permits. Mixed rounds keep the
     // normal limit for newly introduced facts.
-    var newLimit = Math.min(size, focusTable ? size : state.config.newFactsPerRound);
+    var broadMode = !!focusTable || mode === 'hundreds' || mode === 'terms' || mode === 'riddles';
+    var newLimit = Math.min(size, broadMode ? size : state.config.newFactsPerRound);
     var dueReviews = pool.filter(function(skill){ return skill.record.seen && skill.record.dueDate <= today; });
     var newCandidates = pool.filter(function(skill){ return !skill.record.seen; });
 
@@ -481,12 +607,12 @@
     // one division slot. Prefer a due review, then a new division, and only
     // bring a future review forward when neither is available.
     var reservedDivision = null;
-    if (state.config.divisionEnabled && size > 0){
-      reservedDivision = dueReviews.filter(function(skill){ return skill.operation === 'divide'; })[0] ||
-        newCandidates.filter(function(skill){ return skill.operation === 'divide'; })[0] || null;
+    if ((state.config.divisionEnabled || mode === 'hundreds') && mode !== 'terms' && size > 0){
+      reservedDivision = dueReviews.filter(skillIsDivision)[0] ||
+        newCandidates.filter(skillIsDivision)[0] || null;
       if (!reservedDivision){
         var futureDivisions = pool.filter(function(skill){
-          return skill.operation === 'divide' && skill.record.seen && skill.record.dueDate > today;
+          return skillIsDivision(skill) && skill.record.seen && skill.record.dueDate > today;
         }).sort(function(x, y){
           return x.record.dueDate < y.record.dueDate ? -1 : (x.record.dueDate > y.record.dueDate ? 1 : 0);
         });
@@ -499,7 +625,7 @@
     newCandidates = newCandidates.filter(function(skill){ return skill !== reservedDivision; });
     dueReviews = dueReviews.filter(function(skill){ return skill !== reservedDivision; });
     var plannedNew;
-    if (focusTable){
+    if (broadMode){
       var availableFocusedSlots = Math.max(0, size - (reservedDivision ? 1 : 0));
       var focusedReviewSlots = Math.min(dueReviews.length, availableFocusedSlots);
       plannedNew = Math.min(remainingNewLimit, newCandidates.length,
@@ -652,21 +778,26 @@
         correct: 0,
         completed: false,
         bonus: false,
+        mode: 'mixed',
         focusTable: null,
         requeueCounts: {},
         newFactKeys: []
       };
-      state.today.queue = buildQueue(state.config.tasksPerDay, null);
+      state.today.queue = buildQueue(state.config.tasksPerDay, null, 'mixed');
       saveState();
     } else if (!state.today.queue || state.today.queue.length === 0){
-      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.focusTable);
+      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.focusTable, state.today.mode);
       saveState();
-    } else if (state.today.index === 0 && state.config.divisionEnabled &&
-               state.today.queue.every(function(key){ return key.indexOf('d:') !== 0; }) &&
-               practiceSkillsInRange(state.today.focusTable).some(function(skill){ return skill.operation === 'divide'; })){
+    } else if (state.today.index === 0 && (state.config.divisionEnabled || state.today.mode === 'hundreds') &&
+               state.today.mode !== 'terms' &&
+               state.today.queue.every(function(key){
+                 var skill = practiceSkill(key);
+                 return !skill || !skillIsDivision(skill);
+               }) &&
+               practiceSkillsInRange(state.today.focusTable, state.today.mode).some(skillIsDivision)){
       // Repair a not-yet-started queue created by older versions that could
       // omit division even though eligible facts existed.
-      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.focusTable);
+      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.focusTable, state.today.mode);
       saveState();
     }
   }
@@ -847,6 +978,154 @@
     return { correct:correct, options:options };
   }
 
+  function numericChoices(correct, step){
+    var candidates = [correct - step, correct + step, correct + 2 * step,
+      correct - 2 * step, correct + 3 * step, correct + 4 * step];
+    var distractors = shuffle(candidates.filter(function(value){ return value >= 0 && value !== correct; })).slice(0, 3);
+    return { correct:correct, options:shuffle(distractors.concat([correct])) };
+  }
+
+  function operationChoices(a, b, correct){
+    // Different operations with the same operands reveal confusion about the
+    // term. Use exact, nonnegative results and show coinciding answers once.
+    var results = [correct, a + b, Math.abs(a - b), a * b];
+    if (b !== 0 && a % b === 0) results.push(a / b);
+    if (a !== 0 && b % a === 0) results.push(b / a);
+    var options = results.filter(function(value, index, values){
+      return values.indexOf(value) === index;
+    });
+    var anchor = options[Math.floor(Math.random() * options.length)];
+    for (var distance = 1; options.length < 4; distance++){
+      [anchor - distance, anchor + distance].forEach(function(value){
+        if (options.length < 4 && value >= 0 && options.indexOf(value) === -1) options.push(value);
+      });
+    }
+    return { correct:correct, options:shuffle(options) };
+  }
+
+  function hundredsChoices(correct, operation){
+    var divide = operation === 'divide';
+    // Include a missing/extra zero alongside nearby results.
+    var scaleError = divide ? correct * 10 : correct / 10;
+    var nearby = numericChoices(correct, divide ? 1 : 10).options.filter(function(value){
+      return value !== correct && value !== scaleError;
+    }).slice(0, 2);
+    return { correct:correct, options:shuffle([correct, scaleError].concat(nearby)) };
+  }
+
+  function specialQuestion(skill){
+    var a, b, correct, prompt, explanation;
+    if (skill.kind === 'riddle') return riddleQuestion(skill.riddleType);
+    if (skill.kind === 'hundreds'){
+      var swap = Math.random() < 0.5;
+      a = swap ? skill.fact.b : skill.fact.a;
+      b = swap ? skill.fact.a : skill.fact.b;
+      if (skill.displayOperation === 'divide'){
+        prompt = (a * b * 10) + ' ÷ ' + (a * 10);
+        correct = b;
+      } else {
+        prompt = (a * 10) + ' × ' + b;
+        correct = a * b * 10;
+      }
+      return { prompt:prompt, gen:hundredsChoices(correct, skill.displayOperation) };
+    }
+    var concept = skill.concept;
+    var operationNames = ['addition', 'subtraction', 'multiplication', 'division'].map(function(name){ return TERM_LABELS[name]; });
+    var resultNames = ['sum', 'difference', 'product', 'quotient'].map(function(name){ return TERM_LABELS[name]; });
+    var operationIndex = TERM_CONCEPTS.slice(0, 4).indexOf(concept);
+    if (operationIndex !== -1){
+      a = (Math.floor(Math.random() * 5) + 5) * 10;
+      b = (Math.floor(Math.random() * 4) + 1) * 10;
+      if (operationIndex === 2 || operationIndex === 3){
+        a = Math.floor(Math.random() * 10) + 1;
+        b = Math.floor(Math.random() * 10) + 1;
+        if (operationIndex === 3) a *= b;
+      }
+      prompt = 'Wie heißt die Rechenart bei ' + a + ' ' + ['+', '−', '×', '÷'][operationIndex] + ' ' + b + '?';
+      correct = operationNames[operationIndex];
+      explanation = correct + ': Das Ergebnis heißt ' + resultNames[operationIndex] + '.';
+      return { prompt:prompt, gen:{ correct:correct, options:shuffle(operationNames.slice()) }, explanation:explanation };
+    }
+    a = (Math.floor(Math.random() * 9) + 1) * 10;
+    b = (Math.floor(Math.random() * 9) + 1) * 10;
+    if (concept === 'sum'){
+      prompt = 'Die Summe aus ' + a + ' und ' + b;
+      correct = a + b;
+      explanation = 'Addition: ' + a + ' + ' + b + ' = ' + correct + '. Das Ergebnis heißt Summe.';
+    } else if (concept === 'difference'){
+      var large = Math.max(a, b); b = Math.min(a, b); a = large;
+      prompt = 'Die Differenz aus ' + a + ' und ' + b;
+      correct = a - b;
+      explanation = 'Subtraktion: ' + a + ' − ' + b + ' = ' + correct + '. Das Ergebnis heißt Differenz.';
+    } else {
+      a = Math.floor(Math.random() * 10) + 1;
+      b = Math.floor(Math.random() * 10) + 1;
+      if (concept === 'product'){
+        prompt = 'Das Produkt aus ' + a + ' und ' + b;
+        correct = a * b;
+        explanation = 'Multiplikation: ' + a + ' × ' + b + ' = ' + correct + '. Das Ergebnis heißt Produkt.';
+      } else {
+        var dividend = a * b;
+        prompt = 'Der Quotient aus ' + dividend + ' und ' + a;
+        correct = b;
+        explanation = 'Division: ' + dividend + ' ÷ ' + a + ' = ' + correct + '. Das Ergebnis heißt Quotient.';
+        b = a;
+        a = dividend;
+      }
+    }
+    return { prompt:prompt, gen:operationChoices(a, b, correct), explanation:explanation };
+  }
+
+  function riddleQuestion(type){
+    var a = (Math.floor(Math.random() * 9) + 2) * 10;
+    var b = (Math.floor(Math.random() * 5) + 1) * 10;
+    var intermediate, correct, prompt, explanation;
+    if (type === 'halfAdd' || type === 'halfSubtract'){
+      intermediate = a / 2;
+      if (type === 'halfSubtract') b = Math.min(b, intermediate);
+      correct = type === 'halfAdd' ? intermediate + b : intermediate - b;
+      prompt = type === 'halfAdd'
+        ? 'Addiere die Hälfte von ' + a + ' mit ' + b + '.'
+        : 'Ziehe ' + b + ' von der Hälfte von ' + a + ' ab.';
+      explanation = 'Die Hälfte von ' + a + ' ist ' + intermediate + '. Dann: ' + intermediate +
+        (type === 'halfAdd' ? ' + ' : ' − ') + b + ' = ' + correct + '.';
+    } else if (type === 'doubleAdd' || type === 'doubleSubtract'){
+      intermediate = a * 2;
+      if (type === 'doubleSubtract') b = Math.min(b, intermediate);
+      correct = type === 'doubleAdd' ? intermediate + b : intermediate - b;
+      prompt = type === 'doubleAdd'
+        ? 'Meine Zahl ist die Summe aus dem Doppelten von ' + a + ' und ' + b + '.'
+        : 'Subtrahiere ' + b + ' vom Doppelten von ' + a + '.';
+      explanation = 'Das Doppelte von ' + a + ' ist ' + intermediate + '. Dann: ' + intermediate +
+        (type === 'doubleAdd' ? ' + ' : ' − ') + b + ' = ' + correct + '.';
+    } else if (type === 'sumDouble'){
+      intermediate = a + b;
+      correct = intermediate * 2;
+      prompt = 'Verdopple die Summe aus ' + a + ' und ' + b + '.';
+      explanation = a + ' + ' + b + ' = ' + intermediate + '. Das Doppelte davon ist ' + correct + '.';
+    } else if (type === 'differenceHalf'){
+      a *= 2; b *= 2;
+      var large = Math.max(a, b); b = Math.min(a, b); a = large;
+      intermediate = a - b;
+      correct = intermediate / 2;
+      prompt = 'Halbiere die Differenz aus ' + a + ' und ' + b + '.';
+      explanation = a + ' − ' + b + ' = ' + intermediate + '. Die Hälfte davon ist ' + correct + '.';
+    } else {
+      a = Math.floor(Math.random() * 9) + 2;
+      var factor = Math.floor(Math.random() * 9) + 2;
+      intermediate = type === 'productAdd' ? a * factor : factor;
+      prompt = type === 'productAdd'
+        ? 'Addiere zum Produkt aus ' + a + ' und ' + factor + ' die Zahl ' + b + '.'
+        : 'Addiere zum Quotienten aus ' + (a * factor) + ' und ' + a + ' die Zahl ' + b + '.';
+      correct = intermediate + b;
+      explanation = type === 'productAdd'
+        ? a + ' × ' + factor + ' = ' + intermediate + '.'
+        : (a * factor) + ' ÷ ' + a + ' = ' + intermediate + '.';
+      explanation += ' Dann: ' + intermediate + ' + ' + b + ' = ' + correct + '.';
+    }
+    return { prompt:prompt, gen:numericChoices(correct, 5), explanation:explanation };
+  }
+
   // ---------- Confetti ----------
   var CONFETTI_COLORS = ['#6c5ce7','#fdcb6e','#00b894','#e17055','#0984e3','#e84393'];
   function launchConfetti(){
@@ -927,6 +1206,9 @@
   var startBtn = document.getElementById('startBtn');
   var bonusBtn = document.getElementById('bonusBtn');
   var tablePracticeBtn = document.getElementById('tablePracticeBtn');
+  var hundredsBtn = document.getElementById('hundredsBtn');
+  var termsBtn = document.getElementById('termsBtn');
+  var riddlesBtn = document.getElementById('riddlesBtn');
   var practiceTableGrid = document.getElementById('practiceTableGrid');
   var tablePracticeBackBtn = document.getElementById('tablePracticeBackBtn');
   var rewardBtn = document.getElementById('rewardBtn');
@@ -1052,6 +1334,7 @@
   var questionStartTime = 0;
   var answering = false;
   var sessionRewardUnlocks = 0;
+  var questionExplanation = '';
   var rewardGameChoiceOrigin = null;
 
   function showScreen(el){
@@ -1100,6 +1383,9 @@
 
   function repeatRoundLabel(recoveryPending){
     if (recoveryPending) return 'Serie retten: zweite Runde 🔥';
+    if (state.today.mode === 'hundreds') return 'Noch einmal: Rechnen mit 100ern 🔁';
+    if (state.today.mode === 'terms') return 'Noch einmal: Rechenbegriffe 🔁';
+    if (state.today.mode === 'riddles') return 'Noch einmal: Zahlenrätsel 🔁';
     return state.today.focusTable
       ? 'Noch einmal: ' + state.today.focusTable + 'er-Reihe 🔁'
       : 'Noch einmal 🔁';
@@ -1163,13 +1449,15 @@
     showScreen(screenHome);
   }
 
-  function startSession(bonus, focusTable){
+  function startSession(bonus, focusTable, mode){
     sessionRewardUnlocks = 0;
     var selectedTable = parseInt(focusTable, 10);
     var focused = configuredTables().indexOf(selectedTable) !== -1;
-    if (bonus || focused){
+    var specialMode = mode === 'hundreds' || mode === 'terms' || mode === 'riddles';
+    if (bonus || focused || specialMode){
       state.today.focusTable = focused ? selectedTable : null;
-      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.focusTable);
+      state.today.mode = specialMode ? mode : (focused ? 'table' : 'mixed');
+      state.today.queue = buildQueue(state.config.tasksPerDay, state.today.focusTable, state.today.mode);
       state.today.index = 0;
       state.today.correct = 0;
       state.today.bonus = !!bonus;
@@ -1208,7 +1496,17 @@
     var f = skill.fact;
     var gapTask = false;
     var gen, fmt, placeholder;
-    if (skill.operation === 'divide'){
+    questionExplanation = '';
+    questionText.classList.toggle('word-question', skill.kind === 'term' || skill.kind === 'riddle');
+    choicesWrap.classList.toggle('word-choices', skill.kind === 'term');
+    if (skill.kind === 'hundreds' || skill.kind === 'term' || skill.kind === 'riddle'){
+      var special = specialQuestion(skill);
+      gen = special.gen;
+      questionExplanation = special.explanation || '';
+      fmt = function(val){ return special.prompt + ' = ' + val; };
+      placeholder = '?';
+      questionText.textContent = special.prompt;
+    } else if (skill.operation === 'divide'){
       var divideByA = state.today.focusTable === f.a
         ? true
         : (state.today.focusTable === f.b ? false : (f.a === f.b || Math.random() < 0.5));
@@ -1246,6 +1544,7 @@
     choicesWrap.innerHTML = '';
     var answerMode = state.config.answerMode;
     if (answerMode === 'adaptive') answerMode = skill.record.seen && skill.record.box >= 2 ? 'input' : 'choice';
+    if (typeof gen.correct === 'string') answerMode = 'choice';
     if (answerMode === 'input'){
       renderKeypad(key, fmt, gen.correct, placeholder, fmt(gen.correct));
     } else {
@@ -1254,6 +1553,7 @@
         var btn = document.createElement('button');
         btn.className = 'choice-btn';
         btn.textContent = opt;
+        btn.dataset.answer = String(opt);
         btn.addEventListener('click', function(){
           if (answering && gapTask) questionText.textContent = fmt(gen.correct);
           onAnswer(key, opt, gen.correct, btn, false, fmt(gen.correct));
@@ -1287,7 +1587,7 @@
           questionText.textContent = fmt(correct);
           onAnswer(key, chosen, correct, null, true, masteryLabel);
           return;
-        } else if (typedAnswer.length < 3){
+        } else if (typedAnswer.length < 4){
           typedAnswer += k;
         }
         updateEquation();
@@ -1305,7 +1605,7 @@
 
     choicesWrap.querySelectorAll('.choice-btn').forEach(function(b){
       b.classList.add('locked');
-      if (parseInt(b.textContent, 10) === correct) b.classList.add('correct');
+      if (b.dataset.answer === String(correct)) b.classList.add('correct');
       else if (b === btnEl) b.classList.add('wrong');
     });
     choicesWrap.querySelectorAll('.key-btn').forEach(function(b){ b.classList.add('locked'); });
@@ -1345,18 +1645,48 @@
       }
     }
 
+    if (questionExplanation) feedbackText.textContent += ' ' + questionExplanation;
     state.today.index++;
     saveState();
 
     if (isCorrect){
-      setTimeout(function(){ renderQuestion(); }, newlyMastered ? 2400 : CORRECT_ADVANCE_DELAY_MS);
+      setTimeout(function(){ renderQuestion(); }, questionExplanation ? 4500 : (newlyMastered ? 2400 : CORRECT_ADVANCE_DELAY_MS));
     } else {
       setTimeout(function(){ awaitTap = true; }, WRONG_TAP_DELAY_MS);
     }
   }
 
-  var STICKER_POOL = ["🦄","🐬","🦊","🐢","🚀","🌈","🍦","🐼","🦖","⚽","🎨","🐙","🌟","🧁","🐨","🎸","🦋","🍩","🤖","🐳"];
   var BADGE_MILESTONES = [7, 14, 30, 60, 100];
+
+  function replaceDuplicateStickers(stickers){
+    var missing = shuffle(STICKER_POOL.filter(function(emoji){
+      return !stickers.some(function(sticker){ return sticker.emoji === emoji; });
+    }));
+    var seen = {};
+    // Preserve the oldest copy, all dates and the album's original order.
+    stickers.slice().sort(function(a, b){
+      return String(a.date).localeCompare(String(b.date));
+    }).forEach(function(sticker){
+      if (seen[sticker.emoji] && missing.length) sticker.emoji = missing.pop();
+      seen[sticker.emoji] = true;
+    });
+  }
+
+  function pickNextSticker(stickers){
+    var counts = {};
+    STICKER_POOL.forEach(function(emoji){ counts[emoji] = 0; });
+    var latest = null;
+    (stickers || []).forEach(function(sticker){
+      if (Object.prototype.hasOwnProperty.call(counts, sticker.emoji)) counts[sticker.emoji]++;
+      if (!latest || sticker.date >= latest.date) latest = sticker;
+    });
+    var candidates = STICKER_POOL.filter(function(emoji){
+      return !latest || emoji !== latest.emoji;
+    });
+    var lowestCount = Math.min.apply(null, candidates.map(function(emoji){ return counts[emoji]; }));
+    candidates = candidates.filter(function(emoji){ return counts[emoji] === lowestCount; });
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
 
   function finishSession(){
     var wasBonus = state.today.bonus;
@@ -1373,10 +1703,10 @@
       state.stickers = state.stickers || [];
       var hasStickerToday = state.stickers.some(function(s){ return s.date === today; });
       if (!hasStickerToday){
-        newSticker = STICKER_POOL[Math.floor(Math.random() * STICKER_POOL.length)];
+        newSticker = pickNextSticker(state.stickers);
         state.stickers.push({ date: today, emoji: newSticker });
       }
-      unlockedTable = maybeUnlockNextTable();
+      if (state.today.mode === 'mixed' || state.today.mode === 'table') unlockedTable = maybeUnlockNextTable();
     } else {
       streakRecovered = completeStreakRecovery(state.today.date);
     }
@@ -1417,6 +1747,10 @@
           : (wasBonus ? "Noch eine Runde geschafft! Extra-Übung hilft immer. 🌈"
             : "Du hast alle Aufgaben für heute geschafft.")));
     doneStreakVal.textContent = state.streak;
+    if (!recoveryPending && !streakRecovered && ['hundreds', 'terms', 'riddles'].indexOf(state.today.mode) !== -1){
+      doneSubtitle.textContent = { hundreds:'Rechnen mit 100ern geschafft! 🌟',
+        terms:'Rechenbegriffe geübt! 🌟', riddles:'Zahlenrätsel gelöst! 🌟' }[state.today.mode];
+    }
     doneCorrectVal.textContent = state.today.correct + "/" + state.today.queue.length;
     doneRewardGameBtn.style.display = state.reward.availablePlays > 0 ? 'block' : 'none';
     doneRewardGameBtn.style.marginBottom = state.reward.availablePlays > 0 ? '12px' : '';
@@ -1442,7 +1776,10 @@
 
   startBtn.addEventListener('click', function(){ startSession(false); });
   bonusBtn.addEventListener('click', function(){ startSession(true, null); });
-  doneBonusBtn.addEventListener('click', function(){ startSession(true, state.today.focusTable); });
+  doneBonusBtn.addEventListener('click', function(){ startSession(true, state.today.focusTable, state.today.mode); });
+  hundredsBtn.addEventListener('click', function(){ startSession(state.today.completed, null, 'hundreds'); });
+  termsBtn.addEventListener('click', function(){ startSession(state.today.completed, null, 'terms'); });
+  riddlesBtn.addEventListener('click', function(){ startSession(state.today.completed, null, 'riddles'); });
   tablePracticeBtn.addEventListener('click', function(){
     practiceTableGrid.innerHTML = '';
     configuredTables().forEach(function(table){
@@ -2980,7 +3317,8 @@
     ensureFactPool();
     state.today.newFactKeys = [];
     state.today.focusTable = null;
-    state.today.queue = buildQueue(tasks, null);
+    state.today.mode = 'mixed';
+    state.today.queue = buildQueue(tasks, null, 'mixed');
     state.today.index = 0;
     state.today.correct = 0;
     state.today.completed = false;

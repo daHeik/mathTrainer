@@ -92,6 +92,20 @@ When changing persisted data:
 The parental PIN is a local UI guard, not a security boundary. Do not describe
 browser-local data or the PIN as secure storage.
 
+Additional learning modes use `today.mode`: `hundreds`, `terms`, and `riddles`;
+legacy rounds normalize to `mixed` or `table`. Hundreds skills use `h:m:` and
+`h:d:` keys with separate records in `fact.hundreds`; they cover all 1..10
+families, including division regardless of the mixed-round division toggle.
+Term skills use `t:` keys and `profile.termSkills`; riddle skills use `r:` keys
+and `profile.riddleSkills`. Include these records in reward totals and backups.
+Text answers always use choices; numeric answers honor the configured input
+mode and support four digits. Repeat from the completion screen preserves the
+mode; the home mixed-round button starts `mixed`.
+
+Run `node tests/learning-modes.test.js` to check generation, answer handling,
+retries, reward totals, migrations, replay and completion without external
+dependencies. The DOM stand-in does not replace a visual mobile/browser check.
+
 ## Offline behavior
 
 `sw.js` uses a network-first strategy and falls back to cached assets or

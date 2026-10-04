@@ -44,6 +44,26 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 - Konfigurierbare Begrenzung neuer Aufgaben pro Runde; bekannte Wiederholungen
   haben Vorrang, neue Aufgaben werden innerhalb der Runde erneut abgefragt und
   die nächste Runde führt weitere neue Aufgaben ein
+- Drei zusätzliche Lernmodi auf der Startseite:
+  - „Rechnen mit 100ern“: alle Aufgabenfamilien des kleinen Einmaleins von
+    1 bis 10 mit Zehnerzahlen, z.B. `70 × 7 = 490` und `210 ÷ 30 = 7`.
+    Multiplikation und Division sind in diesem Modus direkt verfügbar;
+    Ergebnisse können bis 1000 reichen. Auswahlantworten enthalten auch typische
+    Zehnerfehler, z.B. `90` statt `9` bei `450 ÷ 50` oder eine fehlende Null
+    bei Multiplikationen.
+  - „Rechenbegriffe lernen“: Rechenarten erkennen (Addition, Subtraktion,
+    Multiplikation, Division) und Textaufgaben zu Summe, Differenz, Produkt
+    und Quotient lösen. Antwortmöglichkeiten stammen aus den verschiedenen
+    Rechenarten mit denselben Zahlen; gleiche Ergebnisse erscheinen nur einmal.
+    Nahe gelegene falsche Ergebnisse ergänzen die Auswahl auf vier Antworten.
+    Die Rückmeldung verbindet die Begriffe mit der Rechnung.
+  - „Zahlenrätsel lösen“: zwei Rechenschritte in einer Textaufgabe verbinden,
+    z.B. „Addiere die Hälfte von 100 mit 20“. Die Rückmeldung erklärt beide Schritte.
+  Diese Modi nutzen die eingestellte Rundengröße und eigene Lernstände. Sie
+  zählen für Tagesabschluss, Serie und Belohnungen und bleiben in Sicherungen
+  erhalten. „Noch einmal“ wiederholt den gewählten Modus. Der gesamte Aufgabenpool
+  ist unabhängig von der Reihenauswahl der gemischten Runden verfügbar;
+  das Limit neuer Aufgaben gilt hier nicht.
 - Adaptive Wiederholung: schnelle richtige Antworten -> längere Pause bis zur
   nächsten Wiederholung; falsche/langsame Antworten -> kommen bald wieder;
   pro Runde wird eine ältere, überfällige Aufgabe aus einer höheren Lernstufe
@@ -64,8 +84,13 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   Rundenumfang, neue Aufgaben und Belohnungsfortschritt. Sobald mindestens eine
   Geteiltaufgabe freigeschaltet ist, enthält jede neu gestartete Runde eine
   Divisionsaufgabe
-- Belohnungen: Sticker pro geübtem Tag, Abzeichen für Serien-Meilensteine,
+- Belohnungen: Sticker pro geübtem Tag (zuerst noch nicht gesammelte, danach
+  möglichst gleichmäßig verteilt und ohne direkte Wiederholung), Abzeichen für Serien-Meilensteine,
   Konfetti und Soundeffekte (abschaltbar)
+- Bereits gesammelte doppelte Sticker werden beim Laden oder Sicherungsimport
+  durch noch fehlende Motive ersetzt; Anzahl und Sammeltage bleiben erhalten.
+  Es gibt 80 verschiedene Motive; erst bei mehr als 80 Stickern sind
+  Wiederholungen unvermeidbar.
 - Drei Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel und Turmbauer. Die benötigte
   Anzahl richtiger Antworten pro Spiel ist im Eltern-Bereich konfigurierbar
   (Standard: 10); die Startseite zeigt, wie viele richtige Antworten bis zum
