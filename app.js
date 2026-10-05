@@ -1218,6 +1218,7 @@
   var questionText = document.getElementById('questionText');
   var choicesWrap = document.getElementById('choicesWrap');
   var feedbackText = document.getElementById('feedbackText');
+  var abortSessionBtn = document.getElementById('abortSessionBtn');
 
   var doneSubtitle = document.getElementById('doneSubtitle');
   var doneStreakVal = document.getElementById('doneStreakVal');
@@ -1334,6 +1335,7 @@
   var questionStartTime = 0;
   var answering = false;
   var sessionRewardUnlocks = 0;
+  var sessionRevision = 0;
   var questionExplanation = '';
   var rewardGameChoiceOrigin = null;
 
@@ -1345,7 +1347,8 @@
     el.classList.add('active');
     var gameOpen = el === screenGameChoice || el === screenGame || el === screenFlappy || el === screenTower;
     gearBtn.style.display = gameOpen ? 'none' : '';
-    if (gameOpen) profileBtn.style.display = 'none';
+    abortSessionBtn.style.display = el === screenQuestion ? '' : 'none';
+    if (gameOpen || el === screenQuestion) profileBtn.style.display = 'none';
     window.scrollTo(0, 0);
   }
 
@@ -1450,6 +1453,7 @@
   }
 
   function startSession(bonus, focusTable, mode){
+    sessionRevision++;
     sessionRewardUnlocks = 0;
     var selectedTable = parseInt(focusTable, 10);
     var focused = configuredTables().indexOf(selectedTable) !== -1;
@@ -1466,6 +1470,24 @@
     }
     showScreen(screenQuestion);
     renderQuestion();
+  }
+
+  function abortSession(){
+    // Answers and rewards are saved immediately in onAnswer(). Only discard
+    // the unfinished round, never its learning records or earned rewards.
+    sessionRevision++;
+    answering = false;
+    awaitTap = false;
+    state.today.index = 0;
+    state.today.correct = 0;
+    state.today.bonus = false;
+    state.today.mode = 'mixed';
+    state.today.focusTable = null;
+    state.today.requeueCounts = {};
+    state.today.newFactKeys = [];
+    state.today.queue = buildQueue(state.config.tasksPerDay, null, 'mixed');
+    saveState();
+    renderHome();
   }
 
   function renderProgressDots(){
@@ -1649,10 +1671,15 @@
     state.today.index++;
     saveState();
 
+    var answerRevision = sessionRevision;
     if (isCorrect){
-      setTimeout(function(){ renderQuestion(); }, questionExplanation ? 4500 : (newlyMastered ? 2400 : CORRECT_ADVANCE_DELAY_MS));
+      setTimeout(function(){
+        if (answerRevision === sessionRevision) renderQuestion();
+      }, questionExplanation ? 4500 : (newlyMastered ? 2400 : CORRECT_ADVANCE_DELAY_MS));
     } else {
-      setTimeout(function(){ awaitTap = true; }, WRONG_TAP_DELAY_MS);
+      setTimeout(function(){
+        if (answerRevision === sessionRevision) awaitTap = true;
+      }, WRONG_TAP_DELAY_MS);
     }
   }
 
@@ -1767,7 +1794,7 @@
   var awaitTap = false;
   function tapAdvance(e){
     if (!awaitTap) return;
-    if (e.target.closest && e.target.closest('.gear-btn, .modal-overlay')) return;
+    if (e.target.closest && e.target.closest('.gear-btn, .modal-overlay, #abortSessionBtn')) return;
     awaitTap = false;
     renderQuestion();
   }
@@ -1775,6 +1802,7 @@
   document.addEventListener('touchstart', tapAdvance, { passive: true });
 
   startBtn.addEventListener('click', function(){ startSession(false); });
+  abortSessionBtn.addEventListener('click', abortSession);
   bonusBtn.addEventListener('click', function(){ startSession(true, null); });
   doneBonusBtn.addEventListener('click', function(){ startSession(true, state.today.focusTable, state.today.mode); });
   hundredsBtn.addEventListener('click', function(){ startSession(state.today.completed, null, 'hundreds'); });

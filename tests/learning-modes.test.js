@@ -65,6 +65,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'correctAnswersForProfile:correctAnswersForProfile, startSession:startSession,',
   'renderQuestion:renderQuestion, onAnswer:onAnswer, finishSession:finishSession,',
   'refreshDailySessionIfNeeded:refreshDailySessionIfNeeded, repeatRoundLabel:repeatRoundLabel,',
+  'tapAdvance:tapAdvance,',
   'pickNextSticker:pickNextSticker, stickerPool:STICKER_POOL,',
   'getState:function(){ return state; },',
   'setState:function(profile){ state = profile; root.profiles[root.activeProfileId] = profile; }',
@@ -221,6 +222,66 @@ assert.strictEqual(restored.stickers.length, 1);
 elements.bonusBtn.events.click();
 assert.strictEqual(restored.today.mode, 'mixed');
 assert.strictEqual(restored.today.focusTable, null);
+
+// Aborting any mode preserves answered work and rewards, but not completion.
+['mixed', 'table', 'hundreds', 'terms', 'riddles'].forEach(function(mode){
+  var interrupted = api.defaultProfile();
+  interrupted.config.sound = false;
+  interrupted.config.tasksPerDay = 10;
+  interrupted.config.rewardEvery = 2;
+  api.normalizeProfile(interrupted);
+  api.setState(interrupted);
+  api.ensureFactPool();
+  elements.doneHomeBtn.events.click();
+  api.startSession(false, mode === 'table' ? 3 : null, mode);
+  assert.strictEqual(elements.abortSessionBtn.style.display, '');
+  assert.strictEqual(elements.profileBtn.style.display, 'none');
+  timers.length = 0;
+  for (var answered = 0; answered < 2; answered++){
+    var answer = elements.choicesWrap.children[0].dataset.answer;
+    api.onAnswer(interrupted.today.queue[interrupted.today.index], answer, answer, null, false, 'Test');
+    if (answered === 0) timers.shift()();
+  }
+  assert.strictEqual(api.correctAnswersForProfile(interrupted), 2);
+  assert.strictEqual(interrupted.reward.availablePlays, 1);
+  var historyBefore = JSON.stringify(interrupted.history);
+  var pendingFeedback = timers.splice(0);
+  elements.abortSessionBtn.events.click();
+  assert(elements['screen-home'].classList.contains('active'));
+  assert.strictEqual(elements.abortSessionBtn.style.display, 'none');
+  assert.strictEqual(api.correctAnswersForProfile(interrupted), 2);
+  assert.strictEqual(JSON.stringify(interrupted.history), historyBefore);
+  assert.strictEqual(interrupted.reward.availablePlays, 1);
+  assert.strictEqual(interrupted.today.completed, false);
+  assert.strictEqual(interrupted.stickers.length, 0);
+  assert.strictEqual(interrupted.streak, 0);
+  assert.strictEqual(interrupted.today.index, 0);
+  assert.strictEqual(interrupted.today.mode, 'mixed');
+  var savedRoot = JSON.parse(storage.km_1x1_trainer_v2);
+  assert.strictEqual(savedRoot.profiles[savedRoot.activeProfileId].reward.availablePlays, 1);
+  pendingFeedback.forEach(function(callback){ callback(); });
+  assert(elements['screen-home'].classList.contains('active'));
+  api.startSession(false);
+  var newQuestion = elements.questionText.textContent;
+  pendingFeedback.forEach(function(callback){ callback(); });
+  assert.strictEqual(elements.questionText.textContent, newQuestion);
+  assert.strictEqual(interrupted.today.index, 0);
+  timers.length = 0;
+  api.onAnswer(interrupted.today.queue[0], -1, 25, null, false, 'Test');
+  var wrongHistory = JSON.stringify(interrupted.history);
+  var wrongFeedback = timers.splice(0);
+  elements.abortSessionBtn.events.click();
+  wrongFeedback.forEach(function(callback){ callback(); });
+  api.tapAdvance({ target:{} });
+  assert(elements['screen-home'].classList.contains('active'));
+  assert.strictEqual(JSON.stringify(interrupted.history), wrongHistory);
+  // Aborting a bonus round must not undo a previously completed day.
+  interrupted.today.completed = true;
+  api.startSession(true, null, mode === 'table' ? 'mixed' : mode);
+  elements.abortSessionBtn.events.click();
+  assert.strictEqual(interrupted.today.completed, true);
+  assert.strictEqual(interrupted.reward.availablePlays, 1);
+});
 
 // An album fills before repeats; subsequent awards are balanced and never
 // repeat the preceding sticker. Existing albums are used without modification.

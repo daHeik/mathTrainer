@@ -91,6 +91,10 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   durch noch fehlende Motive ersetzt; Anzahl und Sammeltage bleiben erhalten.
   Es gibt 80 verschiedene Motive; erst bei mehr als 80 Stickern sind
   Wiederholungen unvermeidbar.
+- Laufende Rechenrunden können abgebrochen werden. Bereits beantwortete Aufgaben
+  bleiben in Lernstand und Statistik, freigeschaltete Belohnungsspiele bleiben
+  verfügbar. Ein Abbruch zählt nicht als Rundenabschluss für Sticker und Serie;
+  die nächste Runde beginnt neu.
 - Drei Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel und Turmbauer. Die benötigte
   Anzahl richtiger Antworten pro Spiel ist im Eltern-Bereich konfigurierbar
   (Standard: 10); die Startseite zeigt, wie viele richtige Antworten bis zum

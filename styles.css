@@ -235,6 +235,11 @@
     z-index:50;
   }
   .gear-btn:active{ transform:scale(0.92); }
+  .round-back-btn{
+    left:14px;
+    right:auto;
+    font-size:1.6rem;
+  }
 
   .profile-btn{
     position:fixed;
