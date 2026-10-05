@@ -59,6 +59,9 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
     Die Rückmeldung verbindet die Begriffe mit der Rechnung.
   - „Zahlenrätsel lösen“: zwei Rechenschritte in einer Textaufgabe verbinden,
     z.B. „Addiere die Hälfte von 100 mit 20“. Die Rückmeldung erklärt beide Schritte.
+    Falsche Auswahlantworten bilden typische Fehler ab, etwa einen ausgelassenen
+    Schritt oder eine falsch angewandte Verdopplung/Halbierung. Die Auswahl
+    enthält immer vier unterschiedliche, nichtnegative ganze Zahlen.
   Diese Modi nutzen die eingestellte Rundengröße und eigene Lernstände. Sie
   zählen für Tagesabschluss, Serie und Belohnungen und bleiben in Sicherungen
   erhalten. „Noch einmal“ wiederholt den gewählten Modus. Der gesamte Aufgabenpool

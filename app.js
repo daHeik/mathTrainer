@@ -1076,14 +1076,34 @@
     return { prompt:prompt, gen:operationChoices(a, b, correct), explanation:explanation };
   }
 
+  function riddleChoices(correct, mistakes){
+    var options = [correct];
+    mistakes.forEach(function(value){
+      if (options.length < 4 && value >= 0 && value % 1 === 0 && options.indexOf(value) === -1){
+        options.push(value);
+      }
+    });
+    // Coinciding or negative error results need distinct, nearby fillers.
+    var step = correct % 10 === 0 ? 10 : 5;
+    for (var distance = 1; options.length < 4; distance++){
+      [correct - distance * step, correct + distance * step].forEach(function(value){
+        if (options.length < 4 && value >= 0 && options.indexOf(value) === -1) options.push(value);
+      });
+    }
+    return { correct:correct, options:shuffle(options) };
+  }
+
   function riddleQuestion(type){
     var a = (Math.floor(Math.random() * 9) + 2) * 10;
     var b = (Math.floor(Math.random() * 5) + 1) * 10;
-    var intermediate, correct, prompt, explanation;
+    var intermediate, correct, prompt, explanation, mistakes;
     if (type === 'halfAdd' || type === 'halfSubtract'){
       intermediate = a / 2;
       if (type === 'halfSubtract') b = Math.min(b, intermediate);
       correct = type === 'halfAdd' ? intermediate + b : intermediate - b;
+      mistakes = type === 'halfAdd'
+        ? [a + b, (a + b) / 2, intermediate, intermediate - b]
+        : [a - b, (a - b) / 2, intermediate, intermediate + b];
       prompt = type === 'halfAdd'
         ? 'Addiere die Hälfte von ' + a + ' mit ' + b + '.'
         : 'Ziehe ' + b + ' von der Hälfte von ' + a + ' ab.';
@@ -1093,6 +1113,9 @@
       intermediate = a * 2;
       if (type === 'doubleSubtract') b = Math.min(b, intermediate);
       correct = type === 'doubleAdd' ? intermediate + b : intermediate - b;
+      mistakes = type === 'doubleAdd'
+        ? [a + b, (a + b) * 2, intermediate, intermediate - b]
+        : [a - b, (a - b) * 2, intermediate, intermediate + b];
       prompt = type === 'doubleAdd'
         ? 'Meine Zahl ist die Summe aus dem Doppelten von ' + a + ' und ' + b + '.'
         : 'Subtrahiere ' + b + ' vom Doppelten von ' + a + '.';
@@ -1101,6 +1124,7 @@
     } else if (type === 'sumDouble'){
       intermediate = a + b;
       correct = intermediate * 2;
+      mistakes = [a * 2 + b, a * 2 - b, intermediate, a + b * 2];
       prompt = 'Verdopple die Summe aus ' + a + ' und ' + b + '.';
       explanation = a + ' + ' + b + ' = ' + intermediate + '. Das Doppelte davon ist ' + correct + '.';
     } else if (type === 'differenceHalf'){
@@ -1108,6 +1132,7 @@
       var large = Math.max(a, b); b = Math.min(a, b); a = large;
       intermediate = a - b;
       correct = intermediate / 2;
+      mistakes = [intermediate, a / 2 - b, a - b / 2, (a + b) / 2];
       prompt = 'Halbiere die Differenz aus ' + a + ' und ' + b + '.';
       explanation = a + ' − ' + b + ' = ' + intermediate + '. Die Hälfte davon ist ' + correct + '.';
     } else {
@@ -1118,12 +1143,15 @@
         ? 'Addiere zum Produkt aus ' + a + ' und ' + factor + ' die Zahl ' + b + '.'
         : 'Addiere zum Quotienten aus ' + (a * factor) + ' und ' + a + ' die Zahl ' + b + '.';
       correct = intermediate + b;
+      mistakes = type === 'productAdd'
+        ? [a + factor + b, a * (factor + b), intermediate, intermediate - b]
+        : [a * factor + b, (a * factor) / (a + b), intermediate, intermediate - b, intermediate * b];
       explanation = type === 'productAdd'
         ? a + ' × ' + factor + ' = ' + intermediate + '.'
         : (a * factor) + ' ÷ ' + a + ' = ' + intermediate + '.';
       explanation += ' Dann: ' + intermediate + ' + ' + b + ' = ' + correct + '.';
     }
-    return { prompt:prompt, gen:numericChoices(correct, 5), explanation:explanation };
+    return { prompt:prompt, gen:riddleChoices(correct, mistakes), explanation:explanation };
   }
 
   // ---------- Confetti ----------

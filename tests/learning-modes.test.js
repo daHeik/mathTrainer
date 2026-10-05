@@ -115,6 +115,9 @@ assert.strictEqual(api.practiceSkill('h:invalid:3x7'), null);
       }
       if (mode === 'riddles') assert(question.explanation.indexOf(String(question.gen.correct)) !== -1);
       if (mode === 'riddles'){
+        question.gen.options.forEach(function(value){
+          assert(Number.isInteger(value) && value >= 0);
+        });
         var values = question.prompt.match(/\d+/g).map(Number);
         var expectedRiddle;
         switch (skill.riddleType){
@@ -160,6 +163,10 @@ randomValues = [0.9, 0.2];
 var example = api.specialQuestion(api.practiceSkill('r:halfAdd'));
 assert.strictEqual(example.prompt, 'Addiere die Hälfte von 100 mit 20.');
 assert.strictEqual(example.gen.correct, 70);
+randomValues = [0.23, 0];
+example = api.specialQuestion(api.practiceSkill('r:sumDouble'));
+assert.strictEqual(example.prompt, 'Verdopple die Summe aus 40 und 10.');
+assert.deepStrictEqual(Array.from(example.gen.options).sort(function(a, b){ return a - b; }), [50, 70, 90, 100]);
 randomValues = [0, 0.4];
 example = api.specialQuestion(api.practiceSkill('r:doubleAdd'));
 assert.strictEqual(example.prompt, 'Meine Zahl ist die Summe aus dem Doppelten von 20 und 30.');
