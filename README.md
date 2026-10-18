@@ -20,7 +20,8 @@ Die App kommt ohne Werbung, Benutzerkonto, Tracker oder Telemetrie aus. Sie
 überträgt selbst keine Lernstände oder Profildaten an einen Server.
 
 Die Oberfläche liegt in `index.html`, das Styling in `styles.css` und die
-Anwendungs- und Spiellogik in `app.js`. `flappy.html` und `tower.html` sind
+Anwendungs- und Spiellogik in `app.js`. `flappy.html`, `tower.html`,
+`gravity.html`, `brick.html`, `snake.html` und `snow.html` sind
 kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 öffnen. Dadurch gibt es keine doppelte Spiellogik.
 
@@ -44,7 +45,7 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 - Konfigurierbare Begrenzung neuer Aufgaben pro Runde; bekannte Wiederholungen
   haben Vorrang, neue Aufgaben werden innerhalb der Runde erneut abgefragt und
   die nächste Runde führt weitere neue Aufgaben ein
-- Drei zusätzliche Lernmodi auf der Startseite:
+- Vier zusätzliche Lernmodi auf der Startseite:
   - „Rechnen mit 100ern“: alle Aufgabenfamilien des kleinen Einmaleins von
     1 bis 10 mit Zehnerzahlen, z.B. `70 × 7 = 490` und `210 ÷ 30 = 7`.
     Multiplikation und Division sind in diesem Modus direkt verfügbar;
@@ -62,6 +63,22 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
     Falsche Auswahlantworten bilden typische Fehler ab, etwa einen ausgelassenen
     Schritt oder eine falsch angewandte Verdopplung/Halbierung. Die Auswahl
     enthält immer vier unterschiedliche, nichtnegative ganze Zahlen.
+  - „Schriftlich dividieren“: dreistellige Zahlen durch 2 bis 9 ohne Rest,
+    unabhängig von der Reihenauswahl. Die Maske hat genau zwei Teilrechnungen
+    bei zweistelligem Ergebnis und drei bei dreistelligem Ergebnis. Beispiel:
+    `232 : 4` wird in `200 : 4 = 50` und `32 : 4 = 8` zerlegt. Eine Nullstelle
+    erhält ihre eigene Zeile `0 : 4 = 0`. Die Zahlen und Teilergebnisse werden
+    selbst eingegeben. Jede Zahl hat drei einzelne, senkrecht ausgerichtete
+    Stellenfelder mit `?` als Platzhalter. Jede Ziffer führt automatisch zur
+    nächsten Stelle; leere Felder zählen als 0 (`?32` ist 32, `32?` ist 320).
+    Enter/Weiter überspringt eine leere Stelle, Rücktaste im leeren Feld geht
+    zur vorherigen Stelle. Nach jeder geprüften Zeile geht der Fokus weiter,
+    danach zum Gesamtergebnis oben. Die Eingabe beginnt automatisch links im
+    ersten Feld der ersten Teilrechnung. Es wird immer die Zahleneingabe
+    verwendet, unabhängig vom Multiple-Choice-/Adaptiv-Schalter. Eine Aufgabe
+    zählt nach Eingabe des Gesamtergebnisses einmal für Statistik und Belohnungen;
+    Teilrechnungen können vorher korrigiert werden. Lernstände werden getrennt
+    nach Divisor und zwei-/dreistelligem Ergebnis gespeichert.
   Diese Modi nutzen die eingestellte Rundengröße und eigene Lernstände. Sie
   zählen für Tagesabschluss, Serie und Belohnungen und bleiben in Sicherungen
   erhalten. „Noch einmal“ wiederholt den gewählten Modus. Der gesamte Aufgabenpool
@@ -78,7 +95,11 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 - Antwort-Modus wählbar: Multiple-Choice, Eintippen per Ziffernblock oder
   adaptiv (neue Aufgaben antippen, ab Lernstufe 2 frei eintippen); bei
   eingetippten Antworten werden für die Lernstufen-Bewertung zwei Sekunden
-  Eingabezeit abgezogen
+  Eingabezeit abgezogen. Das gilt auch für Hunderter-Aufgaben und alle
+  Zahlenrätsel. Diese nutzen ihre eigenen Lernstände: Hunderteraufgaben je
+  Aufgabenfamilie und Rechenart, Zahlenrätsel je Rätseltyp. Die Umschaltung
+  setzt Lernstufe 2 voraus, nicht nur eine bestimmte Gesamtzahl richtiger
+  Antworten; sehr langsame Antworten erhöhen die Lernstufe nicht.
 - Optionale Lückenaufgaben (7 × ▢ = 56)
 - Optionales Divisionstraining: Eltern können Division pro Profil aktivieren;
   zu einer Malaufgabe werden ab Lernstufe 4 die beiden passenden exakten
@@ -98,13 +119,14 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   bleiben in Lernstand und Statistik, freigeschaltete Belohnungsspiele bleiben
   verfügbar. Ein Abbruch zählt nicht als Rundenabschluss für Sticker und Serie;
   die nächste Runde beginnt neu.
-- Drei Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel und Turmbauer. Die benötigte
+- Sieben Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel, Turmbauer,
+  Gravity Run, Bricks, Cleo und Schneefahrt. Die benötigte
   Anzahl richtiger Antworten pro Spiel ist im Eltern-Bereich konfigurierbar
   (Standard: 10); die Startseite zeigt, wie viele richtige Antworten bis zum
-  nächsten Spiel fehlen; nach 2 Minuten startet
-  kein neuer Versuch mehr, ein bereits laufender Versuch darf noch bis zum
-  nächsten Zusammenstoß fertiggespielt werden; spätestens nach 3 Versuchen ist
-  Schluss; riskant platzierte Sterne, Combo-Multiplikatoren, fünf Sekunden
+  nächsten Spiel fehlen. Spiele enden nach höchstens drei aktiven Minuten;
+  Pausen, Wartezeit vor Versuchen und ausgeblendete Ansichten zählen nicht mit.
+  Drei Fehlversuche beenden das Spiel (Dino kann einen Bonusversuch sammeln).
+  Beim Dino sorgen riskant platzierte Sterne, Combo-Multiplikatoren, fünf Sekunden
   Super-Dino nach jeweils drei Sternen, seltene Bonus-Versuch-Eier und ein
   persönlicher Punkterekord sorgen für Abwechslung; das Spiel wird in sechs
   Stufen zunehmend schneller und mischt unregelmäßige Abstände, kurze
@@ -116,6 +138,21 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   zum Ausprobieren auch direkt über `flappy.html` gestartet werden
 - Turmbauer mit Ein-Tipp-Steuerung, schneller werdenden Bausteinen, perfekten
   Platzierungen und eigenem Punkterekord; direkt über `tower.html` spielbar
+- Gravity Run: per Tipp zwischen Boden und Decke wechseln, Hindernissen ausweichen
+  und Extras sammeln; Bricks: Ball und direkt per Finger/Maus steuerbarer Schläger,
+  mehrere Steinbilder und Extras; Cleo: Regenbogenraupe mit umlaufenden Rändern,
+  Richtungskreuz, Wischsteuerung und Bomben; Schneefahrt: Snowboard-Runner mit
+  Sprüngen, Saltos, Grinds, Boosts und Verfolger. Alle Spiele speichern Rekorde
+  pro Profil und verbrauchen erst beim ersten Spielzug ein Kontingent.
+- Helle App-Oberfläche aus dem Vocabulator mit SVG-Symbolen und den Bereichen
+  Lernen, Spiele und Statistik: unten eine Tab-Leiste, auf breiten Ansichten
+  eine Seitenleiste. Lernrunden blenden die Navigation aus; Spiele öffnen
+  bildschirmfüllend mit Pause- und optionaler Browser-Vollbildtaste. Safe Areas,
+  Hoch-/Querformat und verfügbare Fensterhöhe werden berücksichtigt.
+- Statistik zeigt beantwortete Aufgaben heute, letzte sieben Tage und insgesamt
+  sowie gespielte Spiele. Die Spielzählung beginnt ab diesem Update mit sichtbarem
+  Startdatum; alte Rekorde und unverbrauchte Kontingente bleiben erhalten.
+  Sticker und Erfolge sind über den Statistikbereich erreichbar.
 - Mehrere Kind-Profile mit getrenntem Fortschritt
 - Eltern-Bereich (Zahnrad oben rechts, PIN-geschützt): Zahlenbereich,
   Reihen, neue und gesamte Aufgaben, richtige Antworten pro Belohnung,
@@ -171,7 +208,7 @@ sudo systemctl enable --now mathserver
 
 ```bash
 sudo apt install nginx
-sudo cp index.html styles.css app.js flappy.html tower.html manifest.json sw.js icon-192.png icon-512.png /var/www/html/
+sudo cp index.html styles.css app.js icons.svg flappy.html tower.html gravity.html brick.html snake.html snow.html manifest.json sw.js icon-192.png icon-512.png /var/www/html/
 ```
 
 Danach ist die Seite über `http://<pi-ip>/` erreichbar.

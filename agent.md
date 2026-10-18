@@ -14,8 +14,10 @@ static web server.
 
 - `index.html` contains the application markup.
 - `styles.css` contains the shared application styling.
+- `icons.svg` provides the local SVG symbol set (no external icon library).
 - `app.js` contains the trainer and reward-game logic.
-- `flappy.html` and `tower.html` are lightweight direct-play launchers that
+- `flappy.html`, `tower.html`, `gravity.html`, `brick.html`, `snake.html` and
+  `snow.html` are lightweight direct-play launchers that
   open the corresponding shared implementation in `index.html` demo mode.
 - `sw.js` provides network-first caching and offline fallback.
 - `manifest.json` contains the PWA metadata.
@@ -102,9 +104,34 @@ Text answers always use choices; numeric answers honor the configured input
 mode and support four digits. Repeat from the completion screen preserves the
 mode; the home mixed-round button starts `mixed`.
 
+Written place-value division uses mode `written` and keys `w:divisor:digits`
+(divisors 2..9, result digits 2 or 3). Its 16 records live in
+`profile.writtenSkills`, with history operation `writtenDivide`. Include them
+in reward totals and backups. Tasks have exact integer quotients and dividends
+100..999. Split the quotient by decimal place, multiply each contribution by
+the divisor, and keep zero-place rows to meet the exact 2/3-row requirement.
+The dedicated native-input form always starts focused at the first chunk's
+left edge, validates rows in order, then enables the total at the top. Count
+the whole exercise once on its final answer, not individual intermediate rows.
+Every number has three separate H/T/U digit cells with `?` placeholders and
+empty cells interpreted as zero, never silently right-aligned. Top and working
+rows share `.written-equation` and identical grid/padding/border geometry.
+Typing advances a cell; Enter skips blank zeros; the last cell validates the
+row/total automatically. Backspace on an empty cell goes to the previous one.
+
 Run `node tests/learning-modes.test.js` to check generation, answer handling,
 retries, reward totals, migrations, replay and completion without external
 dependencies. The DOM stand-in does not replace a visual mobile/browser check.
+
+The light app shell and seven games were ported from sibling `vocuabulator`
+(MIT, source commit `22da147`, UI 28). Navigation uses Learn/Games/Statistics;
+math learning records and storage keys stay unchanged. Games consume a play
+on their first move, not selection. All games use active simulation time with
+a three-minute cap and pause/hidden-view suspension. New record keys and game
+counts are normalized for old backups. `gamesPlayed` starts at zero on migration
+with `gamesTrackedSince`; never infer historical counts from earned rewards.
+Run `node tests/offline.test.js` for the cached asset graph and open
+`tests/layout-preview.html` for narrow portrait/landscape visual checks.
 
 ## Offline behavior
 

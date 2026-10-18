@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#6c5ce7">
+<meta name="theme-color" content="#f2f2f7">
 <link rel="manifest" href="manifest.json">
 <title>1×1 Trainer</title>
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -15,10 +15,11 @@
 </head>
 <body>
 
-<button class="gear-btn" id="gearBtn" title="Eltern-Bereich" aria-label="Einstellungen">⚙️</button>
-<button class="gear-btn round-back-btn" id="abortSessionBtn" type="button" style="display:none;" title="Runde abbrechen und zurück zur Startseite" aria-label="Runde abbrechen und zurück zur Startseite">←</button>
-<button class="profile-btn" id="profileBtn" style="display:none;" aria-label="Profil wechseln">👤</button>
+<header class="app-bar" id="appBar"><button class="gear-btn round-back-btn" id="abortSessionBtn" type="button" style="display:none;" title="Runde abbrechen und zurück zur Startseite" aria-label="Runde abbrechen und zurück zur Startseite"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#back"/></svg></button><div class="app-tools"><button class="gear-btn" id="gearBtn" title="Admin" aria-label="Admin öffnen"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#settings"/></svg><span>Admin</span></button>
 
+<button class="profile-btn" id="profileBtn" style="display:none;" aria-label="Profil wechseln"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#user"/></svg></button>
+
+</div></header>
 <div id="app">
   <div class="card">
 
@@ -27,26 +28,21 @@
       <h1 id="homeGreeting">1×1 Trainer</h1>
       <p class="subtitle" id="homeSubtitle">Übe dein kleines Einmaleins!</p>
 
-      <div class="stats-row">
-        <div class="stat-pill">
-          <div class="val" id="streakVal">0</div>
-          <div class="lbl">Tage Serie</div>
+      <div class="home-columns"><div><div class="learn-hero">
+        <button class="primary-btn" id="startBtn">Los geht's!</button>
+        <button class="primary-btn" id="bonusBtn" style="display:none;">Gemischte Runde spielen</button>
+        <div class="stats-row">
+          <div class="stat-pill"><div class="val" id="streakVal">0</div><div class="lbl">Tage Serie</div></div>
+          <div class="stat-pill"><div class="val" id="todayVal">0/5</div><div class="lbl">Heute</div></div>
         </div>
-        <div class="stat-pill">
-          <div class="val" id="todayVal">0/5</div>
-          <div class="lbl">Heute</div>
-        </div>
-      </div>
-
-      <button class="primary-btn" id="startBtn">Los geht's! 🚀</button>
-      <button class="primary-btn" id="bonusBtn" style="display:none;">Gemischte Runde spielen 🚀</button>
-      <button class="secondary-btn" id="tablePracticeBtn">Zahlenreihe auswählen 🔢</button>
-      <button class="primary-btn extra-round-btn" id="hundredsBtn">Rechnen mit 100ern 🔢</button>
-      <button class="primary-btn extra-round-btn" id="termsBtn">Rechenbegriffe lernen 💬</button>
-      <button class="primary-btn extra-round-btn" id="riddlesBtn">Zahlenrätsel lösen 🧩</button>
-      <button class="secondary-btn" id="rewardBtn" style="display:none;">Belohnungsspiel wählen 🎮</button>
-      <p class="reward-note" id="rewardNote"></p>
-      <button class="secondary-btn" id="stickersBtn">Meine Sticker 🏆</button>
+      </div><p class="reward-note" id="rewardNote"></p></div>
+      <div><h2 class="section-label">Gezielt üben</h2><div class="home-actions">
+        <button class="secondary-btn" id="tablePracticeBtn">Zahlenreihe auswählen</button>
+        <button class="primary-btn extra-round-btn" id="hundredsBtn">Rechnen mit 100ern</button>
+        <button class="primary-btn extra-round-btn" id="termsBtn">Rechenbegriffe lernen</button>
+        <button class="primary-btn extra-round-btn" id="riddlesBtn">Zahlenrätsel lösen</button>
+        <button class="primary-btn extra-round-btn" id="writtenBtn">Schriftlich dividieren</button>
+      </div></div></div>
     </div>
 
     <!-- TABLE PRACTICE CHOICE -->
@@ -54,7 +50,7 @@
       <h1>Zahlenreihe auswählen</h1>
       <p class="subtitle">Welche Reihe möchtest du heute gezielt üben? Die zweite Zahl kommt aus dem gesamten eingestellten Zahlenbereich.</p>
       <div class="practice-table-grid" id="practiceTableGrid"></div>
-      <button class="secondary-btn" id="tablePracticeBackBtn">Zurück 🏠</button>
+      <button class="secondary-btn" id="tablePracticeBackBtn">Zurück <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#home"/></svg></button>
     </div>
 
     <!-- QUESTION SCREEN -->
@@ -62,12 +58,28 @@
       <div class="progress-dots" id="progressDots"></div>
       <div class="question" id="questionText">7 × 8</div>
       <div class="choices" id="choicesWrap"></div>
+      <form id="writtenDivisionForm" class="written-division" autocomplete="off" hidden aria-label="Schriftlich dividieren mit Teilrechnungen"></form>
       <div class="feedback" id="feedbackText" role="status" aria-live="polite"></div>
     </div>
 
+<div class="screen" id="screen-statistics">
+<h1>Statistik</h1><p class="subtitle">Dein Rechnen wird mit jeder Runde sicherer.</p>
+<div class="statistics-layout"><div><dl class="statistics-grid">
+<div class="statistic"><dt>Aufgaben heute</dt><dd id="statToday">0</dd></div>
+<div class="statistic"><dt>Aufgaben · letzte 7 Tage</dt><dd id="statWeek">0</dd></div>
+<div class="statistic"><dt>Aufgaben insgesamt</dt><dd id="statTotal">0</dd></div>
+<div class="statistic"><dt>Gespielte Spiele</dt><dd id="statGames">0</dd><small id="statGamesSince"></small></div>
+</dl><p class="stat-count-note">Gezählt werden beantwortete Abfragen, einschließlich Wiederholungen.</p></div>
+<div><h2 class="section-label">Das hast du erreicht</h2><div class="statistics-links">
+<button class="secondary-btn" id="achievementsBtn"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#award"/></svg><span>Erfolge<small>Deine Lernserie und Abzeichen</small></span><span aria-hidden="true">›</span></button>
+<button class="secondary-btn" id="stickersBtn"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#award"/></svg><span>Meine Sticker<small>Dein Stickeralbum</small></span><span aria-hidden="true">›</span></button>
+</div></div></div></div>
+<div class="screen" id="screen-achievements"><h1>Erfolge</h1><p class="subtitle" id="achievementSummary"></p><div class="badge-row" id="achievementBadges"></div><button class="secondary-btn" id="achievementsBackBtn">Zur Statistik</button></div>
+
+
     <!-- SESSION COMPLETE SCREEN -->
     <div class="screen" id="screen-done">
-      <div class="big-emoji">🎉</div>
+      <div class="completion-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#complete"/></svg></div>
       <h1>Super gemacht!</h1>
       <p class="subtitle" id="doneSubtitle">Du hast alle Aufgaben für heute geschafft.</p>
       <div class="stats-row">
@@ -81,51 +93,58 @@
         </div>
       </div>
       <p class="subtitle" id="doneReward" style="display:none; margin:0 0 20px;"></p>
-      <button class="secondary-btn" id="doneRewardGameBtn" style="display:none;">Belohnungsspiel wählen 🎮</button>
-      <button class="primary-btn" id="doneBonusBtn">Noch einmal 🔁</button>
-      <button class="secondary-btn" id="doneHomeBtn">Fertig für heute 🏁</button>
+      <button class="secondary-btn" id="doneRewardGameBtn" style="display:none;">Belohnungsspiel wählen <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#game"/></svg></button>
+      <button class="primary-btn" id="doneBonusBtn">Noch einmal <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#retry"/></svg></button>
+      <button class="secondary-btn" id="doneHomeBtn">Fertig für heute <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#complete"/></svg></button>
     </div>
 
     <!-- STICKER ALBUM SCREEN -->
     <div class="screen" id="screen-stickers">
-      <h1>Meine Sticker 🏆</h1>
+      <h1>Meine Sticker <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#award"/></svg></h1>
       <p class="subtitle" id="stickerCountLine"></p>
       <div class="badge-row" id="badgeRow"></div>
       <div class="sticker-grid" id="stickerGrid"></div>
-      <button class="secondary-btn" id="stickersBackBtn">Zurück 🏠</button>
+      <button class="secondary-btn" id="stickersBackBtn">Zurück <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#home"/></svg></button>
     </div>
 
     <!-- REWARD GAME CHOICE -->
     <div class="screen" id="screen-game-choice">
-      <h1>Such dir ein Spiel aus! 🎮</h1>
-      <p class="subtitle">Ein freigeschaltetes Spiel wird erst beim ersten Spielzug eingelöst.</p>
+      <h1>Spiele <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#game"/></svg></h1>
+      <p class="subtitle">Deine Pause nach dem Lernen.</p><p class="game-availability" id="gameAvailability" role="status"></p><button class="secondary-btn" id="rewardBtn" style="display:none">Belohnungsspiel wählen</button>
       <div class="game-choice-grid">
         <button class="game-choice" id="chooseDinoBtn">
-          <span class="emoji">🦖</span>Dino-Sprung
+          <span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#dino"/></svg></span>Dino-Sprung
           <small>Spring über Hindernisse</small>
         </button>
         <button class="game-choice" id="chooseFlappyBtn">
-          <span class="emoji">🐤</span>Flattervogel
+          <span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#bird"/></svg></span>Flattervogel
           <small>Flieg durch die Röhren</small>
         </button>
         <button class="game-choice" id="chooseTowerBtn">
-          <span class="emoji">🏗️</span>Turmbauer
+          <span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#tower"/></svg></span>Turmbauer
           <small>Staple die Bausteine</small>
         </button>
+        <button class="game-choice" id="chooseGravityBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#gravity"/></svg></span>Gravity Run<small>Wechsle zwischen Boden und Decke</small></button>
+        <button class="game-choice" id="chooseBrickBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#brick"/></svg></span>Bricks<small>Räume die Steine mit Ball und Schläger ab</small></button>
+        <button class="game-choice" id="chooseSnakeBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#caterpillar"/></svg></span>Cleo<small>Lass deine Regenbogenraupe wachsen</small></button>
+        <button class="game-choice" id="chooseSnowBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#snowboard"/></svg></span>Schneefahrt<small>Springe und lande deine Saltos</small></button>
       </div>
-      <button class="secondary-btn" id="gameChoiceBackBtn">Zurück 🏠</button>
+      <button class="secondary-btn" id="gameChoiceBackBtn">Zurück <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#home"/></svg></button>
     </div>
 
     <!-- REWARD GAME SCREEN -->
     <div class="screen" id="screen-game">
-      <h1>Dino-Sprung 🦖</h1>
+      <div class="game-toolbar"><button class="secondary-btn" id="gameHomeBtn">Spiel beenden <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#home"/></svg></button><h1>Dino-Sprung <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#dino"/></svg></h1><button class="game-pause-btn" id="gamePauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="gameFullscreenBtn" aria-label="Bildschirmfüllende Spielansicht umschalten">Vollbild</button></div>
+
       <p class="subtitle">Spring über die Kakteen!</p>
+
+
       <div class="game-hud">
-        <span id="gameTime">2:00</span>
+        <span id="gameTime">3:00</span>
         <span id="gameAttempts">Versuche: 0/3</span>
         <span id="gameScore">Punkte: 0</span>
         <span id="gameLevel">Stufe: 1/6</span>
-        <span id="gameStars">⭐ 0 · Super 0/3</span>
+        <span id="gameStars">Sterne: 0 · Super 0/3</span>
         <span id="gameCombo">Combo ×1</span>
       </div>
       <div class="game-wrap" id="gameWrap">
@@ -138,15 +157,18 @@
       </div>
       <p class="game-help">Sammle Sterne über den Kakteen. Bei fliegenden Dinos bleibst du besser am Boden!</p>
       <button class="secondary-btn" id="gameAgainBtn" style="display:none;">Nochmal spielen (0 übrig)</button>
-      <button class="secondary-btn" id="gameHomeBtn">Spiel beenden 🏠</button>
+
     </div>
 
     <!-- FLAPPY REWARD GAME SCREEN -->
     <div class="screen" id="screen-flappy">
-      <h1>Flattervogel 🐤</h1>
+      <div class="game-toolbar"><button class="secondary-btn" id="flappyHomeBtn">Spiel beenden <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#home"/></svg></button><h1>Flattervogel <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#bird"/></svg></h1><button class="game-pause-btn" id="flappyPauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="flappyFullscreenBtn" aria-label="Bildschirmfüllende Spielansicht umschalten">Vollbild</button></div>
+
       <p class="subtitle">Flieg durch die Lücken!</p>
+
+
       <div class="game-hud">
-        <span id="flappyTime">2:00</span>
+        <span id="flappyTime">3:00</span>
         <span id="flappyAttempts">Versuch: 1/3</span>
         <span id="flappyScore">Punkte: 0</span>
         <span id="flappyBest">Rekord: 0</span>
@@ -161,15 +183,18 @@
       </div>
       <p class="game-help">Tippe, klicke oder drücke die Leertaste, damit der Vogel flattert.</p>
       <button class="secondary-btn" id="flappyAgainBtn" style="display:none;">Nochmal spielen (0 übrig)</button>
-      <button class="secondary-btn" id="flappyHomeBtn">Spiel beenden 🏠</button>
+
     </div>
 
     <!-- TOWER REWARD GAME SCREEN -->
     <div class="screen" id="screen-tower">
-      <h1>Turmbauer 🏗️</h1>
+      <div class="game-toolbar"><button class="secondary-btn" id="towerHomeBtn">Spiel beenden <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#home"/></svg></button><h1>Turmbauer <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#tower"/></svg></h1><button class="game-pause-btn" id="towerPauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="towerFullscreenBtn" aria-label="Bildschirmfüllende Spielansicht umschalten">Vollbild</button></div>
+
       <p class="subtitle">Staple den höchsten Turm!</p>
+
+
       <div class="game-hud">
-        <span id="towerTime">2:00</span>
+        <span id="towerTime">3:00</span>
         <span id="towerAttempts">Versuch: 1/3</span>
         <span id="towerScore">Punkte: 0</span>
         <span id="towerBest">Rekord: 0</span>
@@ -184,12 +209,80 @@
       </div>
       <p class="game-help">Tippe im richtigen Moment. Perfekte Treffer behalten die volle Breite!</p>
       <button class="secondary-btn" id="towerAgainBtn" style="display:none;">Nochmal spielen (0 übrig)</button>
-      <button class="secondary-btn" id="towerHomeBtn">Spiel beenden 🏠</button>
+
+    </div>
+
+    <div class="screen" id="screen-gravity">
+      <div class="game-toolbar"><button class="secondary-btn" id="gravityHomeBtn">Spiel beenden</button><h1>Gravity Run <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#gravity"/></svg></h1><button class="game-pause-btn" id="gravityPauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="gravityFullscreenBtn" aria-label="Bildschirmfüllende Spielansicht umschalten">Vollbild</button></div>
+
+      <p class="subtitle">Wechsle die Schwerkraft und meistere die Strecke!</p>
+
+
+      <div class="game-hud"><span id="gravityTime">3:00</span><span id="gravityAttempts">Versuch: 1/3</span><span id="gravityScore">Punkte: 0</span><span id="gravityBest">Rekord: 0</span><span id="gravityLevel">Stufe: 1/6</span><span id="gravityCoins">Münzen: 0</span></div>
+      <div class="game-wrap" id="gravityWrap" tabindex="0" role="button" aria-label="Tippen wechselt die Schwerkraft">
+        <canvas id="gravityCanvas" width="640" height="360" draggable="false" aria-label="Gravity Run: automatisch laufende Figur mit Hindernissen und Lücken"></canvas>
+        <div class="game-overlay" id="gravityOverlay" role="status" aria-live="polite" hidden><strong id="gravityOverlayTitle"></strong><span id="gravityOverlayText"></span></div>
+      </div>
+      <p class="game-help">Tippe zum Wechseln. Erst mit Boden unter den Füßen kannst du erneut wechseln. Münzen: +20 Punkte. Schild: 10 s Superman-Schutz.</p>
+      <button class="secondary-btn" id="gravityAgainBtn" style="display:none">Nochmal spielen</button>
+
+    </div>
+
+    <div class="screen" id="screen-brick">
+      <div class="game-toolbar"><button class="secondary-btn" id="brickHomeBtn">Spiel beenden</button><h1>Bricks</h1><button class="game-pause-btn" id="brickPauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="brickFullscreenBtn" aria-label="Bildschirmfüllende Spielansicht umschalten">Vollbild</button></div>
+      <p class="subtitle">Lass den Ball fliegen und räume alle Steine ab!</p>
+
+
+      <div class="game-hud"><span id="brickTime">3:00</span><span id="brickAttempts">Versuch: 1/3</span><span id="brickScore">Punkte: 0</span><span id="brickBest">Rekord: 0</span></div>
+      <div class="game-wrap" id="brickWrap" tabindex="0" aria-label="Bricks Spielfeld">
+        <canvas id="brickCanvas" width="480" height="480" draggable="false" aria-label="Bricks"></canvas>
+        <div class="game-overlay" id="brickOverlay" role="status" aria-live="polite" hidden><strong id="brickOverlayTitle"></strong><span id="brickOverlayText"></span></div>
+      </div>
+
+      <p class="game-help">Ziehe den Finger nach links und rechts: Der Schläger folgt direkt. ↔ macht ihn breiter, 3 bringt Mehrfachbälle.</p>
+      <button class="secondary-btn" id="brickAgainBtn" style="display:none">Nochmal spielen</button>
+
+    </div>
+
+    <div class="screen" id="screen-snake">
+      <div class="game-toolbar"><button class="secondary-btn" id="snakeHomeBtn">Spiel beenden</button><h1>Cleo</h1><button class="game-pause-btn" id="snakePauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="snakeFullscreenBtn" aria-label="Bildschirmfüllende Spielansicht umschalten">Vollbild</button></div>
+      <p class="subtitle">Sammle Äpfel mit deiner Regenbogenraupe – die Ränder führen zur anderen Seite!</p>
+
+
+      <div class="game-hud"><span id="snakeTime">3:00</span><span id="snakeAttempts">Versuch: 1/3</span><span id="snakeScore">Punkte: 0</span><span id="snakeBest">Rekord: 0</span></div>
+      <div class="game-wrap" id="snakeWrap" tabindex="0" aria-label="Cleo Spielfeld">
+        <canvas id="snakeCanvas" width="480" height="480" draggable="false" aria-label="Cleo: Regenbogenraupe mit umlaufenden Spielfeldrändern"></canvas>
+        <div class="game-overlay" id="snakeOverlay" role="status" aria-live="polite" hidden><strong id="snakeOverlayTitle"></strong><span id="snakeOverlayText"></span></div>
+      </div>
+      <div class="snake-controls" aria-label="Cleo-Steuerung"><button id="snakeUpBtn" aria-label="Nach oben"><span>↑</span></button><button id="snakeLeftBtn" aria-label="Nach links"><span>←</span></button><button id="snakeDownBtn" aria-label="Nach unten"><span>↓</span></button><button id="snakeRightBtn" aria-label="Nach rechts"><span>→</span></button></div>
+      <p class="game-help">Wische in die gewünschte Richtung oder nutze die vier Richtungstasten. Am Rechner funktionieren die Pfeiltasten.</p>
+      <button class="secondary-btn" id="snakeAgainBtn" style="display:none">Nochmal spielen</button>
+
+    </div>
+
+    <div class="screen" id="screen-snow">
+      <div class="game-toolbar"><button class="secondary-btn" id="snowHomeBtn">Spiel beenden</button><h1>Schneefahrt</h1><button class="game-pause-btn" id="snowPauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="snowFullscreenBtn">Vollbild</button></div>
+      <p class="subtitle">Steile Abfahrten, Girlanden-Grinds und Verfolgungsjagden!</p>
+
+
+      <div class="game-hud"><span id="snowTime">3:00</span><span id="snowAttempts">Versuch: 1/3</span><span id="snowScore">Punkte: 0</span><span id="snowBest">Rekord: 0</span></div>
+      <div class="game-wrap" id="snowWrap" tabindex="0" aria-label="Schneefahrt Spielfeld">
+        <canvas id="snowCanvas" width="640" height="360" aria-label="Snowboard-Spiel mit Bergen, Münzen und Saltos"></canvas>
+        <div class="game-overlay" id="snowOverlay" role="status" aria-live="polite" hidden><strong id="snowOverlayTitle"></strong><span id="snowOverlayText"></span></div>
+      </div>
+      <p class="game-help">Tippe zum Springen. Halte im Flug für einen Rückwärtssalto und lasse rechtzeitig los. Lande mit dem Board nach unten! Kombiniere Saltos und Grinds für Boosts. Dem Verfolger entkommst du mit Backflips.</p>
+      <button class="secondary-btn" id="snowAgainBtn" style="display:none">Nochmal spielen</button>
     </div>
 
   </div>
   <div class="footer-note">Tipp: Über „Zum Home-Bildschirm hinzufügen“ startet die App wie eine echte App.</div>
 </div>
+
+<nav class="app-navigation" id="appNavigation" aria-label="Hauptnavigation">
+<button id="navLearn" type="button" aria-current="page"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#book"/></svg><span>Lernen</span></button>
+<button id="navGames" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#game"/></svg><span>Spiele</span></button>
+<button id="navStatistics" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#statistics"/></svg><span>Statistik</span></button>
+</nav>
 
 <!-- PROFILE SWITCH MODAL -->
 <div class="modal-overlay" id="profileOverlay">

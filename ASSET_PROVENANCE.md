@@ -32,3 +32,15 @@ Sounddateien. Ihre Grafiken werden zur Laufzeit mit der Canvas-API gezeichnet;
 die Töne werden mit der Web-Audio-API erzeugt. Emojis und Systemschriften
 werden vom jeweiligen Betriebssystem bzw. Browser dargestellt und nicht mit
 diesem Repository ausgeliefert.
+
+## Oberfläche und Spielupdates aus Vocabulator
+
+Am 18. Oktober 2026 wurden die helle App-Oberfläche, `icons.svg` und die sieben
+Spielimplementierungen aus dem lokalen Schwesterprojekt `vocuabulator`
+übernommen (MIT, Copyright 2026 Heiko Hanickel). Die ursprünglichen drei Spiele
+stammen aus mathServer; Gravity Run, Bricks, Cleo und Schneefahrt wurden dort
+eigenständig ergänzt. Die SVG-Linienicons und Canvas-Grafiken sind eigene
+Geometrie, ohne externe Iconbibliotheken oder Originalassets anderer Spiele.
+Die Spielprinzipien von Gravity Run bzw. Schneefahrt wurden durch JindoBlu
+„2 Player Games“ bzw. Alto's Adventure inspiriert. Vokabel- oder Buchdaten
+wurden nicht übernommen. Das bestehende Mathe-App-Icon bleibt unverändert.
