@@ -109,7 +109,9 @@ Written place-value division uses mode `written` and keys `w:divisor:digits`
 `profile.writtenSkills`, with history operation `writtenDivide`. Include them
 in reward totals and backups. Tasks have exact integer quotients and dividends
 100..999. Split the quotient by decimal place, multiply each contribution by
-the divisor, and keep zero-place rows to meet the exact 2/3-row requirement.
+the divisor, and omit zero contributions: use 1..3 rows according to nonzero
+quotient digits, not dividend digits or total quotient length. For 848:8=106,
+accept exactly 800:8=100 and 48:8=6, with no intervening 0:8=0 row.
 The dedicated native-input form always starts focused at the first chunk's
 left edge, validates rows in order, then enables the total at the top. Count
 the whole exercise once on its final answer, not individual intermediate rows.

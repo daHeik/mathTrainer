@@ -64,10 +64,12 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
     Schritt oder eine falsch angewandte Verdopplung/Halbierung. Die Auswahl
     enthält immer vier unterschiedliche, nichtnegative ganze Zahlen.
   - „Schriftlich dividieren“: dreistellige Zahlen durch 2 bis 9 ohne Rest,
-    unabhängig von der Reihenauswahl. Die Maske hat genau zwei Teilrechnungen
-    bei zweistelligem Ergebnis und drei bei dreistelligem Ergebnis. Beispiel:
-    `232 : 4` wird in `200 : 4 = 50` und `32 : 4 = 8` zerlegt. Eine Nullstelle
-    erhält ihre eigene Zeile `0 : 4 = 0`. Die Zahlen und Teilergebnisse werden
+    unabhängig von der Reihenauswahl. Die Maske hat eine Teilrechnung pro
+    Ergebnisstelle ungleich 0, also höchstens drei. Beispiel:
+    `232 : 4` wird in `200 : 4 = 50` und `32 : 4 = 8` zerlegt.
+    `848 : 8 = 106` benötigt ebenfalls nur zwei Zeilen: `800 : 8 = 100`
+    und `48 : 8 = 6`; für die Null an der Zehnerstelle ist keine Zeile nötig.
+    Die Zahlen und Teilergebnisse werden
     selbst eingegeben. Jede Zahl hat drei einzelne, senkrecht ausgerichtete
     Stellenfelder mit `?` als Platzhalter. Jede Ziffer führt automatisch zur
     nächsten Stelle; leere Felder zählen als 0 (`?32` ist 32, `32?` ist 320).

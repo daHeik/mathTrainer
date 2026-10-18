@@ -551,7 +551,7 @@
     var steps = String(quotient).split('').map(function(digit, index, digits){
       var part = Number(digit) * Math.pow(10, digits.length - index - 1);
       return { dividend:part * skill.divisor, quotient:part };
-    });
+    }).filter(function(step){ return step.quotient !== 0; });
     return { dividend:quotient * skill.divisor, divisor:skill.divisor, correct:quotient, steps:steps };
   }
 

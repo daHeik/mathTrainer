@@ -410,8 +410,9 @@ writtenSkills.forEach(function(skill){
     assert(task.dividend >= 100 && task.dividend <= 999);
     assert(task.divisor >= 2 && task.divisor <= 9);
     assert.strictEqual(task.dividend / task.divisor, task.correct);
-    assert.strictEqual(task.steps.length, String(task.correct).length);
-    assert.strictEqual(task.steps.length, skill.digits);
+    assert.strictEqual(String(task.correct).length, skill.digits);
+    assert.strictEqual(task.steps.length, String(task.correct).replace(/0/g, '').length);
+    assert(task.steps.length >= 1 && task.steps.length <= 3);
     assert.strictEqual(task.steps.reduce(function(sum, step){ return sum + step.dividend; }, 0), task.dividend);
     assert.strictEqual(task.steps.reduce(function(sum, step){ return sum + step.quotient; }, 0), task.correct);
     task.steps.forEach(function(step){ assert.strictEqual(step.dividend / task.divisor, step.quotient); });
@@ -503,18 +504,18 @@ assert.strictEqual(writtenProfile.stickers.length, 1);
 elements.doneBonusBtn.events.click();
 assert.strictEqual(writtenProfile.today.mode, 'written');
 assert(api.repeatRoundLabel(false).indexOf('Schriftlich dividieren') !== -1);
-// A 101 quotient still has three rows, including its zero tens digit.
+// Zero quotient digits require no redundant intermediate row.
 context.Math.random = function(){ return 0.004; };
 var zeroWritten = api.writtenDivisionQuestion(api.practiceSkill('w:2:3'));
 context.Math.random = Math.random;
 assert.strictEqual(zeroWritten.correct, 101);
-assert.strictEqual(zeroWritten.steps.length, 3);
-assert.strictEqual(zeroWritten.steps[1].quotient, 0);
-assert.strictEqual(zeroWritten.steps[1].dividend, 0);
+assert.strictEqual(zeroWritten.steps.length, 2);
+assert.strictEqual(zeroWritten.steps[1].quotient, 1);
+assert.strictEqual(zeroWritten.steps[1].dividend, 2);
 api.renderWrittenDivision('w:2:3', zeroWritten);
-assert.strictEqual(form.children.length, 7);
+assert.strictEqual(form.children.length, 6);
 // All rows, including the given dividend, share the same three-column grid.
-[form.children[1], form.children[3], form.children[4], form.children[5]].forEach(function(row){
+[form.children[1], form.children[3], form.children[4]].forEach(function(row){
   assert(row.className.indexOf('written-equation') !== -1);
   assert.strictEqual(row.children.length, 3);
   assert.strictEqual(row.children[0].children.length, 3);
@@ -524,8 +525,8 @@ form.children[3].children[0].children[0].value = '2'; // 200
 form.children[3].children[2].children[0].value = '1'; // 100
 submitWritten();
 assert.strictEqual(context.document.activeElement, form.children[4].children[0].children[0]);
-submitWritten(); // Entirely empty middle row represents 0 : 2 = 0.
-assert.strictEqual(context.document.activeElement, form.children[5].children[0].children[0]);
+submitWritten(); // Empty input is still 0, but the remaining row needs 2:2=1.
+assert.strictEqual(context.document.activeElement, form.children[4].children[0].children[2]);
 var oldSubmit = form.onsubmit;
 elements.abortSessionBtn.events.click();
 oldSubmit({preventDefault:function(){}});
@@ -534,7 +535,54 @@ assert.strictEqual(writtenProfile.today.mode, 'mixed');
 api.startSession(false);
 assert.strictEqual(form.hidden, true);
 assert.strictEqual(elements.choicesWrap.hidden, false);
-console.log('Written division: generation, two/three rows, zero digits, focus, validation, rewards and replay OK');
+// Regression: 848:8 uses two rows for 106, without a separate zero-tens row.
+var regressionProfile = api.normalizeProfile(api.defaultProfile());
+regressionProfile.config.sound = false;
+regressionProfile.config.rewardEvery = 1;
+api.setState(regressionProfile);
+api.ensureFactPool();
+api.startSession(false, null, 'written');
+regressionProfile.today.queue = ['w:8:3']; regressionProfile.today.index = 0;
+context.Math.random = function(){ return 0.26; }; // 100 + floor(.26 * 25) = 106.
+var regressionTask = api.writtenDivisionQuestion(api.practiceSkill('w:8:3'));
+assert.strictEqual(regressionTask.dividend, 848);
+assert.deepStrictEqual(JSON.parse(JSON.stringify(regressionTask.steps)), [
+  {dividend:800,quotient:100}, {dividend:48,quotient:6}
+]);
+api.renderQuestion();
+context.Math.random = Math.random;
+assert.strictEqual(form.children.length, 6);
+['800100', '048006'].forEach(function(entry, index){
+  var row = form.children[3 + index];
+  var inputs = row.children[0].children.concat(row.children[2].children);
+  entry.split('').forEach(function(value, digitIndex){ digit(inputs[digitIndex], value); });
+  assert(row.classList.contains('written-correct'));
+});
+var regressionTotal = form.children[1].children[2].children;
+assert.strictEqual(context.document.activeElement, regressionTotal[0]);
+'106'.split('').forEach(function(value, index){ digit(regressionTotal[index], value); });
+assert.strictEqual(regressionProfile.writtenSkills['w:8:3'].correctCount, 1);
+assert.strictEqual(regressionProfile.reward.availablePlays, 1);
+assert.strictEqual(regressionProfile.history[regressionProfile.today.date].wrong, 0);
+// One, two or three rows depend only on nonzero places in the result.
+[
+  {key:'w:8:3',quotient:100,rows:1},
+  {key:'w:8:3',quotient:110,rows:2},
+  {key:'w:8:3',quotient:111,rows:3},
+  {key:'w:4:2',quotient:50,rows:1},
+  {key:'w:4:2',quotient:58,rows:2}
+].forEach(function(spec){
+  var skill = api.practiceSkill(spec.key);
+  var min = Math.max(Math.ceil(100 / skill.divisor), skill.digits === 3 ? 100 : 10);
+  var max = Math.min(Math.floor(999 / skill.divisor), skill.digits === 3 ? 999 : 99);
+  context.Math.random = function(){ return (spec.quotient - min + 0.5) / (max - min + 1); };
+  var task = api.writtenDivisionQuestion(skill);
+  assert.strictEqual(task.correct, spec.quotient);
+  assert.strictEqual(task.steps.length, spec.rows);
+  assert(task.steps.every(function(step){ return step.quotient > 0; }));
+});
+context.Math.random = Math.random;
+console.log('Written division: one/two/three rows, 848:8 regression, focus, validation and rewards OK');
 
 // All seven games keep the same reward contract and active-time/pause rules.
 var gameProfile = api.normalizeProfile(api.defaultProfile());
