@@ -172,6 +172,11 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   Kürbisse, Spinnweben, Fledermäuse und Hexen; bei Metro Run zusätzlich lustige
   Straßenschilder, tanzende Skelette und Geisterballons. Rein gezeichnete Deko
   ohne zusätzliche Hindernisse oder Änderungen der Trefferflächen.
+  Die Spielwelten nutzen dunkle Dämmerungs-/Nachtpaletten, Mondlicht, Nebel
+  und gelegentliche langsam verblassende Blitze im Hintergrund statt Sonne.
+  Keine bildschirmfüllenden Lichtblitze; bei reduzierter Bewegung bleiben
+  diese Wettereffekte statisch und die Blitze aus. Cleo sammelt leuchtend
+  orange Kürbisse statt Obst; Bomben behalten eine deutlich helle Kontur.
 - Schneefahrt: Die Kamera folgt vorausschauend dem Gelände am rechten Bildschirmrand
   und hält tiefe Stellen im sichtbaren Abschnitt frühzeitig im Bild.
   Jeder erfolgreich gelandete Backflip bringt +20 Prozentpunkte

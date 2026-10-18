@@ -137,6 +137,11 @@ normalization, first-move accounting, immersive/pause/resize and demo launch.
 Runner controls: swipe/arrows/WASD/buttons; coins +20, shield up to 8s/one hit,
 magnet 10s. Recovery keeps world/score. Seasonal canvas art is cosmetic only:
 no hitbox changes or random calls; use active game time so pause freezes it.
+Halloween worlds now use dark dusk/night palettes (no separate sun drawings),
+mist and a slow distant lightning silhouette each 18s, never full-screen flashes.
+Honor prefers-reduced-motion in seasonal scenery. Cleo food is `pumpkin`, drawn
+by `drawSnakePumpkin`; keep bomb outlines and snow HUD legible on dark skies.
+This art is a mathServer extension beyond the original Vocabulator UI 32 port.
 Math learning records and storage keys stay unchanged. Games consume a play
 on their first move, not selection. All games use active simulation time with
 a three-minute cap (Bricks: five minutes) and pause/hidden-view suspension.

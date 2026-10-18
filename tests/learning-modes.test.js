@@ -94,6 +94,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'runnerAction:runnerAction, runnerUpdate:updateRunnerGame, runnerResize:resizeRunnerCanvas,',
   'runnerProject:runnerProject, runnerDraw:drawRunnerGame, runnerSpawn:spawnRunnerRows,',
   'drawHalloweenSky:drawHalloweenSky, drawPumpkin:drawPumpkin,',
+  'halloweenWeather:halloweenWeather, drawSnakePumpkin:drawSnakePumpkin,',
   'activeGameStep:activeGameStep, pauseGame:pauseGame, resumeGame:resumeGame,',
   'gameDurationMs:gameDurationMs, startArcadeGame:startArcadeGame, makeBrickLevel:makeBrickLevel,',
   'resetBrickBall:resetBrickBall, brickLevelSpeed:brickLevelSpeed, applyBrickExtra:applyBrickExtra,',
@@ -1133,6 +1134,39 @@ Object.keys(denseRows).forEach(function(key){
 context.Math.random=savedRandom;
 elements.runnerHomeBtn.events.click();
 console.log('Metro perspective, late-stage routes and cosmetic-only Halloween drawing OK');
+// Halloween weather fades slowly, never flashes the full screen and honors reduced motion.
+assert.strictEqual(api.halloweenWeather(0,false).lightning,0);
+assert.strictEqual(api.halloweenWeather(12,false).lightning,0);
+assert(Math.abs(api.halloweenWeather(12.6,false).lightning-.55)<1e-8);
+assert.strictEqual(api.halloweenWeather(14,false).lightning,0);
+assert(Math.abs(api.halloweenWeather(30.6,false).lightning-.55)<1e-8);
+assert.strictEqual(api.halloweenWeather(12.6,true).lightning,0);
+assert.strictEqual(api.halloweenWeather(12.6,true).drift,0);
+var weatherLines=[],weatherFills=[];
+var weatherCtx=new Element().getContext();
+weatherCtx.stroke=function(){weatherLines.push(weatherCtx.strokeStyle);};
+weatherCtx.fillRect=function(x,y,w,h){weatherFills.push([w,h]);};
+api.drawHalloweenSky(weatherCtx,480,720,12.6,false);
+assert(weatherLines.indexOf('#d4c6ef')!==-1,'A distant bolt is drawn during the weather window');
+assert(!weatherFills.some(function(p){return p[0]===480&&p[1]===720;}),'No full-screen flash');
+weatherLines=[];
+context.window.matchMedia=function(){return {matches:true};};
+api.drawHalloweenSky(weatherCtx,480,720,12.6,false);
+assert(weatherLines.indexOf('#d4c6ef')===-1,'Reduced motion disables lightning');
+delete context.window.matchMedia;
+// Cleo's pickups are always pumpkins, including replacement food after eating.
+api.startArcadeGame('snake',true);cleo=api.games().snake;
+assert.strictEqual(cleo.food.type,'pumpkin');
+cleo.food={x:8,y:10,type:'pumpkin'};api.beginArcadeAttempt('snake');
+api.stepGame('snake',api.snakeStepTime(cleo));
+assert.strictEqual(cleo.score,25);
+assert.strictEqual(cleo.food.type,'pumpkin');
+var pumpkinColors=[],pumpkinCtx=new Element().getContext();
+pumpkinCtx.fill=function(){pumpkinColors.push(pumpkinCtx.fillStyle);};
+api.drawSnakePumpkin(pumpkinCtx,cleo.food);
+assert(pumpkinColors.indexOf('#df6f28')!==-1,'Pumpkin has a distinct orange body');
+elements.snakeHomeBtn.events.click();
+console.log('Halloween: slow distant weather, reduced motion, no screen flash, pumpkin rendering and pickups OK');
 var migratedGames = api.defaultProfile();
 migratedGames.reward.availablePlays = 3;
 migratedGames.reward.bestTowerScore = 42;
