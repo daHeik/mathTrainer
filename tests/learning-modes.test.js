@@ -29,6 +29,7 @@ Element.prototype.setAttribute = function(){};
 Element.prototype.removeAttribute = function(){};
 Element.prototype.getAttribute = function(){ return ''; };
 Element.prototype.blur = function(){};
+Element.prototype.remove = function(){ this.removed = true; };
 Element.prototype.getContext = function(){
   return new Proxy({
     measureText:function(){ return { width:1 }; },
@@ -43,6 +44,10 @@ Element.prototype.querySelector = function(){ return new Element(); };
 Element.prototype.querySelectorAll = function(selector){
   return this.children.filter(function(child){ return child.className.split(' ').indexOf(selector.slice(1)) !== -1; });
 };
+Object.defineProperty(Element.prototype, 'textContent', {
+  get:function(){ return (this._text || '') + this.children.map(function(child){ return child.textContent; }).join(''); },
+  set:function(value){ this._text = String(value); this.children = []; }
+});
 Object.defineProperty(Element.prototype, 'innerHTML', {
   set:function(){ this.children = []; }, get:function(){ return ''; }
 });
@@ -78,13 +83,29 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'defaultProfile:defaultProfile, normalizeProfile:normalizeProfile, ensureFactPool:ensureFactPool,',
   'practiceSkill:practiceSkill, practiceSkillsInRange:practiceSkillsInRange, buildQueue:buildQueue,',
   'specialQuestion:specialQuestion, applyAnswerResult:applyAnswerResult,',
+  'renderMathText:renderMathText,',
   'writtenDivisionQuestion:writtenDivisionQuestion, renderWrittenDivision:renderWrittenDivision,',
   'correctAnswersForProfile:correctAnswersForProfile, startSession:startSession,',
   'renderQuestion:renderQuestion, onAnswer:onAnswer, finishSession:finishSession,',
   'refreshDailySessionIfNeeded:refreshDailySessionIfNeeded, repeatRoundLabel:repeatRoundLabel,',
   'tapAdvance:tapAdvance,',
+  'getConfetti:function(){return confettiLayer;},',
   'games:function(){return {dino:rewardGame,flappy:flappyGame,tower:towerGame,gravity:gravityGame,brick:arcadeGames.brick,snake:arcadeGames.snake,snow:arcadeGames.snow};},',
   'activeGameStep:activeGameStep, pauseGame:pauseGame, resumeGame:resumeGame,',
+  'gameDurationMs:gameDurationMs, startArcadeGame:startArcadeGame, makeBrickLevel:makeBrickLevel,',
+  'resetBrickBall:resetBrickBall, brickLevelSpeed:brickLevelSpeed, applyBrickExtra:applyBrickExtra,',
+  'arcadeHud:arcadeHud, loseArcadeAttempt:loseArcadeAttempt, beginArcadeAttempt:beginArcadeAttempt,',
+  'drawGravityGap:drawGravityGap,',
+  'turnSnake:turnSnake, snakeStepTime:snakeStepTime, snakeRenderSegment:snakeRenderSegment,',
+  'drawSnakeGame:drawSnakeGame,',
+  'runArcadeGame:runArcadeGame,',
+  'startTowerGame:startTowerGame, placeTowerBlock:placeTowerBlock, drawTowerGame:drawTowerGame,',
+  'towerSceneSpec:towerSceneSpec, towerContext:function(){return towerCtx;},',
+  'snowSpeedPercent:snowSpeedPercent, snowSpeed:snowSpeed, snowPhysicsScale:snowPhysicsScale,',
+  'snowCompleteTrick:snowCompleteTrick, decaySnowSpeed:decaySnowSpeed, snowPress:snowPress,',
+  'snowSurface:snowSurface, snowGround:snowGround,',
+  'spawnSnowTerrain:spawnSnowTerrain,',
+  'stepSnowPhysics:stepSnowPhysics,',
   'stepGame:function(kind,dt){({dino:updateRewardGame,flappy:updateFlappyGame,tower:updateTowerGame,gravity:updateGravityGame,brick:updateBrickGame,snake:updateSnakeGame,snow:updateSnowGame})[kind](dt);},',
   'pickNextSticker:pickNextSticker, stickerPool:STICKER_POOL,',
   'getState:function(){ return state; },',
@@ -93,6 +114,21 @@ source = source.replace(/\}\)\(\);\s*$/, [
 ].join('\n'));
 vm.runInContext(source, context);
 var api = context.testApi;
+// Calculations wrap as one inline unit; surrounding words keep normal spaces.
+[
+  ['Wie heißt die Rechenart bei 40 ÷ 4?', ['40 ÷ 4?']],
+  ['Berechne jetzt 40 / 4 und erkläre es.', ['40 / 4']],
+  ['Addition: 50 + 30 = 80. Dann 80 − 10 = 70.', ['50 + 30 = 80', '80 − 10 = 70']],
+  ['Das Produkt aus 1 und 6 = ?', ['1 und 6 = ?']],
+  ['Löse 7 × ▢ = 56.', ['7 × ▢ = 56']],
+  ['Die Hälfte von 100 mit 20.', []],
+  ['<img src=x> 40 : 4 = 10', ['40 : 4 = 10']]
+].forEach(function(spec){
+  var node = new Element();
+  api.renderMathText(node, spec[0]);
+  assert.strictEqual(node.textContent, spec[0]);
+  assert.deepStrictEqual(node.children.filter(function(child){ return child.className === 'math-expression'; }).map(function(child){ return child.textContent; }), spec[1]);
+});
 var profile = api.defaultProfile();
 profile.config.sound = false;
 profile.config.min = 5;
@@ -258,6 +294,7 @@ correctButton.events.click();
 assert(correctButton.classList.contains('correct'));
 assert.strictEqual(profile.termSkills.addition.correctCount, 1);
 assert(elements.feedbackText.textContent.indexOf('Summe') !== -1);
+assert(elements.questionText.children.some(function(child){ return child.className === 'math-expression'; }));
 profile.today.queue = ['t:division']; profile.today.index = 0; profile.today.requeueCounts = {};
 api.renderQuestion();
 elements.choicesWrap.children.find(function(button){ return button.textContent === 'Addition'; }).events.click();
@@ -291,6 +328,12 @@ restored.today.index = restored.today.queue.length; restored.today.bonus = false
 api.finishSession();
 assert(restored.today.completed);
 assert.strictEqual(restored.stickers.length, 1);
+var completedConfetti = api.getConfetti();
+assert(completedConfetti);
+elements.navGames.events.click();
+assert.strictEqual(api.getConfetti(), null);
+assert.strictEqual(completedConfetti.removed, true);
+elements.gameChoiceBackBtn.events.click();
 elements.bonusBtn.events.click();
 assert.strictEqual(restored.today.mode, 'mixed');
 assert.strictEqual(restored.today.focusTable, null);
@@ -621,9 +664,27 @@ api.ensureFactPool();
   assert.strictEqual(game.playTimeMs, 2000);
   api.stepGame(spec[2], 0.1);
   assert(game.playTimeMs > 2000, spec[2] + ' physics must advance active time');
-  api.activeGameStep(game, 180);
-  assert.strictEqual(game.playTimeMs, 180000);
+  var limit = spec[2] === 'brick' ? 300000 : 180000;
+  assert.strictEqual(api.gameDurationMs(game), limit);
+  if (spec[2] === 'brick'){
+    api.activeGameStep(game, (180000 - game.playTimeMs) / 1000);
+    assert(game.active && game.running, 'Bricks continues after three minutes');
+    api.runArcadeGame('brick', game.lastFrame + 16);
+    assert(game.active && game.running, 'Bricks frame loop must not stop at three minutes');
+    api.arcadeHud('brick');
+    assert.strictEqual(elements.brickTime.textContent, '2:00');
+    api.loseArcadeAttempt('brick');
+    assert(api.beginArcadeAttempt('brick'), 'Bricks allows another attempt before five minutes');
+    assert.strictEqual(gameProfile.reward.availablePlays, playsBefore - 1);
+  }
+  api.activeGameStep(game, limit / 1000);
+  assert.strictEqual(game.playTimeMs, limit);
   assert(!game.active, spec[2] + ' must end at the time limit');
+  assert.strictEqual(gameProfile.reward.availablePlays, playsBefore - 1);
+  assert.strictEqual(api.getConfetti(), null, spec[2] + ' game end must not launch confetti');
+  elements[spec[1] + 'AgainBtn'].events.click();
+  assert(elements['screen-game-choice'].classList.contains('active'));
+  assert.strictEqual(api.getConfetti(), null, spec[2] + ' replay must not launch confetti');
   assert.strictEqual(gameProfile.reward.availablePlays, playsBefore - 1);
   elements[spec[1] + 'HomeBtn'].events.click();
 });
@@ -634,9 +695,292 @@ elements.navGames.events.click();
 assert(elements.chooseSnowBtn.disabled);
 elements.navStatistics.events.click();
 assert(elements['screen-statistics'].classList.contains('active'));
-assert.strictEqual(elements.statGames.textContent, 7);
+assert.strictEqual(elements.statGames.textContent, '7');
 elements.navLearn.events.click();
 assert(elements['screen-home'].classList.contains('active'));
+// Higher Bricks levels vary geometrically, stay clearable and grow 25% in speed.
+api.startArcadeGame('brick', true);
+var brick = api.games().brick;
+var layouts = new Set();
+for (var level = 1; level <= 20; level++){
+  brick.level = level; brick.elapsed = 0;
+  api.makeBrickLevel(); api.resetBrickBall();
+  assert(brick.bricks.length >= 15 && brick.bricks.length <= 48);
+  assert(Math.abs(brick.ballSpeed - 351 * Math.pow(1.25, level - 1)) < 0.00001);
+  if (level > 1) assert(Math.abs(api.brickLevelSpeed(level) / api.brickLevelSpeed(level - 1) - 1.25) < 0.00001);
+  brick.bricks.forEach(function(block, index){
+    assert(block.x >= 8 && block.x + block.w <= 472);
+    assert(block.y >= 54 && block.y + block.h < brick.paddle.y);
+    assert(block.hp >= 1 && block.hp <= 3);
+    brick.bricks.slice(index + 1).forEach(function(other){
+      assert(block.x + block.w <= other.x || other.x + other.w <= block.x || block.y + block.h <= other.y || other.y + other.h <= block.y);
+    });
+  });
+  if (level >= 3 && level <= 8) layouts.add(brick.bricks.map(function(b){return b.baseX + ',' + b.y;}).join(';'));
+  assert.strictEqual(brick.bricks.some(function(b){return b.moving;}), level >= 5);
+}
+assert.strictEqual(layouts.size, 6);
+brick.level = 6; brick.elapsed = 0; brick.speedFactor = 1;
+api.makeBrickLevel(); api.resetBrickBall();
+api.beginArcadeAttempt('brick');
+var moving = brick.bricks.find(function(b){ return b.moving; });
+var movingX = moving.x;
+api.stepGame('brick', 0.1);
+assert.notStrictEqual(moving.x, movingX);
+assert(api.applyBrickExtra('fast'));
+assert(Math.abs(brick.ballSpeed - api.brickLevelSpeed(6) * 1.15) < 0.00001);
+var factor = brick.speedFactor;
+brick.level = 7; api.makeBrickLevel(); api.resetBrickBall();
+assert(Math.abs(brick.ballSpeed - api.brickLevelSpeed(7) * factor) < 0.00001);
+elements.brickHomeBtn.events.click();
+// High-contrast holes break the rail; only Superman draws a bridge across them.
+[0, 332].forEach(function(y){
+  var fills = [], labels = [];
+  var ctx = {save:function(){},restore:function(){},beginPath:function(){},moveTo:function(){},lineTo:function(){},stroke:function(){},
+    fillRect:function(x,top,w,h){ fills.push({color:this.fillStyle,x:x,y:top,w:w,h:h}); },
+    fillText:function(label){ labels.push(label); }};
+  var gap = {x:100,w:120};
+  api.drawGravityGap(ctx, gap, y, y === 0 ? -1 : 1, false);
+  assert(fills.some(function(f){return f.color === '#000000' && f.x === 100 && f.w === 120 && f.h === 28;}));
+  assert.strictEqual(fills.filter(function(f){return f.color === '#ffe269';}).length, 2);
+  assert.strictEqual(fills.filter(function(f){return f.color === '#ffffff';}).length, 2);
+  assert(!fills.some(function(f){return f.color === '#68d8ff';}));
+  assert(labels.indexOf('LÜCKE') !== -1);
+  fills = []; labels = [];
+  api.drawGravityGap(ctx, gap, y, y === 0 ? -1 : 1, true);
+  assert(fills.some(function(f){return f.color === '#68d8ff' && f.w === 120 && f.h === 4;}));
+  assert(labels.indexOf('BRÜCKE') !== -1);
+});
+// Tower world/camera regression: blocks never change world coordinates.
+api.startTowerGame(true);
+api.placeTowerBlock(); // Start without spending a play in demo mode.
+var tower = api.games().tower;
+var previousCamera = 0;
+for (var floor = 1; floor <= 65; floor++){
+  var oldY = tower.blocks.map(function(block){ return block.y; });
+  tower.moving.x = tower.blocks[tower.blocks.length - 1].x;
+  api.placeTowerBlock();
+  assert.strictEqual(tower.height, floor);
+  oldY.forEach(function(y, index){ assert.strictEqual(tower.blocks[index].y, y); });
+  assert.strictEqual(tower.blocks[0].y, 438);
+  var top = tower.blocks[tower.blocks.length - 1];
+  assert.strictEqual(top.y, 438 - floor * 27);
+  assert.strictEqual(tower.moving.y, top.y - 27);
+  assert(tower.cameraY >= previousCamera);
+  assert.strictEqual(top.y + tower.cameraY, Math.max(120, top.y));
+  previousCamera = tower.cameraY;
+  var scene = api.towerSceneSpec(floor, tower.cameraY);
+  assert.strictEqual(scene.groundY, 465 + tower.cameraY);
+  if (floor >= 13) assert(scene.groundY >= 480, 'Grass must leave the viewport');
+  if (floor % 10 === 0) assert(tower.altitudeNotice.text.indexOf(floor + '. Etage') === 0);
+  api.drawTowerGame();
+}
+function towerSceneAt(height){ return api.towerSceneSpec(height, Math.max(0, 120 - (438 - height * 27))); }
+assert.strictEqual(towerSceneAt(9).objects.length, 0);
+assert(towerSceneAt(10).objects.some(function(o){ return o.kind === 'birds'; }));
+assert(!towerSceneAt(19).objects.some(function(o){ return o.kind === 'plane'; }));
+assert(towerSceneAt(20).objects.some(function(o){ return o.kind === 'plane'; }));
+assert.strictEqual(towerSceneAt(20).space, 0);
+assert.strictEqual(towerSceneAt(25).space, 0.5);
+assert.strictEqual(towerSceneAt(30).space, 1);
+assert(!towerSceneAt(29).objects.some(function(o){ return o.kind === 'shuttle' || o.kind === 'station'; }));
+[[30,'shuttle'],[40,'station'],[50,'shuttle'],[60,'station']].forEach(function(spec){
+  assert(towerSceneAt(spec[0]).objects.some(function(o){ return o.level === spec[0] && o.kind === spec[1]; }));
+});
+// Verify drawing removes the grass, not merely hiding it in the scene metadata.
+var highCamera = tower.cameraY;
+tower.moving.x = 500;
+api.placeTowerBlock();
+assert.strictEqual(tower.attempts, 1);
+assert.strictEqual(tower.height, 65);
+assert.strictEqual(tower.cameraY, highCamera);
+api.placeTowerBlock(); // Continue the same tower, rather than restoring the ground.
+assert(tower.running);
+assert.strictEqual(tower.cameraY, highCamera);
+var towerCtx = api.towerContext(), originalFillRect = towerCtx.fillRect, fills = [];
+towerCtx.fillRect = function(x,y,w,h){ fills.push({color:this.fillStyle,y:y}); };
+api.drawTowerGame();
+assert(!fills.some(function(fill){ return fill.color === '#b8dc87' || fill.color === '#7fba66'; }));
+elements.towerHomeBtn.events.click();
+api.startTowerGame(true);
+fills = []; api.drawTowerGame();
+assert.strictEqual(api.games().tower.cameraY, 0);
+assert(fills.some(function(fill){ return fill.color === '#b8dc87' && fill.y === 465; }));
+towerCtx.fillRect = originalFillRect;
+elements.towerHomeBtn.events.click();
+console.log('Tower: stable world coordinates, moving scenery, grass removal and altitude events through floor 65 OK');
+// Snow: every landed flip adds 20 percentage points; active whole seconds lose 1.
+api.startArcadeGame('snow', true);
+api.beginArcadeAttempt('snow');
+var snow = api.games().snow;
+assert.strictEqual(api.snowSpeedPercent(snow), 100);
+api.snowCompleteTrick(snow, {rotation:0}, true); // A grind alone is not a backflip.
+assert.strictEqual(api.snowSpeedPercent(snow), 100);
+[120,140,160,180,200,200].forEach(function(expected){
+  api.snowCompleteTrick(snow, {rotation:-Math.PI * 2}, false);
+  assert.strictEqual(api.snowSpeedPercent(snow), expected);
+});
+snow.speedPercent = 100;
+api.snowCompleteTrick(snow, {rotation:-Math.PI * 4}, false);
+assert.strictEqual(api.snowSpeedPercent(snow), 140);
+api.decaySnowSpeed(snow, .99);
+assert.strictEqual(api.snowSpeedPercent(snow), 140);
+api.decaySnowSpeed(snow, .01);
+assert.strictEqual(api.snowSpeedPercent(snow), 139);
+api.decaySnowSpeed(snow, 9);
+assert.strictEqual(api.snowSpeedPercent(snow), 130);
+api.pauseGame(elements['screen-snow']);
+api.decaySnowSpeed(snow, 20);
+api.stepGame('snow', 1);
+assert.strictEqual(api.snowSpeedPercent(snow), 130);
+api.resumeGame(elements['screen-snow']);
+snow.running = false;
+api.decaySnowSpeed(snow, 20);
+assert.strictEqual(api.snowSpeedPercent(snow), 130);
+snow.running = true;
+api.decaySnowSpeed(snow, 200);
+assert.strictEqual(api.snowSpeedPercent(snow), 100);
+snow.player.grounded = true; api.snowPress();
+var jump100 = -snow.player.vy;
+var speed100 = api.snowSpeed(snow);
+snow.speedPercent = 200; snow.player.grounded = true; api.snowPress();
+var jump200 = -snow.player.vy;
+assert.strictEqual(jump100, 410);
+assert.strictEqual(jump200, 615);
+assert.strictEqual(api.snowSpeed(snow), speed100 * 2);
+assert.strictEqual(api.snowPhysicsScale(snow), 1.5);
+assert.strictEqual(2 * jump100 / 720, 2 * jump200 / 1080); // Similar airtime/control.
+assert(Math.abs((jump200 * jump200 / (2 * 1080)) / (jump100 * jump100 / (2 * 720)) - 1.5) < 1e-10);
+api.startArcadeGame('snow', true); api.beginArcadeAttempt('snow');
+snow = api.games().snow; snow.speedPercent = 200; snow.spawnIn = 999;
+snow.ramps = [{x:150,w:11,launch:500}];
+api.stepSnowPhysics(1 / 180);
+assert.strictEqual(snow.player.vy, -750, 'Ramp impulses scale with high speed');
+snow.ramps = []; snow.player.y = api.snowGround(snow.distance + 160) - 120;
+snow.player.grounded = false; snow.player.vy = -100;
+api.stepGame('snow', .01);
+assert(Math.abs(snow.player.vy - (-100 + 1080 * .01)) < 1e-8, 'Airborne gravity uses the same scale');
+snow.patternBag = ['rocks']; snow.nextFeatureX = 0; snow.rocks = [];
+var lookAhead = Math.max(790, api.snowSpeed(snow) * 2.5);
+api.spawnSnowTerrain();
+assert(snow.rocks[0].x >= snow.distance + lookAhead, 'Fast terrain must spawn with adequate warning');
+// Use the actual landing/collision path, not just the bonus helper.
+[true, false].forEach(function(success){
+  api.startArcadeGame('snow', true); api.beginArcadeAttempt('snow');
+  var g = api.games().snow, p = g.player;
+  g.spawnIn = 999;
+  p.grounded = false; p.y = api.snowSurface(g, 160) - p.h - .1; p.vy = 500;
+  p.rotation = success ? -Math.PI * 2 : Math.PI;
+  api.stepGame('snow', .01);
+  assert.strictEqual(g.flips, success ? 1 : 0);
+  assert.strictEqual(api.snowSpeedPercent(g), success ? 120 : 100);
+  assert.strictEqual(g.attempts, success ? 0 : 1);
+});
+[
+  {percent:149,decay:0,breaks:false}, {percent:150,decay:0,breaks:true},
+  {percent:200,decay:0,breaks:true}, {percent:150,decay:1,breaks:false}
+].forEach(function(spec){
+  api.startArcadeGame('snow', true); api.beginArcadeAttempt('snow');
+  var g = api.games().snow;
+  g.speedPercent = spec.percent; g.spawnIn = 999;
+  api.decaySnowSpeed(g, spec.decay);
+  g.rocks = [{x:155,w:40,h:35}];
+  api.stepGame('snow', .001);
+  assert.strictEqual(g.rocks.length, spec.breaks ? 0 : 1);
+  assert.strictEqual(g.attempts, spec.breaks ? 0 : 1);
+  if (spec.breaks) assert.strictEqual(g.score, 30);
+});
+elements.snowHomeBtn.events.click();
+api.startArcadeGame('snow', true);
+assert.strictEqual(api.snowSpeedPercent(api.games().snow), 100);
+elements.snowHomeBtn.events.click();
+console.log('Snow: landed-flip boosts, active-time decay, 100..200% caps, jump physics and 150% rock collisions OK');
+// Cleo glides along locked grid segments, with only one future turn buffered.
+api.startArcadeGame('snake', true);
+var cleo = api.games().snake;
+cleo.food = {x:0,y:0};
+api.beginArcadeAttempt('snake');
+var cleoStep = api.snakeStepTime(cleo);
+function cleoPoint(index,x,y){
+  var point = api.snakeRenderSegment(cleo,index);
+  assert(Math.abs(point.x-x)<1e-8, 'Cleo x: '+point.x+' vs '+x);
+  assert(Math.abs(point.y-y)<1e-8, 'Cleo y: '+point.y+' vs '+y);
+}
+api.stepGame('snake', cleoStep/2);
+assert.strictEqual(cleo.body[0].x,7); // Logical position changes only on arrival.
+cleoPoint(0,7.5,10);
+api.turnSnake(0,1);
+api.turnSnake(-1,0); // No second future turn, even with rapid swipes.
+assert.strictEqual(cleo.turns.length,1);
+assert.strictEqual(cleo.turns[0].y,1);
+cleoPoint(0,7.5,10); // Queuing cannot bend a segment halfway through.
+api.stepGame('snake', cleoStep/2);
+cleoPoint(0,8,10);
+assert.strictEqual(cleo.direction.y,1);
+assert.strictEqual(cleo.turns.length,0);
+api.stepGame('snake', cleoStep/2);
+cleoPoint(0,8,10.5);
+cleoPoint(1,7.5,10); // Body follows the corner, never a diagonal shortcut.
+api.turnSnake(0,-1); // Reversal is still forbidden.
+assert.strictEqual(cleo.turns.length,0);
+api.pauseGame(elements['screen-snake']);
+var frozenTick = cleo.tick;
+api.stepGame('snake',1);
+assert.strictEqual(cleo.tick,frozenTick);
+cleoPoint(0,8,10.5);
+api.resumeGame(elements['screen-snake']);
+api.stepGame('snake',cleoStep/2);
+cleoPoint(0,8,11);
+elements.snakeHomeBtn.events.click();
+
+// Every wrapping direction interpolates across the seam, not across the board.
+[
+  {x:19,y:10,dx:1,dy:0}, {x:0,y:10,dx:-1,dy:0},
+  {x:10,y:19,dx:0,dy:1}, {x:10,y:0,dx:0,dy:-1}
+].forEach(function(spec){
+  api.startArcadeGame('snake',true);cleo=api.games().snake;
+  cleo.body=[{x:spec.x,y:spec.y}];cleo.direction={x:spec.dx,y:spec.dy};
+  cleo.food={x:3,y:3};api.beginArcadeAttempt('snake');
+  var duration=api.snakeStepTime(cleo);
+  api.stepGame('snake',duration/2);
+  cleoPoint(0,spec.x+spec.dx/2,spec.y+spec.dy/2);
+  var translations=[];
+  cleo.ctx.translate=function(x,y){translations.push([x,y]);};
+  api.drawSnakeGame();
+  var seamCopies=translations.filter(function(p){return spec.dx?p[1]===252:p[0]===252;});
+  assert(seamCopies.length>=2,'Both sides of the seam must be drawn');
+  delete cleo.ctx.translate;
+  api.stepGame('snake',duration/2);
+  cleoPoint(0,(spec.x+spec.dx+20)%20,(spec.y+spec.dy+20)%20);
+  elements.snakeHomeBtn.events.click();
+});
+
+// Eating and collisions happen at arrival, not when rendering begins moving.
+api.startArcadeGame('snake',true);cleo=api.games().snake;
+cleo.food={x:8,y:10};api.beginArcadeAttempt('snake');
+cleoStep=api.snakeStepTime(cleo);
+api.stepGame('snake',cleoStep/2);
+assert.strictEqual(cleo.score,0);
+assert.strictEqual(cleo.body.length,4);
+api.stepGame('snake',cleoStep/2);
+assert.strictEqual(cleo.score,25);
+assert.strictEqual(cleo.body.length,5);
+assert.strictEqual(cleo.stepDuration,api.snakeStepTime(cleo));
+cleo.bombs=[{x:9,y:10}];
+api.stepGame('snake',cleo.stepDuration/2);
+assert.strictEqual(cleo.attempts,0);
+api.stepGame('snake',cleo.stepDuration/2);
+assert.strictEqual(cleo.attempts,1);
+assert.strictEqual(cleo.tick,0);
+assert.strictEqual(cleo.stepDuration,0);
+assert.strictEqual(cleo.turns.length,0);
+elements.snakeHomeBtn.events.click();
+api.startArcadeGame('snake',true);cleo=api.games().snake;
+cleo.food={x:0,y:0};api.beginArcadeAttempt('snake');
+api.stepGame('snake',api.snakeStepTime(cleo)*2.5);
+cleoPoint(0,9.5,10); // Catch-up can cross several cells without losing remainder.
+elements.snakeHomeBtn.events.click();
+console.log('Cleo: smooth grid movement, one buffered turn, corners, wrap rendering, pause, food and collisions OK');
 var migratedGames = api.defaultProfile();
 migratedGames.reward.availablePlays = 3;
 migratedGames.reward.bestTowerScore = 42;
@@ -649,6 +993,7 @@ assert.strictEqual(migratedGames.reward.bestTowerScore, 42);
 assert.strictEqual(migratedGames.reward.bestSnowScore, 0);
 assert.strictEqual(migratedGames.reward.gamesPlayed, 0);
 assert(/^\d{4}-\d{2}-\d{2}$/.test(migratedGames.reward.gamesTrackedSince));
-console.log('Seven games: start/exit, rewards, pause, three-minute limit, navigation and migration OK');
+console.log('Seven games: rewards, replay without confetti, pause, per-game timers and migration OK');
+console.log('Bricks: six layouts, 25% speed growth, moving rows and extras; Gravity: high-contrast gaps OK');
 console.log('Sticker awards: unseen first, balanced repeats and existing albums OK');
 console.log('Learning modes: generation, UI answers, retries, rewards, migration, replay and completion OK');

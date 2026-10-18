@@ -177,6 +177,7 @@
     gap:clamp(10px, 3vw, 16px);
   }
   .question.word-question{ font-size:clamp(1.35rem, 5.5vw, 2rem); line-height:1.4; letter-spacing:normal; }
+  .math-expression{display:inline-block;white-space:nowrap;vertical-align:baseline;}
   .word-choices .choice-btn{ font-size:clamp(0.9rem, 3.5vw, 1.25rem); overflow-wrap:anywhere; }
   .choice-btn{
     padding:clamp(18px, 5vw, 26px) 8px;
@@ -815,7 +816,8 @@ body.focused-view .app-navigation {display:none;}
   .game-choice-grid {grid-template-columns:repeat(3,minmax(0,1fr));}
   .game-choice {min-height:140px;padding:16px;}
   .game-choice small {display:block;font-size:.78rem;color:var(--ink-soft);font-weight:400;}
-  .game-choice:last-child {grid-column:auto;flex-direction:column;align-items:flex-start;gap:0;}
+  .game-choice:last-child {grid-column:auto;flex-direction:column;align-items:center;gap:0;}
+  .game-choice:last-child .game-choice-icon {margin:0 0 6px;}
 }
 @media(min-width:760px) and (min-height:600px) {
   body {grid-template-columns:180px minmax(0,1fr);grid-template-rows:calc(68px + var(--safe-top)) minmax(0,1fr);}

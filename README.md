@@ -102,6 +102,10 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   Aufgabenfamilie und Rechenart, Zahlenrätsel je Rätseltyp. Die Umschaltung
   setzt Lernstufe 2 voraus, nicht nur eine bestimmte Gesamtzahl richtiger
   Antworten; sehr langsame Antworten erhöhen die Lernstufe nicht.
+- Bei Textaufgaben bleiben zusammengehörige Rechnungen wie `40 ÷ 4` und
+  Gleichungen in einer Zeile. Reicht der Platz hinter dem Text nicht aus,
+  beginnt die Rechnung als Ganzes in der nächsten Zeile. Das gilt auch für
+  die erklärenden Rückmeldungen und die Eingabe bei Textaufgaben.
 - Optionale Lückenaufgaben (7 × ▢ = 56)
 - Optionales Divisionstraining: Eltern können Division pro Profil aktivieren;
   zu einer Malaufgabe werden ab Lernstufe 4 die beiden passenden exakten
@@ -112,7 +116,8 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   Divisionsaufgabe
 - Belohnungen: Sticker pro geübtem Tag (zuerst noch nicht gesammelte, danach
   möglichst gleichmäßig verteilt und ohne direkte Wiederholung), Abzeichen für Serien-Meilensteine,
-  Konfetti und Soundeffekte (abschaltbar)
+  Konfetti zum Abschluss einer Rechenrunde und Soundeffekte (abschaltbar).
+  Beim Spielende oder erneuten Spielen erscheint kein Konfetti.
 - Bereits gesammelte doppelte Sticker werden beim Laden oder Sicherungsimport
   durch noch fehlende Motive ersetzt; Anzahl und Sammeltage bleiben erhalten.
   Es gibt 80 verschiedene Motive; erst bei mehr als 80 Stickern sind
@@ -125,7 +130,8 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   Gravity Run, Bricks, Cleo und Schneefahrt. Die benötigte
   Anzahl richtiger Antworten pro Spiel ist im Eltern-Bereich konfigurierbar
   (Standard: 10); die Startseite zeigt, wie viele richtige Antworten bis zum
-  nächsten Spiel fehlen. Spiele enden nach höchstens drei aktiven Minuten;
+  nächsten Spiel fehlen. Bricks endet nach höchstens fünf aktiven Minuten,
+  die anderen Spiele nach drei;
   Pausen, Wartezeit vor Versuchen und ausgeblendete Ansichten zählen nicht mit.
   Drei Fehlversuche beenden das Spiel (Dino kann einen Bonusversuch sammeln).
   Beim Dino sorgen riskant platzierte Sterne, Combo-Multiplikatoren, fünf Sekunden
@@ -140,12 +146,38 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   zum Ausprobieren auch direkt über `flappy.html` gestartet werden
 - Turmbauer mit Ein-Tipp-Steuerung, schneller werdenden Bausteinen, perfekten
   Platzierungen und eigenem Punkterekord; direkt über `tower.html` spielbar
+- Im Turmbauer folgt die Kamera dem wachsenden Turm: Rasen und Umgebung wandern
+  nach unten aus dem Bild. Ab Etage 10 fliegen Vögel vorbei, ab 20 Flugzeuge
+  mit „Mathe-Air“-Banner. Zwischen 20 und 30 geht der Himmel fließend in ein
+  Sternenfeld über. Bei 30 erscheint ein Shuttle, bei 40 eine Raumstation;
+  danach wechseln sich beide alle zehn Etagen ab. Animationen pausieren mit
+  dem Spiel. Fehlversuche setzen weder Turmhöhe noch Umgebung zurück.
 - Gravity Run: per Tipp zwischen Boden und Decke wechseln, Hindernissen ausweichen
   und Extras sammeln; Bricks: Ball und direkt per Finger/Maus steuerbarer Schläger,
   mehrere Steinbilder und Extras; Cleo: Regenbogenraupe mit umlaufenden Rändern,
-  Richtungskreuz, Wischsteuerung und Bomben; Schneefahrt: Snowboard-Runner mit
+  Richtungskreuz, Wischsteuerung und Bomben. Cleo gleitet flüssig zwischen den
+  Rasterzellen; Richtungswechsel erfolgen erst am nächsten Zellpunkt, mit
+  höchstens einem vorgemerkten Wechsel zusätzlich zur laufenden Bewegung.
+  Schneefahrt: Snowboard-Runner mit
   Sprüngen, Saltos, Grinds, Boosts und Verfolger. Alle Spiele speichern Rekorde
   pro Profil und verbrauchen erst beim ersten Spielzug ein Kontingent.
+- Schneefahrt: Jeder erfolgreich gelandete Backflip bringt +20 Prozentpunkte
+  Tempo (Doppelsalto +40), maximal 200 % des aktuellen Grundtempos. Pro voller
+  aktiver Sekunde sinkt es um einen Prozentpunkt bis mindestens 100 %;
+  Pause und Warten zählen nicht. Der Prozentwert steht im Spielfeld. Ab
+  150 % zertrümmert die Figur Steine bei Kontakt. Sprungimpuls, Rampen und
+  Schwerkraft skalieren gemeinsam: bis 50 % mehr Sprunghöhe bei ähnlicher
+  Flugzeit. Gelände wird bei hohem Tempo weiter voraus erzeugt. Eis beschleunigt
+  auf mindestens 150 % und nutzt dieselbe Begrenzung/Abklingregel statt eines
+  zusätzlichen, unbegrenzten Tempoaufschlags.
+- Bricks steigert das Grundtempo mit jedem Level um 25 % gegenüber dem
+  vorherigen Level. Ab Level 3 wechseln Treppe, Raute, Doppeltürme, Schachbrett,
+  Festung und Wellen; spätere Felder haben robustere Steine und ab Level 5
+  sanft bewegte Reihen. Tempo-Extras wirken zusätzlich und bleiben beim
+  Levelwechsel erhalten. Drei Fehlversuche beenden das Spiel weiterhin früher.
+- Löcher bei Gravity Run sind schwarz mit weißen Kanten, gelb-schwarzen
+  Warnmarkierungen und „LÜCKE“ beschriftet – an Boden und Decke. Während
+  Superman zeigt eine cyanfarbene Linie die vorübergehend sichere Brücke.
 - Helle App-Oberfläche aus dem Vocabulator mit SVG-Symbolen und den Bereichen
   Lernen, Spiele und Statistik: unten eine Tab-Leiste, auf breiten Ansichten
   eine Seitenleiste. Lernrunden blenden die Navigation aus; Spiele öffnen

@@ -103,6 +103,9 @@ and `profile.riddleSkills`. Include these records in reward totals and backups.
 Text answers always use choices; numeric answers honor the configured input
 mode and support four digits. Repeat from the completion screen preserves the
 mode; the home mixed-round button starts `mixed`.
+Use `setQuestionText()` for question updates and `renderMathText()` for textual
+math feedback. Arithmetic expressions and operand pairs use local nowrap
+`.math-expression` spans; do not insert HTML or forbid wrapping whole sentences.
 
 Written place-value division uses mode `written` and keys `w:divisor:digits`
 (divisors 2..9, result digits 2 or 3). Its 16 records live in
@@ -129,7 +132,30 @@ The light app shell and seven games were ported from sibling `vocuabulator`
 (MIT, source commit `22da147`, UI 28). Navigation uses Learn/Games/Statistics;
 math learning records and storage keys stay unchanged. Games consume a play
 on their first move, not selection. All games use active simulation time with
-a three-minute cap and pause/hidden-view suspension. New record keys and game
+a three-minute cap (Bricks: five minutes) and pause/hidden-view suspension.
+Use `gameDurationMs(game)` in shared arcade loops, attempt checks and HUDs.
+Bricks' base speed is `351 * 1.25^(level-1)`; extras multiply this base.
+Higher levels cycle six layouts with breakable armor and moving rows.
+Confetti belongs only to math-round completion and is cleared on leaving it.
+Tower blocks keep immutable world Y positions (27 units per floor). Use
+`towerGame.cameraY` only for rendering the whole world, including ground.
+`towerSceneSpec()` defines altitude encounters: birds at 10+, aircraft at 20+,
+sky-to-space blend 20..30, shuttle/station alternating every 10 floors from 30.
+Animation time comes from active game time, never the wall clock. Failed
+attempts continue the same tower/camera; a new game resets both.
+Cleo keeps integer body cells for collisions and interpolates rendering toward
+the next cell using `tick / stepDuration`. Lock direction and step duration
+for each segment; apply queued input only at cell boundaries. Buffer at most
+one future turn, rejecting further gestures until consumed. Render wrapped
+edge copies to avoid seam jumps. Pause freezes interpolation; recovery resets it.
+Snow uses `speedPercent` (100..200): +20 points per landed flip, -1 point per
+full active second. Pause/waiting freeze decay; only a new game resets speed.
+Actual speed is current base speed times this percentage, without a second
+additive boost. Ice provides at least 150% within the same system. At >=150%
+rocks break on contact. Scale jump/ramp impulses and gravity together via
+`snowPhysicsScale()` to increase clearance without changing flip timing;
+spawn terrain at least 2.5 seconds ahead at high speed. Show tempo in the HUD.
+New record keys and game
 counts are normalized for old backups. `gamesPlayed` starts at zero on migration
 with `gamesTrackedSince`; never infer historical counts from earned rewards.
 Run `node tests/offline.test.js` for the cached asset graph and open
