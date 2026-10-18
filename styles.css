@@ -904,3 +904,10 @@ body.focused-view .app-bar {padding-top:calc(4px + var(--safe-top));padding-bott
 .written-correct {border-color:var(--good);}
 .written-hint {color:var(--ink-soft);font-size:.85rem;line-height:1.45;margin:12px 0;}
 .written-division button {margin-top:14px;}
+
+.runner-controls {display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%;flex:none;margin:0;}
+.runner-controls button {min-height:44px;touch-action:none;border:0;border-radius:12px;background:#e4edf4;color:#244a63;font-size:1.4rem;font-weight:700;padding:4px 2px;white-space:nowrap;overflow:hidden;}
+.runner-controls small {display:block;font-size:.66rem;margin:0;line-height:1.15;}
+#runnerWrap {touch-action:none;}
+#screen-runner.is-paused .runner-controls {pointer-events:none;}
+#screen-runner.game-immersive .game-wrap canvas {object-fit:fill;}

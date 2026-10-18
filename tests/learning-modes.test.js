@@ -90,7 +90,10 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'refreshDailySessionIfNeeded:refreshDailySessionIfNeeded, repeatRoundLabel:repeatRoundLabel,',
   'tapAdvance:tapAdvance,',
   'getConfetti:function(){return confettiLayer;},',
-  'games:function(){return {dino:rewardGame,flappy:flappyGame,tower:towerGame,gravity:gravityGame,brick:arcadeGames.brick,snake:arcadeGames.snake,snow:arcadeGames.snow};},',
+  'games:function(){return {dino:rewardGame,flappy:flappyGame,tower:towerGame,gravity:gravityGame,brick:arcadeGames.brick,snake:arcadeGames.snake,snow:arcadeGames.snow,runner:arcadeGames.runner};},',
+  'runnerAction:runnerAction, runnerUpdate:updateRunnerGame, runnerResize:resizeRunnerCanvas,',
+  'runnerProject:runnerProject, runnerDraw:drawRunnerGame, runnerSpawn:spawnRunnerRows,',
+  'drawHalloweenSky:drawHalloweenSky, drawPumpkin:drawPumpkin,',
   'activeGameStep:activeGameStep, pauseGame:pauseGame, resumeGame:resumeGame,',
   'gameDurationMs:gameDurationMs, startArcadeGame:startArcadeGame, makeBrickLevel:makeBrickLevel,',
   'resetBrickBall:resetBrickBall, brickLevelSpeed:brickLevelSpeed, applyBrickExtra:applyBrickExtra,',
@@ -108,7 +111,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'updateSnowCamera:updateSnowCamera,',
   'spawnSnowTerrain:spawnSnowTerrain,',
   'stepSnowPhysics:stepSnowPhysics,',
-  'stepGame:function(kind,dt){({dino:updateRewardGame,flappy:updateFlappyGame,tower:updateTowerGame,gravity:updateGravityGame,brick:updateBrickGame,snake:updateSnakeGame,snow:updateSnowGame})[kind](dt);},',
+  'stepGame:function(kind,dt){({dino:updateRewardGame,flappy:updateFlappyGame,tower:updateTowerGame,gravity:updateGravityGame,brick:updateBrickGame,snake:updateSnakeGame,snow:updateSnowGame,runner:updateRunnerGame})[kind](dt);},',
   'pickNextSticker:pickNextSticker, stickerPool:STICKER_POOL,',
   'getState:function(){ return state; },',
   'setState:function(profile){ state = profile; root.profiles[root.activeProfileId] = profile; }',
@@ -629,14 +632,14 @@ assert.strictEqual(regressionProfile.history[regressionProfile.today.date].wrong
 context.Math.random = Math.random;
 console.log('Written division: one/two/three rows, 848:8 regression, focus, validation and rewards OK');
 
-// All seven games keep the same reward contract and active-time/pause rules.
+// All eight games keep the same reward contract and active-time/pause rules.
 var gameProfile = api.normalizeProfile(api.defaultProfile());
 gameProfile.config.sound = false;
 api.setState(gameProfile);
 api.ensureFactPool();
 [
   ['Dino','game','dino'], ['Flappy','flappy','flappy'], ['Tower','tower','tower'],
-  ['Gravity','gravity','gravity'], ['Brick','brick','brick'], ['Snake','snake','snake'], ['Snow','snow','snow']
+  ['Gravity','gravity','gravity'], ['Brick','brick','brick'], ['Snake','snake','snake'], ['Snow','snow','snow'], ['Runner','runner','runner']
 ].forEach(function(spec){
   var choose = elements['choose' + spec[0] + 'Btn'];
   var screen = elements['screen-' + spec[1]];
@@ -695,9 +698,10 @@ assert(elements['screen-game-choice'].classList.contains('active'));
 gameProfile.reward.availablePlays = 0;
 elements.navGames.events.click();
 assert(elements.chooseSnowBtn.disabled);
+assert(elements.chooseRunnerBtn.disabled);
 elements.navStatistics.events.click();
 assert(elements['screen-statistics'].classList.contains('active'));
-assert.strictEqual(elements.statGames.textContent, '7');
+assert.strictEqual(elements.statGames.textContent, '8');
 elements.navLearn.events.click();
 assert(elements['screen-home'].classList.contains('active'));
 // Higher Bricks levels vary geometrically, stay clearable and grow 25% in speed.
@@ -1063,19 +1067,87 @@ api.stepGame('snake',api.snakeStepTime(cleo)*2.5);
 cleoPoint(0,9.5,10); // Catch-up can cross several cells without losing remainder.
 elements.snakeHomeBtn.events.click();
 console.log('Cleo: smooth grid movement, one buffered turn, corners, wrap rendering, pause, food and collisions OK');
+// Metro Run: integration and real world-preserving collision/collectible paths.
+var metroProfile=api.getState();metroProfile.reward.availablePlays=1;elements.chooseRunnerBtn.click();var metro=api.games().runner;
+assert(metro.active&&!metro.running);assert.equal(metroProfile.reward.availablePlays,1);assert.equal(elements.runnerTime.textContent,'3:00');assert(elements['screen-runner'].classList.contains('game-immersive'));
+api.runnerAction('left');assert.equal(metroProfile.reward.availablePlays,0);assert.equal(metro.lane,-1);api.runnerAction('left');assert.equal(metro.lane,-1);
+api.runnerAction('right');api.runnerAction('right');assert.equal(metro.lane,1);
+var generated=metro.objects.slice();var rows={};generated.filter(function(o){return o.length;}).forEach(function(o){(rows[o.z]||(rows[o.z]=[])).push(o);});Object.values(rows).forEach(function(row){assert(new Set(row.map(function(o){return o.lane;})).size<3||row.some(function(o){return o.type==='barrier'||o.type==='gate';}));});
+function cleanMetro(){
+ api.startArcadeGame('runner',true);api.beginArcadeAttempt('runner');var g=api.games().runner;g.objects=[];g.nextRow=10000;return g;
+}
+metro=cleanMetro();metro.objects=[{type:'coin',lane:0,z:.2}];api.runnerUpdate(.01);assert.equal(metro.coins,1);assert(metro.score>=20);
+metro=cleanMetro();metro.objects=[{type:'barrier',length:2,lane:0,z:9}];api.runnerAction('jump');
+for(var t=0;t<.5;t+=1/60)api.runnerUpdate(1/60);assert.equal(metro.attempts,0);assert(metro.jump>0);
+metro=cleanMetro();metro.objects=[{type:'gate',length:2,lane:0,z:.2}];api.runnerAction('slide');api.runnerUpdate(.01);assert.equal(metro.attempts,0);
+metro=cleanMetro();metro.objects=[{type:'train',length:14,lane:0,z:.2},{type:'coin',lane:1,z:90}];metro.distance=0;metro.coins=7;metro.score=140;
+api.runnerUpdate(.01);assert.equal(metro.attempts,1);assert(metro.awaitingStart);assert.equal(metro.coins,7);assert(metro.distance>0);assert.equal(metro.score,140);assert(metro.objects.some(function(o){return o.z===90;}));assert(metro.graceUntil>metro.elapsed);
+var freeze=metro.playTimeMs;api.runnerUpdate(1);assert.equal(metro.playTimeMs,freeze);api.beginArcadeAttempt('runner');assert(metro.running);
+metro=cleanMetro();metro.objects=[{type:'shield',lane:0,z:.2}];api.runnerUpdate(.01);assert.equal(metro.shieldUntil,metro.elapsed+8);
+metro.objects=[{type:'train',lane:0,z:metro.distance+.2,length:14}];api.runnerUpdate(.01);assert.equal(metro.attempts,0);assert.equal(metro.shieldUntil,0);assert(metro.graceUntil>metro.elapsed);
+metro=cleanMetro();metro.objects=[{type:'magnet',lane:0,z:.2}];api.runnerUpdate(.01);assert.equal(metro.magnetUntil,metro.elapsed+10);
+metro.objects=[{type:'coin',lane:-1,z:metro.distance+4}];api.runnerUpdate(.01);assert.equal(metro.coins,1);
+elements.runnerPauseBtn.click();freeze=metro.playTimeMs;var distance=metro.distance;api.runnerAction('left');api.runnerUpdate(1);assert.equal(metro.playTimeMs,freeze);assert.equal(metro.distance,distance);assert.equal(metro.lane,0);elements.runnerPauseBtn.click();
+metro=cleanMetro();var event={pointerId:9,clientX:100,clientY:100,preventDefault:function(){}};
+elements.runnerWrap.events.pointerdown(event);elements.runnerWrap.events.pointermove({pointerId:9,clientX:140,clientY:100,preventDefault:function(){}});assert.equal(metro.lane,1);
+elements.runnerWrap.events.pointerup({pointerId:9,clientX:140,clientY:100,preventDefault:function(){}});assert.equal(metro.lane,1);assert.equal(metro.vy,0);
+elements.runnerWrap.events.pointerdown(event);elements.runnerWrap.events.pointercancel();elements.runnerWrap.events.pointerup({pointerId:9,clientX:100,clientY:40,preventDefault:function(){}});assert.equal(metro.vy,0);
+// Actual rendered geometry adapts to both aspect ratios and keeps near/far order.
+elements.runnerWrap.getBoundingClientRect=function(){return {width:390,height:650};};api.runnerResize();assert.equal(elements.runnerCanvas.height,800);
+var near=api.runnerProject(metro,1,0),far=api.runnerProject(metro,1,100);assert(near.y>far.y);assert(near.k>far.k);api.runnerDraw();
+elements.runnerWrap.getBoundingClientRect=function(){return {width:800,height:300};};api.runnerResize();assert.equal(elements.runnerCanvas.height,300);api.runnerDraw();
+metro.playTimeMs=180000;api.runArcadeGame('runner',1000);assert.equal(metro.active,false);elements.runnerHomeBtn.click();assert.equal(api.games().runner,null);
+assert(api.getState().reward.bestRunnerScore>=140);
+api.getState().reward.availablePlays=0;elements.navGames.click();assert.equal(elements.chooseRunnerBtn.disabled,true);
+console.log('OK: eighth-game rewards/locking, jump/slide/lane rules, continuation, coins/shield/magnet, swipe/cancel, pause/timer, responsive projection and backup record.');
+// Perspective keeps lanes on straight rails, even when objects pass the rider.
+metro=cleanMetro();
+[-1,0,1].forEach(function(lane){
+  var horizon=elements.runnerCanvas.height*.2;
+  [0,5,20,90].forEach(function(z){
+    var point=api.runnerProject(metro,lane,z);
+    assert(Math.abs((point.x-240)/(point.y-horizon)-lane*122/(elements.runnerCanvas.height*.63))<1e-9);
+  });
+});
+assert(api.runnerProject(metro,1,-8).y>api.runnerProject(metro,1,-3).y);
+// Seasonal graphics are deterministic paint: no simulation changes or randomness.
+var savedRandom=context.Math.random;
+context.Math.random=function(){throw new Error('Decoration must not consume gameplay randomness');};
+var beforeDecoration=JSON.stringify(metro);
+api.runnerDraw();
+assert.strictEqual(JSON.stringify(metro),beforeDecoration);
+var artCtx=new Element().getContext();
+api.drawHalloweenSky(artCtx,480,720,12,false);
+api.drawHalloweenSky(artCtx,480,480,12,true);
+api.drawPumpkin(artCtx,30,40,12);
+context.Math.random=savedRandom;
+// At later stages every fully occupied row still has a jump/slide route.
+context.Math.random=function(){return .1;};
+metro.elapsed=120;metro.nextRow=metro.distance+40;metro.objects=[];api.runnerSpawn(metro);
+var denseRows={};
+metro.objects.filter(function(o){return o.length;}).forEach(function(o){(denseRows[o.z]||(denseRows[o.z]=[])).push(o);});
+Object.keys(denseRows).forEach(function(key){
+  var row=denseRows[key];assert(row.length<=3);
+  assert(row.length<3||row.some(function(o){return o.type==='barrier'||o.type==='gate';}));
+});
+context.Math.random=savedRandom;
+elements.runnerHomeBtn.events.click();
+console.log('Metro perspective, late-stage routes and cosmetic-only Halloween drawing OK');
 var migratedGames = api.defaultProfile();
 migratedGames.reward.availablePlays = 3;
 migratedGames.reward.bestTowerScore = 42;
 delete migratedGames.reward.gamesTrackedSince;
 delete migratedGames.reward.gamesPlayed;
 delete migratedGames.reward.bestSnowScore;
+delete migratedGames.reward.bestRunnerScore;
 api.normalizeProfile(migratedGames);
 assert.strictEqual(migratedGames.reward.availablePlays, 3);
 assert.strictEqual(migratedGames.reward.bestTowerScore, 42);
 assert.strictEqual(migratedGames.reward.bestSnowScore, 0);
+assert.strictEqual(migratedGames.reward.bestRunnerScore, 0);
 assert.strictEqual(migratedGames.reward.gamesPlayed, 0);
 assert(/^\d{4}-\d{2}-\d{2}$/.test(migratedGames.reward.gamesTrackedSince));
-console.log('Seven games: rewards, replay without confetti, pause, per-game timers and migration OK');
+console.log('Eight games: rewards, replay without confetti, pause, per-game timers and migration OK');
 console.log('Bricks: six layouts, 25% speed growth, moving rows and extras; Gravity: high-contrast gaps OK');
 console.log('Sticker awards: unseen first, balanced repeats and existing albums OK');
 console.log('Learning modes: generation, UI answers, retries, rewards, migration, replay and completion OK');

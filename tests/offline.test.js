@@ -10,7 +10,7 @@ var context = { self:{ addEventListener:function(name, fn){ handlers[name] = fn;
 vm.runInNewContext(fs.readFileSync(path.join(root, 'sw.js'), 'utf8'), context);
 var assets = Array.from(context.ASSETS);
 assets.forEach(function(asset){ assert(fs.existsSync(path.join(root, asset)), 'Missing cached asset: ' + asset); });
-['gravity','brick','snake','snow','flappy','tower'].forEach(function(game){
+['gravity','brick','snake','snow','flappy','tower','runner'].forEach(function(game){
   assert(assets.indexOf('./' + game + '.html') !== -1);
   assert(fs.readFileSync(path.join(root, game + '.html'), 'utf8').indexOf('?demo=' + game) !== -1);
 });
@@ -25,4 +25,4 @@ Array.from(html.matchAll(/href="icons\.svg#([^"]+)"/g)).forEach(function(match){
 });
 assert(!/vocabulator|Vokabel|trainer\.js|data\/manifest/.test(html));
 assert(handlers.install && handlers.activate && handlers.fetch);
-console.log('Offline: all seven games, launchers, icons and app assets available');
+console.log('Offline: all eight games, launchers, icons and app assets available');

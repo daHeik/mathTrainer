@@ -21,7 +21,7 @@ Die App kommt ohne Werbung, Benutzerkonto, Tracker oder Telemetrie aus. Sie
 
 Die Oberfläche liegt in `index.html`, das Styling in `styles.css` und die
 Anwendungs- und Spiellogik in `app.js`. `flappy.html`, `tower.html`,
-`gravity.html`, `brick.html`, `snake.html` und `snow.html` sind
+`gravity.html`, `brick.html`, `snake.html`, `snow.html` und `runner.html` sind
 kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 öffnen. Dadurch gibt es keine doppelte Spiellogik.
 
@@ -126,8 +126,8 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   bleiben in Lernstand und Statistik, freigeschaltete Belohnungsspiele bleiben
   verfügbar. Ein Abbruch zählt nicht als Rundenabschluss für Sticker und Serie;
   die nächste Runde beginnt neu.
-- Sieben Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel, Turmbauer,
-  Gravity Run, Bricks, Cleo und Schneefahrt. Die benötigte
+- Acht Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel, Turmbauer,
+  Gravity Run, Bricks, Cleo, Schneefahrt und Metro Run. Die benötigte
   Anzahl richtiger Antworten pro Spiel ist im Eltern-Bereich konfigurierbar
   (Standard: 10); die Startseite zeigt, wie viele richtige Antworten bis zum
   nächsten Spiel fehlen. Bricks endet nach höchstens fünf aktiven Minuten,
@@ -162,6 +162,16 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   Sprüngen, Saltos, Grinds, Boosts und Verfolger. Alle Spiele speichern Rekorde
   pro Profil und verbrauchen erst beim ersten Spielzug ein Kontingent.
 - Die aktuelle App-Version steht dezent in Hellgrau unten auf der Startseite.
+- Metro Run: Perspektivischer Drei-Spuren-Runner mit Zügen und Schranken.
+  Wischen, Pfeiltasten/WASD oder Bildschirmtasten zum Ausweichen, Springen und
+  Rutschen; Tippen/Leertaste springt. Münzen geben je 20 Punkte, Schild schützt
+  maximal 8 Sekunden bis zum ersten Treffer, Magnet sammelt 10 Sekunden lang.
+  Drei aktive Minuten und drei Versuche, Fortsetzung erhält Strecke und Punkte;
+  eigener Profilrekord und offline spielbarer Demo-Einstieg über `runner.html`.
+- Freundliche Halloween-Dekoration aus dem Vocabulator in allen acht Spielen:
+  Kürbisse, Spinnweben, Fledermäuse und Hexen; bei Metro Run zusätzlich lustige
+  Straßenschilder, tanzende Skelette und Geisterballons. Rein gezeichnete Deko
+  ohne zusätzliche Hindernisse oder Änderungen der Trefferflächen.
 - Schneefahrt: Die Kamera folgt vorausschauend dem Gelände am rechten Bildschirmrand
   und hält tiefe Stellen im sichtbaren Abschnitt frühzeitig im Bild.
   Jeder erfolgreich gelandete Backflip bringt +20 Prozentpunkte
@@ -249,7 +259,7 @@ sudo systemctl enable --now mathserver
 
 ```bash
 sudo apt install nginx
-sudo cp index.html styles.css app.js icons.svg flappy.html tower.html gravity.html brick.html snake.html snow.html manifest.json sw.js icon-192.png icon-512.png /var/www/html/
+sudo cp index.html styles.css app.js icons.svg flappy.html tower.html gravity.html brick.html snake.html snow.html runner.html manifest.json sw.js icon-192.png icon-512.png /var/www/html/
 ```
 
 Danach ist die Seite über `http://<pi-ip>/` erreichbar.

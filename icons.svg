@@ -28,3 +28,4 @@
 <symbol id="snowboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="5" r="2"/><path d="m12 8-3 5 5 3 2 4m-7-7-4 5m5-8 5 2 3-3M2 20c5 3 15 3 20-1M2 10l3-5 3 5"/></symbol>
 <symbol id="statistics" viewBox="0 0 24 24"><path d="M5 20V12M12 20V4M19 20V8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
 </svg>
+<symbol id="runner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="16" rx="4" fill="#55c0c7" stroke="#236879"/><path d="M7 6h10v5H7z" fill="#d4f5ff"/><path d="m8 18-3 4m11-4 3 4M7 20h10"/><circle cx="8" cy="14" r="1" fill="#ffe279"/><circle cx="16" cy="14" r="1" fill="#ffe279"/></symbol>

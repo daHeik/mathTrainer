@@ -17,7 +17,7 @@ static web server.
 - `icons.svg` provides the local SVG symbol set (no external icon library).
 - `app.js` contains the trainer and reward-game logic.
 - `flappy.html`, `tower.html`, `gravity.html`, `brick.html`, `snake.html` and
-  `snow.html` are lightweight direct-play launchers that
+  `snow.html` and `runner.html` are lightweight direct-play launchers that
   open the corresponding shared implementation in `index.html` demo mode.
 - `sw.js` provides network-first caching and offline fallback.
 - `manifest.json` contains the PWA metadata.
@@ -129,8 +129,15 @@ retries, reward totals, migrations, replay and completion without external
 dependencies. The DOM stand-in does not replace a visual mobile/browser check.
 
 The light app shell and seven games were ported from sibling `vocuabulator`
-(MIT, source commit `22da147`, UI 28). Navigation uses Learn/Games/Statistics;
-math learning records and storage keys stay unchanged. Games consume a play
+(MIT, source commit `22da147`, UI 28). Navigation uses Learn/Games/Statistics.
+Metro Run and Halloween art were subsequently ported from source `f3e7851`
+(UI 32, MIT, same copyright holder). There are now eight games. Runner shares
+the arcade lifecycle, three active minutes/three attempts, `bestRunnerScore`
+normalization, first-move accounting, immersive/pause/resize and demo launch.
+Runner controls: swipe/arrows/WASD/buttons; coins +20, shield up to 8s/one hit,
+magnet 10s. Recovery keeps world/score. Seasonal canvas art is cosmetic only:
+no hitbox changes or random calls; use active game time so pause freezes it.
+Math learning records and storage keys stay unchanged. Games consume a play
 on their first move, not selection. All games use active simulation time with
 a three-minute cap (Bricks: five minutes) and pause/hidden-view suspension.
 Use `gameDurationMs(game)` in shared arcade loops, attempt checks and HUDs.
