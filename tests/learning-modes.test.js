@@ -104,6 +104,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'snowSpeedPercent:snowSpeedPercent, snowSpeed:snowSpeed, snowPhysicsScale:snowPhysicsScale,',
   'snowCompleteTrick:snowCompleteTrick, decaySnowSpeed:decaySnowSpeed, snowPress:snowPress,',
   'snowSurface:snowSurface, snowGround:snowGround,',
+  'updateSnowChaser:updateSnowChaser,',
   'updateSnowCamera:updateSnowCamera,',
   'spawnSnowTerrain:spawnSnowTerrain,',
   'stepSnowPhysics:stepSnowPhysics,',
@@ -955,6 +956,27 @@ api.stepGame('snow',.001);
 assert.strictEqual(snow.attempts,1,'Normal rock collision resumes after the window');
 elements.snowHomeBtn.events.click();
 console.log('Snow landing: one active second of rock smashing, including landing frame and pause OK');
+// Base speed never grows with elapsed time. Each chase locks its starting speed.
+api.startArcadeGame('snow',true);snow=api.games().snow;
+[0,35,143,180].forEach(function(seconds){
+  snow.elapsed=seconds;snow.speedPercent=100;assert.strictEqual(api.snowSpeed(snow),220);
+  snow.speedPercent=200;assert.strictEqual(api.snowSpeed(snow),440);
+});
+snow.elapsed=35;snow.nextChaseAt=35;snow.speedPercent=150;
+api.updateSnowChaser(snow,0);
+assert.strictEqual(snow.chaser.speed,346,'Chaser starts 16px/s faster than current 150% pace');
+api.updateSnowChaser(snow,1);
+assert.strictEqual(snow.chaser.gap,164,'Chaser gains ground at unchanged rider speed');
+snow.speedPercent=170;api.updateSnowChaser(snow,1);
+assert.strictEqual(snow.chaser.speed,346,'Later boosts do not accelerate the chaser');
+assert.strictEqual(snow.chaser.gap,192,'A later boost lets the rider pull away');
+snow.speedPercent=140;api.updateSnowChaser(snow,1);
+assert.strictEqual(snow.chaser.gap,154,'Boost decay lets the chaser catch up');
+snow.chaser=null;snow.nextChaseAt=snow.elapsed;snow.speedPercent=100;snow.chasesEscaped=3;
+api.updateSnowChaser(snow,0);
+assert.strictEqual(snow.chaser.speed,236,'Next chase samples its own starting rider speed');
+elements.snowHomeBtn.events.click();
+console.log('Snow pace: fixed base speed and chaser locked to starting rider speed plus 16px/s OK');
 // Cleo glides along locked grid segments, with only one future turn buffered.
 api.startArcadeGame('snake', true);
 var cleo = api.games().snake;

@@ -4009,7 +4009,7 @@
   function snowSlope(x){return Math.atan((snowGround(x+2)-snowGround(x-2))/4);}
   function snowGapAt(g,x){return g.gaps.some(function(gap){return x>gap.x&&x<gap.x+gap.w;});}
   function snowSpeedPercent(g){return Math.max(100,Math.min(200,Number(g.speedPercent)||100));}
-  function snowBaseSpeed(g){return 220+Math.min(100,g.elapsed*.7);}
+  function snowBaseSpeed(){return 220;}
   function snowSpeed(g){return snowBaseSpeed(g)*snowSpeedPercent(g)/100;}
   function snowPhysicsScale(g){return 1+(snowSpeedPercent(g)-100)/200;}
   function decaySnowSpeed(g,dt){
@@ -4094,9 +4094,9 @@
     }
   }
   function updateSnowChaser(g,dt){
-    if(!g.chaser&&g.elapsed>=g.nextChaseAt)g.chaser={gap:180,startFlips:g.flips};
+    if(!g.chaser&&g.elapsed>=g.nextChaseAt)g.chaser={gap:180,startFlips:g.flips,speed:snowSpeed(g)+16};
     if(!g.chaser)return;
-    g.chaser.gap+=(snowSpeed(g)-snowBaseSpeed(g)-16-g.chasesEscaped*3)*dt;
+    g.chaser.gap+=(snowSpeed(g)-g.chaser.speed)*dt;
     if(g.chaser.gap>=270&&g.flips-g.chaser.startFlips>=2){g.chasesEscaped++;g.score+=250;g.chaser=null;g.nextChaseAt=g.elapsed+30;}
     else if(g.chaser.gap<=28&&g.elapsed>=g.graceUntil)loseArcadeAttempt('snow','Verfolger zu nah');
   }

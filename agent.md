@@ -150,6 +150,9 @@ one future turn, rejecting further gestures until consumed. Render wrapped
 edge copies to avoid seam jumps. Pause freezes interpolation; recovery resets it.
 Snow uses `speedPercent` (100..200): +20 points per landed flip, -1 point per
 full active second. Pause/waiting freeze decay; only a new game resets speed.
+Base speed is a constant 220 px/s, never elapsed-time dependent. Each chaser
+locks `speed` to the rider's actual speed at chase start plus 16 px/s; later
+boosts/decay affect only the rider. No extra chaser-speed escalation per escape.
 Actual speed is current base speed times this percentage, without a second
 additive boost. Ice provides at least 150% within the same system. At >=150%
 rocks break on contact. Scale jump/ramp impulses and gravity together via

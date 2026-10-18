@@ -174,6 +174,9 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   Flugzeit. Gelände wird bei hohem Tempo weiter voraus erzeugt. Eis beschleunigt
   auf mindestens 150 % und nutzt dieselbe Begrenzung/Abklingregel statt eines
   zusätzlichen, unbegrenzten Tempoaufschlags.
+  Das Grundtempo bleibt konstant bei 220 Pixeln/Sekunde, ohne zeitabhängigen
+  Anstieg. Der Verfolger startet mit dem dann aktuellen Fahrtempo plus
+  16 Pixeln/Sekunde und behält dieses Tempo während der Verfolgung bei.
 - Bricks steigert das Grundtempo mit jedem Level um 25 % gegenüber dem
   vorherigen Level. Ab Level 3 wechseln Treppe, Raute, Doppeltürme, Schachbrett,
   Festung und Wellen; spätere Felder haben robustere Steine und ab Level 5
