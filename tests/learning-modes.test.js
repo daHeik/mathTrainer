@@ -104,6 +104,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'snowSpeedPercent:snowSpeedPercent, snowSpeed:snowSpeed, snowPhysicsScale:snowPhysicsScale,',
   'snowCompleteTrick:snowCompleteTrick, decaySnowSpeed:decaySnowSpeed, snowPress:snowPress,',
   'snowSurface:snowSurface, snowGround:snowGround,',
+  'updateSnowCamera:updateSnowCamera,',
   'spawnSnowTerrain:spawnSnowTerrain,',
   'stepSnowPhysics:stepSnowPhysics,',
   'stepGame:function(kind,dt){({dino:updateRewardGame,flappy:updateFlappyGame,tower:updateTowerGame,gravity:updateGravityGame,brick:updateBrickGame,snake:updateSnakeGame,snow:updateSnowGame})[kind](dt);},',
@@ -895,6 +896,65 @@ api.startArcadeGame('snow', true);
 assert.strictEqual(api.snowSpeedPercent(api.games().snow), 100);
 elements.snowHomeBtn.events.click();
 console.log('Snow: landed-flip boosts, active-time decay, 100..200% caps, jump physics and 150% rock collisions OK');
+// The right edge leads the camera before the rider reaches a downhill ravine.
+api.startArcadeGame('snow',true);
+snow=api.games().snow;
+snow.distance=600;
+snow.terrainCache[0]={knots:[0,160,480,1400],heights:[250,250,440,440]};
+snow.player.y=222;snow.cameraY=5;
+var originalSnowHeight=elements.snowCanvas.height;
+elements.snowCanvas.height=360;
+snow.gaps=[{x:1050,w:170}];
+api.updateSnowCamera(snow,1/60);
+assert(snow.cameraY>=128,'Upcoming low terrain must retain 48px bottom clearance');
+assert(snow.player.y-snow.cameraY>=60,'Rider remains visible above upcoming terrain');
+assert.strictEqual(api.snowGround(snow.distance+160),250,'Rider has not reached the descent yet');
+for(var cameraFrame=0;cameraFrame<120;cameraFrame++)api.updateSnowCamera(snow,1/60);
+assert(Math.abs(snow.cameraY-162)<.001,'Right-edge terrain, bounded by rider visibility, drives camera');
+// A valley in the middle stays visible even after the right edge climbs again.
+snow.terrainCache[0]={knots:[0,160,320,640,1400],heights:[250,250,440,250,250]};
+snow.cameraY=5;
+api.updateSnowCamera(snow,1/60);
+assert(snow.cameraY>=128,'Visible valley must not be cropped by a higher right bank');
+// Portrait view scales framing; a high jump keeps the rider on screen.
+elements.snowCanvas.height=720;snow.cameraY=5;
+api.updateSnowCamera(snow,1/60);
+assert(snow.player.y-snow.cameraY>=120);
+elements.snowCanvas.height=360;snow.player.y=-100;snow.cameraY=5;
+api.updateSnowCamera(snow,1/60);
+assert(snow.player.y-snow.cameraY>=60);
+elements.snowCanvas.height=originalSnowHeight;
+elements.snowHomeBtn.events.click();
+console.log('Snow camera: right-edge lookahead, early ravine visibility, valley framing, portrait and jumps OK');
+// A successful landing grants one active second of rock smashing at base speed.
+api.startArcadeGame('snow',true);
+snow=api.games().snow;api.beginArcadeAttempt('snow');
+snow.spawnIn=100;snow.nextChaseAt=1000;
+snow.player.grounded=false;snow.player.y=api.snowSurface(snow,160)-snow.player.h-.01;
+snow.player.vy=100;snow.player.rotation=0;
+snow.rocks=[{x:155,w:40,h:35}];
+api.stepGame('snow',.001);
+assert.strictEqual(snow.player.grounded,true);
+assert.strictEqual(snow.speedPercent,100);
+assert.strictEqual(snow.rocks.length,0,'Rock touching the landing is destroyed');
+assert.strictEqual(snow.attempts,0);
+assert(Math.abs(snow.landingSmashUntil-snow.elapsed-1)<1e-8);
+api.pauseGame(elements['screen-snow']);
+var landingElapsed=snow.elapsed;
+api.stepGame('snow',2);
+assert.strictEqual(snow.elapsed,landingElapsed);
+api.resumeGame(elements['screen-snow']);
+api.stepGame('snow',.9);
+snow.rocks=[{x:snow.distance+155,w:40,h:35}];
+api.stepGame('snow',.001);
+assert.strictEqual(snow.rocks.length,0,'Protection persists near the end of the second');
+assert.strictEqual(snow.attempts,0);
+api.stepGame('snow',.11);
+snow.rocks=[{x:snow.distance+155,w:40,h:35}];
+api.stepGame('snow',.001);
+assert.strictEqual(snow.attempts,1,'Normal rock collision resumes after the window');
+elements.snowHomeBtn.events.click();
+console.log('Snow landing: one active second of rock smashing, including landing frame and pause OK');
 // Cleo glides along locked grid segments, with only one future turn buffered.
 api.startArcadeGame('snake', true);
 var cleo = api.games().snake;

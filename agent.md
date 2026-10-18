@@ -155,6 +155,12 @@ additive boost. Ice provides at least 150% within the same system. At >=150%
 rocks break on contact. Scale jump/ramp impulses and gravity together via
 `snowPhysicsScale()` to increase clearance without changing flip timing;
 spawn terrain at least 2.5 seconds ahead at high speed. Show tempo in the HUD.
+Snow camera targets terrain at `distance + 640` (right viewport edge), not
+terrain under the rider. `updateSnowCamera()` preserves bottom clearance for
+visible valleys while retaining rider visibility; scale framing with canvas height.
+Successful airborne-to-ground/grind landings grant one active second of rock
+smashing via `landingSmashUntil`, including collisions in the landing step.
+Do not extend this window during ordinary grounded riding; reset on recovery.
 New record keys and game
 counts are normalized for old backups. `gamesPlayed` starts at zero on migration
 with `gamesTrackedSince`; never infer historical counts from earned rewards.
@@ -172,6 +178,8 @@ Run `node tests/offline.test.js` for the cached asset graph and open
 - While changes are still uncommitted, keep `CACHE_NAME` exactly one version
   above the value in `HEAD`. Do not increment it again for every additional
   edit that will be part of the same commit.
+- Keep the home screen's `appVersion` text in `index.html` aligned with
+  `CACHE_NAME`; `tests/offline.test.js` checks that the version numbers match.
 - Verify both an online load and a reload while offline.
 - Keep service-worker registration guarded so direct `file://` use does not
   fail.

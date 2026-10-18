@@ -161,11 +161,15 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   Schneefahrt: Snowboard-Runner mit
   Sprüngen, Saltos, Grinds, Boosts und Verfolger. Alle Spiele speichern Rekorde
   pro Profil und verbrauchen erst beim ersten Spielzug ein Kontingent.
-- Schneefahrt: Jeder erfolgreich gelandete Backflip bringt +20 Prozentpunkte
+- Die aktuelle App-Version steht dezent in Hellgrau unten auf der Startseite.
+- Schneefahrt: Die Kamera folgt vorausschauend dem Gelände am rechten Bildschirmrand
+  und hält tiefe Stellen im sichtbaren Abschnitt frühzeitig im Bild.
+  Jeder erfolgreich gelandete Backflip bringt +20 Prozentpunkte
   Tempo (Doppelsalto +40), maximal 200 % des aktuellen Grundtempos. Pro voller
   aktiver Sekunde sinkt es um einen Prozentpunkt bis mindestens 100 %;
   Pause und Warten zählen nicht. Der Prozentwert steht im Spielfeld. Ab
-  150 % zertrümmert die Figur Steine bei Kontakt. Sprungimpuls, Rampen und
+  150 % zertrümmert die Figur Steine bei Kontakt. Für eine aktive Sekunde nach
+  einer Landung gilt das auch bei niedrigerem Tempo. Sprungimpuls, Rampen und
   Schwerkraft skalieren gemeinsam: bis 50 % mehr Sprunghöhe bei ähnlicher
   Flugzeit. Gelände wird bei hohem Tempo weiter voraus erzeugt. Eis beschleunigt
   auf mindestens 150 % und nutzt dieselbe Begrenzung/Abklingregel statt eines

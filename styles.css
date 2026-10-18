@@ -624,6 +624,7 @@
 .home-rewards { display:flex; gap:10px; flex-wrap:wrap; }
 .home-rewards .secondary-btn { flex:1 1 160px; margin:0; padding:11px 14px; min-height:46px; font-size:.92rem; border-radius:12px; }
 #screen-home .reward-note { margin:12px 0 0; font-size:.8rem; }
+#screen-home .app-version { margin:20px 0 0; color:#a0a5ad; font-size:.72rem; text-align:center; }
 button:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
 @media (max-width:520px) {
   .home-top { align-items:flex-start; flex-direction:column; gap:12px; }

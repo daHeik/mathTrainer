@@ -4023,6 +4023,7 @@
   function initSnow(){
     var g=arcadeGames.snow;g.terrainSeed=Math.floor(Math.random()*4294967296)>>>0;g.terrainCache={};g.distance=0;g.coins=0;g.flips=0;g.combo=0;g.spawnIn=.8;g.wave=0;g.rocks=[];g.gaps=[];g.items=[];g.ropes=[];g.ramps=[];g.ice=[];g.houses=[];g.patternBag=[];g.lastPattern=null;g.nextFeatureX=0;
     g.effects=[];g.notice=null;g.held=false;g.graceUntil=0;g.speedPercent=100;g.speedDecayElapsed=0;g.lastTrickAt=-100;g.grindDistance=0;g.cameraY=snowGround(160)-245*snowViewHeight()/360;g.chaser=null;g.chasesEscaped=0;g.nextChaseAt=35;g.section='Bergstart';
+    g.landingSmashUntil=0;
     g.player={y:snowGround(160)-28,h:28,vy:0,rotation:0,grounded:true,grinding:null};
   }
   function snowRecoveryPoint(g){
@@ -4040,7 +4041,7 @@
     var g=arcadeGames.snow,p=g.player,target=snowRecoveryPoint(g),screenY=p.y-g.cameraY;
     // Advance only to safe snow; preserve score, terrain, collectibles and progress.
     g.distance=target-160;g.effects=[];g.notice={text:'Sichere Weiterfahrt',until:g.elapsed+1.5};g.held=false;g.combo=0;p.vy=0;p.rotation=0;p.grounded=true;p.grinding=null;p.y=snowSurface(g,target)-p.h;
-    g.cameraY=p.y-Math.max(60,Math.min(snowViewHeight()*.7,screenY));g.graceUntil=g.elapsed+1.5;g.chaser=null;g.nextChaseAt=g.elapsed+30;
+    g.cameraY=p.y-Math.max(60,Math.min(snowViewHeight()*.7,screenY));g.graceUntil=g.elapsed+1.5;g.landingSmashUntil=0;g.chaser=null;g.nextChaseAt=g.elapsed+30;
   }
   function snowPress(){if(arcadeGames.snow&&arcadeGames.snow.pausedAt!=null)return;var g=arcadeGames.snow;if(!g||!g.active)return;if(g.awaitingStart&&!beginArcadeAttempt('snow'))return;g.held=true;if(g.player.grounded){g.player.vy=-410*snowPhysicsScale(g);g.player.grounded=false;g.player.grinding=null;g.player.rotation=0;}}
   function snowRelease(){if(arcadeGames.snow)arcadeGames.snow.held=false;}
@@ -4106,6 +4107,18 @@
   }
   function snowSurfaceSlope(g,x){return Math.atan((snowSurface(g,x+1)-snowSurface(g,x-1))/2);}
   function snowViewHeight(){return el('snowCanvas').height||360;}
+  function updateSnowCamera(g,dt){
+    var height=snowViewHeight(),scale=height/360,p=g.player;
+    // Lead with the terrain entering at the right edge, not the rider's feet.
+    var ahead=snowSurface(g,g.distance+640),deepest=ahead;
+    for(var sx=160;sx<640;sx+=16)deepest=Math.max(deepest,snowSurface(g,g.distance+sx));
+    var lower=Math.max(p.y-280*scale,deepest-height+48*scale),upper=p.y-60*scale;
+    lower=Math.min(lower,upper);
+    var target=Math.max(lower,Math.min(upper,ahead-245*scale));
+    g.cameraY+=(target-g.cameraY)*(1-Math.exp(-dt*8));
+    // Smoothing must not hide an approaching bank below the viewport.
+    g.cameraY=Math.max(lower,Math.min(upper,g.cameraY));
+  }
   function resizeSnowCanvas(){
     if(!arcadeGames.snow)return;
     var canvas=el('snowCanvas'),bounds=el('snowWrap').getBoundingClientRect();
@@ -4194,7 +4207,8 @@
       var lip=gap.x+gap.w;return oldX+14<=lip&&x+14>=lip&&!snowGapAt(g,lip+.01)&&p.y+p.h>snowSurface(g,lip)+2;
     })){loseArcadeAttempt('snow','Pistenkante getroffen');return;}
     if(!protectedNow&&!p.grounded&&!p.grinding&&!snowGapAt(g,x)&&oldFeet>oldGround+.01&&p.y+p.h>ground+2){loseArcadeAttempt('snow','Piste getroffen');return;}
-    var boosted=snowSpeedPercent(g)>=150;
+    if(wasAirborne&&(p.grounded||p.grinding))g.landingSmashUntil=g.elapsed+1;
+    var boosted=snowSpeedPercent(g)>=150||g.elapsed<(g.landingSmashUntil||0);
     var rider=snowRiderPolygon(g,x);
     for(var rockIndex=g.rocks.length-1;rockIndex>=0;rockIndex--){
       var rock=g.rocks[rockIndex];
@@ -4211,7 +4225,7 @@
     if(p.y>ground+200){loseArcadeAttempt('snow','Schlucht verfehlt');return;}
     g.items=g.items.filter(function(coin){if(Math.abs(coin.x-x)<24&&Math.abs(coin.y-(p.y+14))<25){g.coins++;g.score+=20;return false;}return coin.x>g.distance-30;});
     ['gaps','ropes','ramps','ice','houses'].forEach(function(key){g[key]=g[key].filter(function(o){return o.x+o.w>g.distance-50;});});
-    var viewScale=snowViewHeight()/360,target=Math.min(ground-245*viewScale,p.y-70*viewScale);g.cameraY+=(target-g.cameraY)*(1-Math.exp(-dt*5));g.cameraY=Math.max(p.y-280*viewScale,Math.min(p.y-60*viewScale,g.cameraY));
+    updateSnowCamera(g,dt);
     updateSnowChaser(g,dt);
   }
   function snowMountain(ctx,offset,height,color,scale){ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(0,snowViewHeight());for(var x=-120;x<800;x+=80){var y=height-30*Math.sin((x+offset*scale)/145)-22*Math.cos((x+offset*scale)/76);ctx.lineTo(x,y);}ctx.lineTo(640,snowViewHeight());ctx.closePath();ctx.fill();}

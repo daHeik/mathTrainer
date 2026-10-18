@@ -16,6 +16,9 @@ assets.forEach(function(asset){ assert(fs.existsSync(path.join(root, asset)), 'M
 });
 ['index.html','app.js','styles.css','icons.svg','manifest.json'].forEach(function(file){ assert(assets.indexOf('./' + file) !== -1); });
 var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+var appVersion = html.match(/id="appVersion">Version (\d+)<\/p>/);
+assert(appVersion, 'Home screen shows the app version');
+assert.strictEqual('1x1-trainer-v' + appVersion[1], context.CACHE_NAME, 'Visible app version matches the release cache version');
 var icons = fs.readFileSync(path.join(root, 'icons.svg'), 'utf8');
 Array.from(html.matchAll(/href="icons\.svg#([^"]+)"/g)).forEach(function(match){
   assert(icons.indexOf('id="' + match[1] + '"') !== -1, 'Unknown icon ' + match[1]);
