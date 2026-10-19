@@ -9,14 +9,14 @@
   a {margin-right:16px;}
 </style>
 <h1>Layoutprüfung ohne Änderung der Browserfenster</h1>
-<p><a href="?">Lernen</a><a href="?game=gravity">Gravity Run</a><a href="?game=brick">Bricks</a><a href="?game=snake">Cleo</a><a href="?game=snow">Schneefahrt</a><a href="?game=runner">Metro Run</a></p>
+<p><a href="?">Lernen</a><a href="?game=gravity">Gravity Run</a><a href="?game=brick">Bricks</a><a href="?game=snake">Cleo</a><a href="?game=snow">Schneefahrt</a><a href="?game=runner">Metro Run</a><a href="?game=doodle">Doodle Jump</a><a href="?game=tiles">2048</a><a href="?game=maze">Pac-Man</a><a href="?game=asteroid">Asteroids</a></p>
 <main>
   <section><h2>Hochformat · 390 × 844</h2><iframe id="portrait" width="390" height="844" title="Schmale Hochformatansicht"></iframe></section>
   <section><h2>Querformat · 844 × 390</h2><iframe id="landscape" width="844" height="390" title="Flache Querformatansicht"></iframe></section>
 </main>
 <script>
 var game = new URLSearchParams(location.search).get('game');
-var url = '../index.html' + (['gravity','brick','snake','snow','runner'].indexOf(game) !== -1 ? '?demo=' + game : '');
+var url = '../index.html' + (['gravity','brick','snake','snow','runner','doodle','tiles','maze','asteroid'].indexOf(game) !== -1 ? '?demo=' + game : '');
 document.querySelectorAll('iframe').forEach(function(frame){ frame.src = url; });
 </script>
 </html>

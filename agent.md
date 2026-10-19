@@ -16,8 +16,10 @@ static web server.
 - `styles.css` contains the shared application styling.
 - `icons.svg` provides the local SVG symbol set (no external icon library).
 - `app.js` contains the trainer and reward-game logic.
+- `arcade-extra.js` contains the four additional Canvas games, loaded before app.js.
 - `flappy.html`, `tower.html`, `gravity.html`, `brick.html`, `snake.html` and
-  `snow.html` and `runner.html` are lightweight direct-play launchers that
+  `snow.html`, `runner.html`, `doodle.html`, `tiles.html`, `maze.html` and
+  `asteroid.html` are lightweight direct-play launchers that
   open the corresponding shared implementation in `index.html` demo mode.
 - `sw.js` provides network-first caching and offline fallback.
 - `manifest.json` contains the PWA metadata.
@@ -131,7 +133,7 @@ dependencies. The DOM stand-in does not replace a visual mobile/browser check.
 The light app shell and seven games were ported from sibling `vocuabulator`
 (MIT, source commit `22da147`, UI 28). Navigation uses Learn/Games/Statistics.
 Metro Run and Halloween art were subsequently ported from source `f3e7851`
-(UI 32, MIT, same copyright holder). There are now eight games. Runner shares
+(UI 32, MIT, same copyright holder). Runner shares
 the arcade lifecycle, three active minutes/three attempts, `bestRunnerScore`
 normalization, first-move accounting, immersive/pause/resize and demo launch.
 Runner controls: swipe/arrows/WASD/buttons; coins +20, shield up to 8s/one hit,
@@ -142,6 +144,23 @@ mist and a slow distant lightning silhouette each 18s, never full-screen flashes
 Honor prefers-reduced-motion in seasonal scenery. Cleo food is `pumpkin`, drawn
 by `drawSnakePumpkin`; keep bomb outlines and snow HUD legible on dark skies.
 This art is a mathServer extension beyond the original Vocabulator UI 32 port.
+Doodle Jump, 2048, Pac-Man and Asteroids plus colored SVG icons were ported
+from Vocabulator `50f8292` (UI 35, MIT), including harder reachable Doodle
+platforms and long-press control fixes. There are now twelve games.
+`VocabArcade.create()` in arcade-extra.js plugs into the shared lifecycle;
+keep `ARCADE_LABELS`/`ARCADE_RECORDS`, profile normalization, all screen lists,
+availability, pause/resize observers, demo routing and offline assets in sync.
+Records: bestDoodleScore/bestTilesScore/bestMazeScore/bestAsteroidScore.
+Do not replace existing mathServer Halloween/physics changes when syncing.
+Run `node tests/arcade-extra.test.js` alongside learning-modes/offline tests;
+it checks 2048 merge rules, reachable Doodle routes, maze connectivity/power
+and inertial Asteroid collisions. Integration tests cover all twelve rewards.
+Asteroids finger-following controls synced from Vocabulator `117ea0c`
+(implementation `3e37848`): `touchTarget` aims and adds thrust without replacing
+velocity. Map pointer X/Y through canvas contain-letterboxing. First pointer
+owns the target; release/cancel/lost capture, pause, recovery and resize clear
+it. Clear pending pointers on pause so resume requires a fresh contact.
+Preserve buttons/keyboard and auto-fire. Cache stays one version above HEAD.
 Math learning records and storage keys stay unchanged. Games consume a play
 on their first move, not selection. All games use active simulation time with
 a three-minute cap (Bricks: five minutes) and pause/hidden-view suspension.

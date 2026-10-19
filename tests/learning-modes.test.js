@@ -57,13 +57,21 @@ Array.from(html.matchAll(/id="([^"]+)"/g)).forEach(function(match){
   assert(!elements[match[1]], 'Duplicate DOM id ' + match[1]);
   elements[match[1]] = new Element(); elements[match[1]].id = match[1];
 });
+Array.from(html.matchAll(/<canvas\b[^>]*\bid="([^"]+)"[^>]*>/g)).forEach(function(match){
+  var width=match[0].match(/\bwidth="(\d+)"/),height=match[0].match(/\bheight="(\d+)"/);
+  if(width)elements[match[1]].width=Number(width[1]);
+  if(height)elements[match[1]].height=Number(height[1]);
+});
 var storage = {};
 var timers = [];
 var context = {
   console:console, Date:Date, Math:Object.create(Math), Set:Set,
   document:{
     documentElement:new Element(), activeElement:null, body:new Element(),
-    getElementById:function(id){ assert(elements[id], 'Missing DOM id ' + id); return elements[id]; },
+    getElementById:function(id){
+      if(/^(doodle|tiles|maze|asteroid)(left|right|up|down|fire)Btn$/.test(id))return elements[id]||null;
+      assert(elements[id], 'Missing DOM id ' + id); return elements[id];
+    },
     querySelector:function(){ return new Element(); }, querySelectorAll:function(){ return []; },
     createElement:function(){ return new Element(); },
     createElementNS:function(){ return new Element(); },
@@ -78,6 +86,8 @@ var context = {
   requestAnimationFrame:function(){ return 1; }, cancelAnimationFrame:function(){}
 };
 vm.createContext(context);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..','arcade-extra.js'),'utf8'),context);
+context.VocabArcade=context.window.VocabArcade;
 source = source.replace(/\}\)\(\);\s*$/, [
   'globalThis.testApi = {',
   'defaultProfile:defaultProfile, normalizeProfile:normalizeProfile, ensureFactPool:ensureFactPool,',
@@ -90,7 +100,8 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'refreshDailySessionIfNeeded:refreshDailySessionIfNeeded, repeatRoundLabel:repeatRoundLabel,',
   'tapAdvance:tapAdvance,',
   'getConfetti:function(){return confettiLayer;},',
-  'games:function(){return {dino:rewardGame,flappy:flappyGame,tower:towerGame,gravity:gravityGame,brick:arcadeGames.brick,snake:arcadeGames.snake,snow:arcadeGames.snow,runner:arcadeGames.runner};},',
+  'games:function(){return {dino:rewardGame,flappy:flappyGame,tower:towerGame,gravity:gravityGame,brick:arcadeGames.brick,snake:arcadeGames.snake,snow:arcadeGames.snow,runner:arcadeGames.runner,doodle:arcadeGames.doodle,tiles:arcadeGames.tiles,maze:arcadeGames.maze,asteroid:arcadeGames.asteroid};},',
+  'extras:extraArcade, resizeExtraCanvases:resizeExtraCanvases,',
   'runnerAction:runnerAction, runnerUpdate:updateRunnerGame, runnerResize:resizeRunnerCanvas,',
   'runnerProject:runnerProject, runnerDraw:drawRunnerGame, runnerSpawn:spawnRunnerRows,',
   'drawHalloweenSky:drawHalloweenSky, drawPumpkin:drawPumpkin,',
@@ -112,7 +123,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'updateSnowCamera:updateSnowCamera,',
   'spawnSnowTerrain:spawnSnowTerrain,',
   'stepSnowPhysics:stepSnowPhysics,',
-  'stepGame:function(kind,dt){({dino:updateRewardGame,flappy:updateFlappyGame,tower:updateTowerGame,gravity:updateGravityGame,brick:updateBrickGame,snake:updateSnakeGame,snow:updateSnowGame,runner:updateRunnerGame})[kind](dt);},',
+  'stepGame:function(kind,dt){if(extraArcade.definitions[kind])extraArcade.update(kind,dt);else ({dino:updateRewardGame,flappy:updateFlappyGame,tower:updateTowerGame,gravity:updateGravityGame,brick:updateBrickGame,snake:updateSnakeGame,snow:updateSnowGame,runner:updateRunnerGame})[kind](dt);},',
   'pickNextSticker:pickNextSticker, stickerPool:STICKER_POOL,',
   'getState:function(){ return state; },',
   'setState:function(profile){ state = profile; root.profiles[root.activeProfileId] = profile; }',
@@ -633,14 +644,15 @@ assert.strictEqual(regressionProfile.history[regressionProfile.today.date].wrong
 context.Math.random = Math.random;
 console.log('Written division: one/two/three rows, 848:8 regression, focus, validation and rewards OK');
 
-// All eight games keep the same reward contract and active-time/pause rules.
+// All twelve games keep the same reward contract and active-time/pause rules.
 var gameProfile = api.normalizeProfile(api.defaultProfile());
 gameProfile.config.sound = false;
 api.setState(gameProfile);
 api.ensureFactPool();
 [
   ['Dino','game','dino'], ['Flappy','flappy','flappy'], ['Tower','tower','tower'],
-  ['Gravity','gravity','gravity'], ['Brick','brick','brick'], ['Snake','snake','snake'], ['Snow','snow','snow'], ['Runner','runner','runner']
+  ['Gravity','gravity','gravity'], ['Brick','brick','brick'], ['Snake','snake','snake'], ['Snow','snow','snow'], ['Runner','runner','runner'],
+  ['Doodle','doodle','doodle'], ['Tiles','tiles','tiles'], ['Maze','maze','maze'], ['Asteroid','asteroid','asteroid']
 ].forEach(function(spec){
   var choose = elements['choose' + spec[0] + 'Btn'];
   var screen = elements['screen-' + spec[1]];
@@ -655,7 +667,8 @@ api.ensureFactPool();
   assert.strictEqual(gameProfile.reward.availablePlays, playsBefore);
   assert(!screen.classList.contains('game-immersive'));
   choose.events.click();
-  elements[spec[1] + 'Wrap'].events.pointerdown({ preventDefault:function(){}, pointerId:1, clientX:240, clientY:240 });
+  if(api.extras.definitions[spec[2]])elements[spec[2]+'leftBtn'].events.click();
+  else elements[spec[1] + 'Wrap'].events.pointerdown({ preventDefault:function(){}, pointerId:1, clientX:240, clientY:240 });
   assert.strictEqual(gameProfile.reward.availablePlays, playsBefore - 1);
   assert.strictEqual(gameProfile.reward.gamesPlayed, gamesBefore + 1);
   var game = api.games()[spec[2]];
@@ -700,9 +713,10 @@ gameProfile.reward.availablePlays = 0;
 elements.navGames.events.click();
 assert(elements.chooseSnowBtn.disabled);
 assert(elements.chooseRunnerBtn.disabled);
+['Doodle','Tiles','Maze','Asteroid'].forEach(function(name){assert(elements['choose'+name+'Btn'].disabled);});
 elements.navStatistics.events.click();
 assert(elements['screen-statistics'].classList.contains('active'));
-assert.strictEqual(elements.statGames.textContent, '8');
+assert.strictEqual(elements.statGames.textContent, '12');
 elements.navLearn.events.click();
 assert(elements['screen-home'].classList.contains('active'));
 // Higher Bricks levels vary geometrically, stay clearable and grow 25% in speed.
@@ -1167,7 +1181,50 @@ api.drawSnakePumpkin(pumpkinCtx,cleo.food);
 assert(pumpkinColors.indexOf('#df6f28')!==-1,'Pumpkin has a distinct orange body');
 elements.snakeHomeBtn.events.click();
 console.log('Halloween: slow distant weather, reduced motion, no screen flash, pumpkin rendering and pickups OK');
+// All four new games share real rewards, pause, continuation, records and timers.
+['doodle','tiles','maze','asteroid'].forEach(function(kind){
+ elements[kind+'Canvas'].height=640;
+ api.getState().reward.availablePlays=1;api.startArcadeGame(kind,false);var g=api.games()[kind];
+ assert(g.active&&!g.running);assert.equal(api.getState().reward.availablePlays,1);
+ var action=kind==='asteroid'?'up':'left';api.extras.action(kind,action,true);
+ assert(g.running);assert.equal(api.getState().reward.availablePlays,0);api.extras.action(kind,action,true);assert.equal(api.getState().reward.availablePlays,0);
+ api.extras.action(kind,action,false);
+ assert(elements['screen-'+kind].classList.contains('game-immersive'));
+ if(kind==='asteroid'){
+  var canvas=elements.asteroidCanvas,oldBounds=canvas.getBoundingClientRect;canvas.height=640;
+  canvas.getBoundingClientRect=function(){return {left:100,top:20,width:800,height:300};};
+  function finger(id,x,y){return {pointerId:id,clientX:x,clientY:y,preventDefault:function(){}};}
+  var wrap=elements.asteroidWrap;
+  wrap.events.pointerdown(finger(41,500,170));assert.equal(g.touchTarget.x,240);assert.equal(g.touchTarget.y,320);
+  wrap.events.pointerdown(finger(42,900,300));assert.equal(g.touchTarget.x,240,'second finger cannot replace first');
+  wrap.events.pointermove(finger(42,900,300));assert.equal(g.touchTarget.x,240);
+  wrap.events.pointermove(finger(41,550,200));assert(Math.abs(g.touchTarget.x-346.6666667)<.001);assert.equal(g.touchTarget.y,384);
+  wrap.events.pointerup(finger(42,550,200));assert(g.touchTarget);
+  wrap.events.pointerup(finger(41,550,200));assert.equal(g.touchTarget,null);
+  ['pointercancel','lostpointercapture'].forEach(function(event){wrap.events.pointerdown(finger(43,500,170));wrap.events[event](finger(43,500,170));assert.equal(g.touchTarget,null);});
+  wrap.events.pointerdown(finger(44,500,170));elements.asteroidPauseBtn.click();assert.equal(g.touchTarget,null);elements.asteroidPauseBtn.click();
+  wrap.events.pointermove(finger(44,550,200));assert.equal(g.touchTarget,null,'resume requires new contact');
+  canvas.getBoundingClientRect=oldBounds;
+  ['left','up','fire','right'].forEach(function(action){
+   var b=elements['asteroid'+action+'Btn'];
+   ['contextmenu','selectstart','dragstart'].forEach(function(event){var prevented=false;b.events[event]({preventDefault:function(){prevented=true;}});assert(prevented);});
+   b.events.pointerdown({preventDefault:function(){},pointerId:7});assert.equal(g.keys[action],true);
+   api.extras.update(kind,.2);assert.equal(g.keys[action],true);
+   b.events.pointerup({pointerId:7});assert.equal(g.keys[action],false);
+  });
+ }
+ var before=g.playTimeMs||0;elements[kind+'PauseBtn'].click();api.runArcadeGame(kind,2000);assert.equal(g.playTimeMs||0,before);assert(g.active);
+ elements[kind+'PauseBtn'].click();api.extras.draw(kind);
+ g.score=321;g.playTimeMs=180000;api.runArcadeGame(kind,1000);assert.equal(g.active,false);
+ var field={doodle:'bestDoodleScore',tiles:'bestTilesScore',maze:'bestMazeScore',asteroid:'bestAsteroidScore'}[kind];assert.equal(api.getState().reward[field],321);
+ elements[kind+'HomeBtn'].click();assert.equal(api.games()[kind],null);
+});
+var savedRoot=JSON.parse(storage.km_1x1_trainer_v2);
+var newer=savedRoot.profiles[savedRoot.activeProfileId];
+assert.equal(newer.reward.bestMazeScore,321);assert.equal(newer.reward.bestTilesScore,321);
+console.log('OK: all twelve games integrate; new four consume one play, support immersion/pause, end on active deadline and preserve profile records/backups.');
 var migratedGames = api.defaultProfile();
+['bestDoodleScore','bestTilesScore','bestMazeScore','bestAsteroidScore'].forEach(function(key){delete migratedGames.reward[key];});
 migratedGames.reward.availablePlays = 3;
 migratedGames.reward.bestTowerScore = 42;
 delete migratedGames.reward.gamesTrackedSince;
@@ -1175,13 +1232,14 @@ delete migratedGames.reward.gamesPlayed;
 delete migratedGames.reward.bestSnowScore;
 delete migratedGames.reward.bestRunnerScore;
 api.normalizeProfile(migratedGames);
+['bestDoodleScore','bestTilesScore','bestMazeScore','bestAsteroidScore'].forEach(function(key){assert.strictEqual(migratedGames.reward[key],0);});
 assert.strictEqual(migratedGames.reward.availablePlays, 3);
 assert.strictEqual(migratedGames.reward.bestTowerScore, 42);
 assert.strictEqual(migratedGames.reward.bestSnowScore, 0);
 assert.strictEqual(migratedGames.reward.bestRunnerScore, 0);
 assert.strictEqual(migratedGames.reward.gamesPlayed, 0);
 assert(/^\d{4}-\d{2}-\d{2}$/.test(migratedGames.reward.gamesTrackedSince));
-console.log('Eight games: rewards, replay without confetti, pause, per-game timers and migration OK');
+console.log('Twelve games: rewards, replay without confetti, pause, per-game timers and migration OK');
 console.log('Bricks: six layouts, 25% speed growth, moving rows and extras; Gravity: high-contrast gaps OK');
 console.log('Sticker awards: unseen first, balanced repeats and existing albums OK');
 console.log('Learning modes: generation, UI answers, retries, rewards, migration, replay and completion OK');

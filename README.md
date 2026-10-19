@@ -20,8 +20,9 @@ Die App kommt ohne Werbung, Benutzerkonto, Tracker oder Telemetrie aus. Sie
 überträgt selbst keine Lernstände oder Profildaten an einen Server.
 
 Die Oberfläche liegt in `index.html`, das Styling in `styles.css` und die
-Anwendungs- und Spiellogik in `app.js`. `flappy.html`, `tower.html`,
-`gravity.html`, `brick.html`, `snake.html`, `snow.html` und `runner.html` sind
+Anwendungs- und Spiellogik in `app.js` und `arcade-extra.js`. `flappy.html`, `tower.html`,
+`gravity.html`, `brick.html`, `snake.html`, `snow.html`, `runner.html`,
+`doodle.html`, `tiles.html`, `maze.html` und `asteroid.html` sind
 kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 öffnen. Dadurch gibt es keine doppelte Spiellogik.
 
@@ -126,8 +127,9 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   bleiben in Lernstand und Statistik, freigeschaltete Belohnungsspiele bleiben
   verfügbar. Ein Abbruch zählt nicht als Rundenabschluss für Sticker und Serie;
   die nächste Runde beginnt neu.
-- Acht Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel, Turmbauer,
-  Gravity Run, Bricks, Cleo, Schneefahrt und Metro Run. Die benötigte
+- Zwölf Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel, Turmbauer,
+  Gravity Run, Bricks, Cleo, Schneefahrt, Metro Run, Doodle Jump, 2048,
+  Pac-Man und Asteroids. Die benötigte
   Anzahl richtiger Antworten pro Spiel ist im Eltern-Bereich konfigurierbar
   (Standard: 10); die Startseite zeigt, wie viele richtige Antworten bis zum
   nächsten Spiel fehlen. Bricks endet nach höchstens fünf aktiven Minuten,
@@ -162,13 +164,26 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   Sprüngen, Saltos, Grinds, Boosts und Verfolger. Alle Spiele speichern Rekorde
   pro Profil und verbrauchen erst beim ersten Spielzug ein Kontingent.
 - Die aktuelle App-Version steht dezent in Hellgrau unten auf der Startseite.
+- Die Spieleauswahl nutzt die eingefärbten SVG-Icons aus dem Vocabulator.
+- Vier weitere Spiele aus dem Vocabulator: Doodle Jump mit automatischen
+  Sprüngen, schmaler werdenden beweglichen/brüchigen Plattformen und Federn;
+  2048 mit animierten Zahlenverschmelzungen; Pac-Man mit wechselnden Labyrinthen,
+  vier Geistern und acht Sekunden Kraftpunkten; Asteroids mit trägem Raumflug,
+  automatischem Feuer und zerfallenden Asteroiden. Alle haben Touch-/Tastensteuerung,
+  Pause, Vollbild und eigene Profilrekorde. Fehlversuche erhalten Welt und Punkte;
+  bei blockiertem 2048 werden für den nächsten Versuch die zwei kleinsten Steine
+  entfernt. Langes Halten der Bildschirmtasten löst keine Textauswahl aus.
+  Asteroids lässt sich direkt mit dem Finger im Spielfeld steuern: Halten und
+  Bewegen richtet das Schiff zum Finger aus und gibt Schub. Die bisherige
+  Bewegung bleibt durch Trägheit erhalten; beim Loslassen gleitet es weiter.
+  Tastensteuerung und automatisches Feuer bleiben verfügbar.
 - Metro Run: Perspektivischer Drei-Spuren-Runner mit Zügen und Schranken.
   Wischen, Pfeiltasten/WASD oder Bildschirmtasten zum Ausweichen, Springen und
   Rutschen; Tippen/Leertaste springt. Münzen geben je 20 Punkte, Schild schützt
   maximal 8 Sekunden bis zum ersten Treffer, Magnet sammelt 10 Sekunden lang.
   Drei aktive Minuten und drei Versuche, Fortsetzung erhält Strecke und Punkte;
   eigener Profilrekord und offline spielbarer Demo-Einstieg über `runner.html`.
-- Freundliche Halloween-Dekoration aus dem Vocabulator in allen acht Spielen:
+- Freundliche Halloween-Dekoration aus dem Vocabulator in allen Spielen:
   Kürbisse, Spinnweben, Fledermäuse und Hexen; bei Metro Run zusätzlich lustige
   Straßenschilder, tanzende Skelette und Geisterballons. Rein gezeichnete Deko
   ohne zusätzliche Hindernisse oder Änderungen der Trefferflächen.
@@ -264,7 +279,7 @@ sudo systemctl enable --now mathserver
 
 ```bash
 sudo apt install nginx
-sudo cp index.html styles.css app.js icons.svg flappy.html tower.html gravity.html brick.html snake.html snow.html runner.html manifest.json sw.js icon-192.png icon-512.png /var/www/html/
+sudo cp index.html styles.css app.js arcade-extra.js icons.svg flappy.html tower.html gravity.html brick.html snake.html snow.html runner.html doodle.html tiles.html maze.html asteroid.html manifest.json sw.js icon-192.png icon-512.png /var/www/html/
 ```
 
 Danach ist die Seite über `http://<pi-ip>/` erreichbar.

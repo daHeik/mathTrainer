@@ -911,3 +911,24 @@ body.focused-view .app-bar {padding-top:calc(4px + var(--safe-top));padding-bott
 #runnerWrap {touch-action:none;}
 #screen-runner.is-paused .runner-controls {pointer-events:none;}
 #screen-runner.game-immersive .game-wrap canvas {object-fit:fill;}
+
+/* Classic games use the actual slot aspect ratio; large held controls never scroll. */
+.classic-game .game-wrap {touch-action:none;}
+.classic-game.game-immersive .game-wrap canvas {object-fit:contain;}
+.classic-controls {display:flex;gap:8px;flex:none;width:100%;justify-content:center;margin:0;}
+.classic-controls button {touch-action:none;flex:1;min-height:44px;border:0;border-radius:12px;background:#e2eaf1;color:#29495f;font-size:1.4rem;font-weight:700;}
+.classic-controls,.classic-controls * {user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none;}
+.classic-controls button:active {background:#bfdedc;}
+.classic-controls small {display:block;font-size:.68rem;line-height:1.1;}
+.classic-game.is-paused .classic-controls {pointer-events:none;}
+.direction-pad {display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px);width:auto;align-self:center;gap:4px;}
+.direction-pad [data-action=up] {grid-column:2;grid-row:1;}
+.direction-pad [data-action=left] {grid-column:1;grid-row:2;}
+.direction-pad [data-action=down] {grid-column:2;grid-row:2;}
+.direction-pad [data-action=right] {grid-column:3;grid-row:2;}
+@media(orientation:landscape) and (max-height:600px){
+ #screen-tiles.game-immersive.active,#screen-maze.game-immersive.active {display:grid;grid-template-columns:minmax(0,1fr) 144px;grid-template-rows:44px auto minmax(0,1fr) auto;}
+ #screen-tiles .game-toolbar,#screen-maze .game-toolbar,#screen-tiles .game-hud,#screen-maze .game-hud {grid-column:1/-1;}
+ #screen-tiles .game-wrap,#screen-maze .game-wrap {grid-row:3;grid-column:1;height:100%;}
+ #screen-tiles .direction-pad,#screen-maze .direction-pad {grid-row:3;grid-column:2;align-self:center;justify-self:center;}
+}

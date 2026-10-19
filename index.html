@@ -43,7 +43,7 @@
         <button class="primary-btn extra-round-btn" id="riddlesBtn">Zahlenrätsel lösen</button>
         <button class="primary-btn extra-round-btn" id="writtenBtn">Schriftlich dividieren</button>
       </div></div></div>
-      <p class="app-version" id="appVersion">Version 40</p>
+      <p class="app-version" id="appVersion">Version 41</p>
     </div>
 
     <!-- TABLE PRACTICE CHOICE -->
@@ -130,6 +130,10 @@
         <button class="game-choice" id="chooseSnakeBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#caterpillar"/></svg></span>Cleo<small>Lass deine Regenbogenraupe wachsen</small></button>
         <button class="game-choice" id="chooseSnowBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#snowboard"/></svg></span>Schneefahrt<small>Springe und lande deine Saltos</small></button>
         <button class="game-choice" id="chooseRunnerBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#runner"/></svg></span>Metro Run<small>Ausweichen, springen und rutschen</small></button>
+<button class="game-choice" id="chooseDoodleBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#jump"/></svg></span>Doodle Jump<small>Springe immer höher</small></button>
+<button class="game-choice" id="chooseTilesBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#tiles"/></svg></span>2048<small>Zahlen clever kombinieren</small></button>
+<button class="game-choice" id="chooseMazeBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#maze"/></svg></span>Pac-Man<small>Punkte sammeln, Geister jagen</small></button>
+<button class="game-choice" id="chooseAsteroidBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#rocket"/></svg></span>Asteroids<small>Durchs All fliegen</small></button>
       </div>
       <button class="secondary-btn" id="gameChoiceBackBtn">Zurück <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#home"/></svg></button>
     </div>
@@ -286,6 +290,27 @@
       <div class="runner-controls" aria-label="Metro Run Steuerung"><button id="runnerleftBtn" aria-label="Spur nach links">←</button><button id="runnerjumpBtn" aria-label="Springen">↑<small>Springen</small></button><button id="runnerslideBtn" aria-label="Rutschen">↓<small>Rutschen</small></button><button id="runnerrightBtn" aria-label="Spur nach rechts">→</button></div>
       <button class="secondary-btn" id="runnerAgainBtn" style="display:none">Nochmal spielen</button>
     </div>
+
+<div class="screen classic-game" id="screen-doodle">
+ <div class="game-toolbar"><button class="secondary-btn" id="doodleHomeBtn">Spiel beenden</button><h1>Doodle Jump</h1><button class="game-pause-btn" id="doodlePauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="doodleFullscreenBtn">Vollbild</button></div>
+ <div class="game-hud"><span id="doodleTime">3:00</span><span id="doodleAttempts">Versuch: 1/3</span><span id="doodleScore">Punkte: 0</span><span id="doodleBest">Rekord: 0</span></div>
+ <div class="game-wrap" id="doodleWrap" tabindex="0" aria-label="Doodle Jump Spielfeld"><canvas id="doodleCanvas" width="480" height="640" aria-label="Doodle Jump"></canvas><div class="game-overlay" id="doodleOverlay" role="status" aria-live="polite" hidden><strong id="doodleOverlayTitle"></strong><span id="doodleOverlayText"></span></div></div>
+ <div class="classic-controls " aria-label="Doodle Jump Steuerung"><button type="button" data-action="left" id="doodleleftBtn" aria-label="Links">←</button><button type="button" data-action="right" id="doodlerightBtn" aria-label="Rechts">→</button></div><button class="secondary-btn" id="doodleAgainBtn" style="display:none">Nochmal spielen</button></div>
+<div class="screen classic-game" id="screen-tiles">
+ <div class="game-toolbar"><button class="secondary-btn" id="tilesHomeBtn">Spiel beenden</button><h1>2048</h1><button class="game-pause-btn" id="tilesPauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="tilesFullscreenBtn">Vollbild</button></div>
+ <div class="game-hud"><span id="tilesTime">3:00</span><span id="tilesAttempts">Versuch: 1/3</span><span id="tilesScore">Punkte: 0</span><span id="tilesBest">Rekord: 0</span></div>
+ <div class="game-wrap" id="tilesWrap" tabindex="0" aria-label="2048 Spielfeld"><canvas id="tilesCanvas" width="480" height="640" aria-label="2048"></canvas><div class="game-overlay" id="tilesOverlay" role="status" aria-live="polite" hidden><strong id="tilesOverlayTitle"></strong><span id="tilesOverlayText"></span></div></div>
+ <div class="classic-controls direction-pad" aria-label="2048 Steuerung"><button type="button" data-action="up" id="tilesupBtn" aria-label="Hoch">↑</button><button type="button" data-action="left" id="tilesleftBtn" aria-label="Links">←</button><button type="button" data-action="down" id="tilesdownBtn" aria-label="Runter">↓</button><button type="button" data-action="right" id="tilesrightBtn" aria-label="Rechts">→</button></div><button class="secondary-btn" id="tilesAgainBtn" style="display:none">Nochmal spielen</button></div>
+<div class="screen classic-game" id="screen-maze">
+ <div class="game-toolbar"><button class="secondary-btn" id="mazeHomeBtn">Spiel beenden</button><h1>Pac-Man</h1><button class="game-pause-btn" id="mazePauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="mazeFullscreenBtn">Vollbild</button></div>
+ <div class="game-hud"><span id="mazeTime">3:00</span><span id="mazeAttempts">Versuch: 1/3</span><span id="mazeScore">Punkte: 0</span><span id="mazeBest">Rekord: 0</span></div>
+ <div class="game-wrap" id="mazeWrap" tabindex="0" aria-label="Pac-Man Spielfeld"><canvas id="mazeCanvas" width="480" height="640" aria-label="Pac-Man"></canvas><div class="game-overlay" id="mazeOverlay" role="status" aria-live="polite" hidden><strong id="mazeOverlayTitle"></strong><span id="mazeOverlayText"></span></div></div>
+ <div class="classic-controls direction-pad" aria-label="Pac-Man Steuerung"><button type="button" data-action="up" id="mazeupBtn" aria-label="Hoch">↑</button><button type="button" data-action="left" id="mazeleftBtn" aria-label="Links">←</button><button type="button" data-action="down" id="mazedownBtn" aria-label="Runter">↓</button><button type="button" data-action="right" id="mazerightBtn" aria-label="Rechts">→</button></div><button class="secondary-btn" id="mazeAgainBtn" style="display:none">Nochmal spielen</button></div>
+<div class="screen classic-game" id="screen-asteroid">
+ <div class="game-toolbar"><button class="secondary-btn" id="asteroidHomeBtn">Spiel beenden</button><h1>Asteroids</h1><button class="game-pause-btn" id="asteroidPauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="asteroidFullscreenBtn">Vollbild</button></div>
+ <div class="game-hud"><span id="asteroidTime">3:00</span><span id="asteroidAttempts">Versuch: 1/3</span><span id="asteroidScore">Punkte: 0</span><span id="asteroidBest">Rekord: 0</span></div>
+ <div class="game-wrap" id="asteroidWrap" tabindex="0" aria-label="Asteroids Spielfeld"><canvas id="asteroidCanvas" width="480" height="640" aria-label="Asteroids"></canvas><div class="game-overlay" id="asteroidOverlay" role="status" aria-live="polite" hidden><strong id="asteroidOverlayTitle"></strong><span id="asteroidOverlayText"></span></div></div>
+ <div class="classic-controls " aria-label="Asteroids Steuerung"><button type="button" data-action="left" id="asteroidleftBtn" aria-label="Links">←<small>Links</small></button><button type="button" data-action="up" id="asteroidupBtn" aria-label="Schub">↑<small>Schub</small></button><button type="button" data-action="fire" id="asteroidfireBtn" aria-label="Feuer">✦<small>Feuer</small></button><button type="button" data-action="right" id="asteroidrightBtn" aria-label="Rechts">→<small>Rechts</small></button></div><button class="secondary-btn" id="asteroidAgainBtn" style="display:none">Nochmal spielen</button></div>
 
   </div>
   <div class="footer-note">Tipp: Über „Zum Home-Bildschirm hinzufügen“ startet die App wie eine echte App.</div>
@@ -490,6 +515,7 @@
   </div>
 </div>
 
+<script src="arcade-extra.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
