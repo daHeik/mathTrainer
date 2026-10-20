@@ -126,6 +126,21 @@ rows share `.written-equation` and identical grid/padding/border geometry.
 Typing advances a cell; Enter skips blank zeros; the last cell validates the
 row/total automatically. Backspace on an empty cell goes to the previous one.
 
+Semi-written division is a separate mode family: `semi` (guided, 100..999),
+`semiFree` (own chunks, 1000..9999), `semiRest` (own chunks with nonzero rest).
+Keys `sd:mode:divisor` for divisors 2..9 (24 records) live in `semiSkills`;
+history operation `semiDivide`. Include in normalization, reward totals/backups.
+Intro `screen-semi-intro` explains and compares own examples; guided chunks
+use a place-value suggestion. Free paths accept ANY positive divisible chunk
+no greater than the remaining dividend and a correct partial quotient, with
+no fixed number/order of rows. Never split/change the divisor. Stop splitting
+when remaining < divisor, then sum, rest and multiplication proof. Only full
+completion including proof earns one answer/reward; final wrong totals use
+normal retries, intermediate errors/hints permit correction. Protect all form
+callbacks with sessionRevision and answering; retain repeat/abort contracts.
+Keep previous `written` records/behavior unchanged. Pedagogical references and
+scope are in README; no external teaching assets were copied.
+
 Run `node tests/learning-modes.test.js` to check generation, answer handling,
 retries, reward totals, migrations, replay and completion without external
 dependencies. The DOM stand-in does not replace a visual mobile/browser check.
@@ -151,6 +166,11 @@ platforms and long-press control fixes. There are now twelve games.
 keep `ARCADE_LABELS`/`ARCADE_RECORDS`, profile normalization, all screen lists,
 availability, pause/resize observers, demo routing and offline assets in sync.
 Records: bestDoodleScore/bestTilesScore/bestMazeScore/bestAsteroidScore.
+Doodle easing synced from Vocabulator `ba7a476`: widths 72..48, horizontal
+shifts 102..136 and rises 80..106. Crumb platforms stay stored but invisible
+and non-solid until respawnAt (elapsed + 4 active seconds). Recovery must
+choose an intact platform; pause/waiting freeze the cooldown. Offscreen
+platform cleanup still applies. Other game mechanics remain unchanged.
 Do not replace existing mathServer Halloween/physics changes when syncing.
 Run `node tests/arcade-extra.test.js` alongside learning-modes/offline tests;
 it checks 2048 merge rules, reachable Doodle routes, maze connectivity/power

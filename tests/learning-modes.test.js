@@ -95,6 +95,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'specialQuestion:specialQuestion, applyAnswerResult:applyAnswerResult,',
   'renderMathText:renderMathText,',
   'writtenDivisionQuestion:writtenDivisionQuestion, renderWrittenDivision:renderWrittenDivision,',
+  'semiDivisionQuestion:semiDivisionQuestion, semiSuggestedPart:semiSuggestedPart, checkSemiPart:checkSemiPart, renderSemiDivision:renderSemiDivision,',
   'correctAnswersForProfile:correctAnswersForProfile, startSession:startSession,',
   'renderQuestion:renderQuestion, onAnswer:onAnswer, finishSession:finishSession,',
   'refreshDailySessionIfNeeded:refreshDailySessionIfNeeded, repeatRoundLabel:repeatRoundLabel,',
@@ -644,6 +645,95 @@ assert.strictEqual(regressionProfile.history[regressionProfile.today.date].wrong
 context.Math.random = Math.random;
 console.log('Written division: one/two/three rows, 848:8 regression, focus, validation and rewards OK');
 
+// Semi-written division: three scaffolding levels, flexible chunks and a proof.
+var semiProfile=api.normalizeProfile(api.defaultProfile());semiProfile.config.sound=false;semiProfile.config.rewardEvery=1;
+api.setState(semiProfile);api.ensureFactPool();
+['semi','semiFree','semiRest'].forEach(function(mode){
+  var skills=api.practiceSkillsInRange(null,mode);assert.strictEqual(skills.length,8);
+  skills.forEach(function(skill){
+    for(var sample=0;sample<100;sample++){
+      var q=api.semiDivisionQuestion(skill),remaining=q.dividend,sum=0;
+      assert(q.dividend>=(mode==='semi'?100:1000)&&q.dividend<=(mode==='semi'?999:9999));
+      assert(q.divisor>=2&&q.divisor<=9);assert.strictEqual(q.correct*q.divisor+q.rest,q.dividend);
+      assert(q.rest>=0&&q.rest<q.divisor);assert.strictEqual(q.rest>0,mode==='semiRest');
+      while(remaining>=q.divisor){
+        var part=api.semiSuggestedPart(remaining,q.divisor);assert(part>0&&part<=remaining);
+        assert.strictEqual(api.checkSemiPart(q,remaining,String(part),String(part/q.divisor)),'');
+        remaining-=part;sum+=part/q.divisor;
+      }
+      assert.strictEqual(remaining,q.rest);assert.strictEqual(sum,q.correct);
+    }
+  });
+  assert.strictEqual(api.buildQueue(5,null,mode).length,5);
+});
+var semiForm=elements.semiDivisionForm;
+function semiFind(id){
+  function visit(n){if(n.id===id)return n;for(var i=0;i<n.children.length;i++){var found=visit(n.children[i]);if(found)return found;}return null;}
+  return visit(semiForm);
+}
+function semiSubmit(){semiForm.onsubmit({preventDefault:function(){}});}
+function semiPart(part,result){semiFind('semiChunk').value=String(part);semiFind('semiPartResult').value=String(result);semiSubmit();}
+function semiExercise(mode,dividend,divisor){
+  api.startSession(true,null,mode);var key='sd:'+mode+':'+divisor;
+  semiProfile.today.queue=[key];semiProfile.today.index=0;api.renderQuestion();
+  api.renderSemiDivision(key,{mode:mode,dividend:dividend,divisor:divisor,correct:Math.floor(dividend/divisor),rest:dividend%divisor});
+  return key;
+}
+elements.semiBtn.events.click();assert(elements['screen-semi-intro'].classList.contains('active'));
+assert.strictEqual(api.correctAnswersForProfile(semiProfile),0);
+elements.semiStartBtn.events.click();assert.strictEqual(semiProfile.today.mode,'semi');
+assert(!semiForm.hidden&&elements.writtenDivisionForm.hidden&&elements.choicesWrap.hidden);
+semiExercise('semi',276,4);
+assert.strictEqual(semiFind('semiChunk').value,'240');assert(semiFind('semiChunk').readOnly);
+assert.strictEqual(context.document.activeElement,semiFind('semiPartResult'));
+semiPart(240,60);assert.strictEqual(semiFind('semiChunk').value,'36');
+semiPart(36,9);semiFind('semiTotal').value='69';semiSubmit();
+assert.strictEqual(api.correctAnswersForProfile(semiProfile),0,'Only completion including proof earns credit');
+semiFind('semiProbe').value='276';semiSubmit();
+assert.strictEqual(api.correctAnswersForProfile(semiProfile),1);assert.strictEqual(semiProfile.reward.availablePlays,1);
+semiSubmit();assert.strictEqual(api.correctAnswersForProfile(semiProfile),1,'No duplicate submit reward');
+api.finishSession();assert(elements.doneSubtitle.textContent.indexOf('Halbschriftlich')!==-1);
+elements.doneBonusBtn.events.click();assert.strictEqual(semiProfile.today.mode,'semi');
+// Different valid decompositions are accepted; malformed/oversized/nondivisible ones are not.
+var semiKey=semiExercise('semiFree',276,4);
+assert.strictEqual(context.document.activeElement,semiFind('semiChunk'));
+assert(!semiFind('semiChunk').readOnly);
+semiPart(200,40);assert(elements.feedbackText.textContent.indexOf('Welche Zahl')!==-1);
+semiPart(300,75);assert(elements.feedbackText.textContent.indexOf('größer')!==-1);
+semiPart(201,50);assert(elements.feedbackText.textContent.indexOf('Vielfaches')!==-1);
+semiPart(0,0);assert(elements.feedbackText.textContent.indexOf('größer als 0')!==-1);
+semiPart('2e2',50);assert(elements.feedbackText.textContent.indexOf('ganze Zahl')!==-1);
+semiPart(200,50);semiPart(76,19);
+semiFind('semiTotal').value='69';semiSubmit();
+semiFind('semiProbe').value='275';semiSubmit();assert(elements.feedbackText.textContent.indexOf('noch einmal')!==-1);
+assert.strictEqual(api.correctAnswersForProfile(semiProfile),1);
+semiFind('semiProbe').value='276';semiSubmit();
+assert.strictEqual(semiProfile.semiSkills[semiKey].correctCount,1);
+assert.strictEqual(semiProfile.history[semiProfile.today.date].byOperation.semiDivide.correct,2);
+// Rest must be small, is never divided as a separate chunk, and is part of the proof.
+semiExercise('semiRest',278,4);semiPart(240,60);semiPart(36,9);
+assert(semiForm.textContent.indexOf('Es bleiben 2')!==-1);
+semiFind('semiTotal').value='69';semiFind('semiRest').value='4';semiSubmit();
+assert(elements.feedbackText.textContent.indexOf('kleiner')!==-1);
+semiFind('semiRest').value='2';semiSubmit();assert(semiForm.textContent.indexOf('69 × 4 + 2')!==-1);
+semiFind('semiProbe').value='278';semiSubmit();
+assert.strictEqual(api.correctAnswersForProfile(semiProfile),3);
+assert.strictEqual(semiProfile.reward.availablePlays,3);
+var savedSemi=api.normalizeProfile(JSON.parse(JSON.stringify(semiProfile)));
+assert.strictEqual(savedSemi.today.mode,'semiRest');assert.strictEqual(api.correctAnswersForProfile(savedSemi),3);
+api.finishSession();elements.doneBonusBtn.events.click();assert.strictEqual(semiProfile.today.mode,'semiRest');
+// Wrong totals enter the standard retry path. Aborting preserves only completed work.
+semiKey=semiExercise('semiFree',276,4);semiPart(276,69);semiFind('semiTotal').value='68';semiSubmit();
+assert.strictEqual(semiProfile.semiSkills[semiKey].wrongCount,1);
+assert.strictEqual(semiProfile.today.requeueCounts[semiKey],1);
+semiExercise('semiRest',278,4);semiPart(240,60);var staleSubmit=semiForm.onsubmit;
+elements.abortSessionBtn.events.click();var afterAbort=JSON.stringify(semiProfile.history);
+staleSubmit({preventDefault:function(){}});assert.strictEqual(JSON.stringify(semiProfile.history),afterAbort);
+assert.strictEqual(api.correctAnswersForProfile(semiProfile),3);assert.strictEqual(semiProfile.reward.availablePlays,3);
+assert.strictEqual(semiProfile.today.mode,'mixed');
+var legacySemi=api.defaultProfile();delete legacySemi.semiSkills;api.normalizeProfile(legacySemi);
+assert.strictEqual(Object.keys(legacySemi.semiSkills).length,24);
+console.log('Semi-written: staged generation, flexible paths, validation, rest/proof, one-time rewards, retries, migration and abort OK');
 // All twelve games keep the same reward contract and active-time/pause rules.
 var gameProfile = api.normalizeProfile(api.defaultProfile());
 gameProfile.config.sound = false;

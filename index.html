@@ -42,8 +42,32 @@
         <button class="primary-btn extra-round-btn" id="termsBtn">Rechenbegriffe lernen</button>
         <button class="primary-btn extra-round-btn" id="riddlesBtn">Zahlenrätsel lösen</button>
         <button class="primary-btn extra-round-btn" id="writtenBtn">Schriftlich dividieren</button>
+        <button class="primary-btn extra-round-btn" id="semiBtn">Halbschriftlich dividieren</button>
       </div></div></div>
-      <p class="app-version" id="appVersion">Version 41</p>
+      <p class="app-version" id="appVersion">Version 42</p>
+    </div>
+
+    <div class="screen semi-intro" id="screen-semi-intro">
+      <h1>Halbschriftlich dividieren</h1>
+      <p class="subtitle">Große Aufgaben werden leicht, wenn du sie in passende Teile zerlegst.</p>
+      <div class="semi-lesson">
+        <h2>So geht’s: 276 : 4</h2>
+        <ol>
+          <li><strong>Zerlegen:</strong> 276 = 240 + 36. Beide Teile lassen sich gut durch 4 teilen. Die 4 bleibt unverändert!</li>
+          <li><strong>Teilen:</strong> 240 : 4 = 60 und 36 : 4 = 9.</li>
+          <li><strong>Zusammenzählen:</strong> 60 + 9 = 69. Also 276 : 4 = 69.</li>
+          <li><strong>Probe:</strong> 69 × 4 = 276. Das passt!</li>
+        </ol>
+        <p>Auch 200 + 76 ist ein richtiger Weg: 200 : 4 = 50 und 76 : 4 = 19. Du darfst deine eigenen passenden Teile finden.</p>
+        <p><strong>Mit Rest:</strong> Bei 278 : 4 bleiben nach 240 und 36 noch 2 übrig. Ergebnis: 69 Rest 2. Der Rest muss kleiner als 4 sein. Probe: 69 × 4 + 2 = 278.</p>
+        <p>Hilfreich sind das kleine Einmaleins und Aufgaben wie 24 : 4 = 6 → 240 : 4 = 60. Sprich deinen Rechenweg ruhig laut mit!</p>
+      </div>
+      <div class="semi-levels">
+        <button class="primary-btn" id="semiStartBtn">1 · Mit Hilfe<small>Bis 999 · passende Teile sind vorgegeben</small></button>
+        <button class="primary-btn" id="semiFreeStartBtn">2 · Eigener Rechenweg<small>Bis 9999 · wähle deine Teile selbst</small></button>
+        <button class="primary-btn" id="semiRestStartBtn">3 · Mit Rest<small>Bis 9999 · verteilen, Rest und Probe</small></button>
+      </div>
+      <button class="secondary-btn" id="semiIntroBackBtn">Zurück zur Startseite</button>
     </div>
 
     <!-- TABLE PRACTICE CHOICE -->
@@ -60,6 +84,7 @@
       <div class="question" id="questionText">7 × 8</div>
       <div class="choices" id="choicesWrap"></div>
       <form id="writtenDivisionForm" class="written-division" autocomplete="off" hidden aria-label="Schriftlich dividieren mit Teilrechnungen"></form>
+      <form id="semiDivisionForm" class="semi-division" autocomplete="off" hidden aria-label="Halbschriftlich dividieren in eigenen Schritten"></form>
       <div class="feedback" id="feedbackText" role="status" aria-live="polite"></div>
     </div>
 

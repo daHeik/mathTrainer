@@ -27,24 +27,38 @@ function checkDoodleChain(g){
  var ordered=g.platforms.slice().sort(function(a,b){return b.y-a.y;});
  for(var i=1;i<ordered.length;i++){
   var prev=ordered[i-1],next=ordered[i],rise=prev.y-next.y;
-  assert(rise>=82&&rise<=108.01);
+  assert(rise>=80&&rise<=106.01);
   var shift=Math.abs(next.baseX+next.w/2-prev.baseX-prev.w/2);
-  assert(shift>=105.99&&shift<=140.01);
+  assert(shift>=101.99&&shift<=136.01);
   var moving=(prev.type==='moving'?14:0)+(next.type==='moving'?14:0);
   var descendingTime=(510+Math.sqrt(510*510-2*1100*rise))/1100;
   assert(shift+moving<245*descendingTime+next.w/2+11,'next platform remains reachable');
  }
 }
 for(var route=0;route<80;route++){
- var easy=start('doodle');checkDoodleChain(easy);assert(easy.platforms.slice(1).every(function(p){return p.w>=62;}));
+ var easy=start('doodle');checkDoodleChain(easy);assert(easy.platforms.slice(1).every(function(p){return p.w>=66;}));
  easy.cameraY=-6000;easy.topY=-5800;easy.topX=240;easy.player.y=-5700;easy.player.vy=0;easy.platforms=[];api.update('doodle',.001);
- checkDoodleChain(easy);assert(easy.platforms.length>=3);assert(easy.platforms.every(function(p){return p.w===44;}));
+ checkDoodleChain(easy);assert(easy.platforms.length>=3);assert(easy.platforms.every(function(p){return p.w===48;}));
 }
 var doodle=start('doodle');
 doodle.platforms=[{x:190,y:300,w:90,type:'spring',baseX:190}];doodle.topY=-10000;doodle.player={x:230,y:265,vy:200};api.update('doodle',.01);assert.equal(doodle.player.vy,-760);assert.equal(doodle.player.y,266);
 doodle.player.x=479;doodle.axis=1;api.update('doodle',.02);assert(doodle.player.x<10);
 doodle.score=450;var before=doodle.height;doodle.player.y=doodle.cameraY+700;api.update('doodle',.01);assert.equal(doodle.attempts,1);assert(doodle.awaitingStart);assert(doodle.height>=before);assert(doodle.platforms.length>0);assert(doodle.player.y<doodle.cameraY+640);
 api.draw('doodle');
+// Broken platforms remain in the world, cannot support a landing/respawn,
+// and return exactly four active seconds later, even across a retry or pause.
+var crumbGame=start('doodle'),crumb={x:190,y:300,w:80,type:'crumb',baseX:190};
+crumbGame.platforms=[crumb,{x:190,y:400,w:90,type:'normal',baseX:190}];crumbGame.topY=-10000;
+crumbGame.player={x:230,y:265,vy:200};api.update('doodle',.01);
+assert.equal(crumb.broken,true);assert.equal(crumb.respawnAt,crumbGame.elapsed+4);assert(crumbGame.platforms.includes(crumb));
+var brokenAt=crumbGame.elapsed;crumbGame.elapsed=brokenAt+3.98;crumbGame.player={x:230,y:265,vy:200};api.update('doodle',.01);
+assert.equal(crumb.broken,true);assert(crumbGame.player.vy>0,'broken platform is non-solid');
+crumbGame.pausedAt=1;var frozen=crumbGame.elapsed;api.update('doodle',2);assert.equal(crumbGame.elapsed,frozen);assert.equal(crumb.broken,true);crumbGame.pausedAt=null;
+api.definitions.doodle.recover(crumbGame);assert.equal(crumbGame.player.y,366,'respawn uses the intact lower platform');assert.equal(crumb.broken,true);
+crumbGame.elapsed=brokenAt+4-.01;crumbGame.player={x:230,y:265,vy:200};api.update('doodle',.01);
+assert.equal(crumbGame.player.vy,-510,'platform supports landing again at four seconds');
+assert.equal(crumb.respawnAt,crumbGame.elapsed+4,'second break starts a new four-second cooldown');
+crumbGame.elapsed=crumb.respawnAt;crumbGame.player={x:400,y:330,vy:0};api.update('doodle',.001);assert.equal(crumb.broken,false);assert.equal(crumb.respawnAt,null);api.draw('doodle');
 // Every dot in generated labyrinths can be reached, including the wrap tunnel.
 for(var sample=0;sample<12;sample++){
  var maze=start('maze'),queue=[19*19+1],seen=new Set(queue);
@@ -59,8 +73,6 @@ var asteroid=start('asteroid');asteroid.rocks=[{x:100,y:100,r:38,vx:0,vy:0,angle
 asteroid.ship.x=479;asteroid.ship.vx=200;api.update('asteroid',.02);assert(asteroid.ship.x<10);
 api.action('asteroid','up',true);var vy=asteroid.ship.vy;api.update('asteroid',.05);assert(asteroid.ship.vy<vy);api.action('asteroid','up',false);assert.equal(asteroid.keys.up,false);
 asteroid.grace=0;asteroid.rocks=[{x:asteroid.ship.x,y:asteroid.ship.y,r:38,vx:0,vy:0,angle:0,spin:0,points:Array(10).fill(1)}];asteroid.shots=[];asteroid.shotIn=99;api.update('asteroid',.001);assert.equal(asteroid.attempts,1);assert.equal(asteroid.rocks.length,1);assert.equal(asteroid.score,20);assert(asteroid.grace>asteroid.elapsed);api.draw('asteroid');
-A.kinds.forEach(function(kind){var g=start(kind);g.pausedAt=1;var before=JSON.stringify(g);api.update(kind,1);api.action(kind,'left',true);assert.equal(JSON.stringify(g),before);g.canvas.height=300;api.draw(kind);g.canvas.height=960;api.draw(kind);});
-console.log('OK: canonical 2048 merges/no-op/spawn/rescue, reachable Doodle chain/bounce/wrap/recovery, connected maze/power/ghosts, inertial Asteroid split/wrap/respawn, pause and portrait/landscape rendering.');
 // Finger aiming steers acceleration, never teleports or replaces momentum.
 var touch=start('asteroid');touch.grace=999;touch.shotIn=99;
 touch.rocks=[{x:30,y:30,r:8,vx:0,vy:0,angle:0,spin:0,points:Array(10).fill(1)}];
@@ -79,3 +91,5 @@ api.update('asteroid',.05);assert(Math.abs(touch.ship.vx-vx*Math.exp(-.12*.05))<
 touch.touchTarget={x:touch.ship.x,y:touch.ship.y};api.update('asteroid',.01);assert(Number.isFinite(touch.ship.vx)&&Number.isFinite(touch.ship.angle));
 api.definitions.asteroid.recover(touch);assert.equal(touch.touchTarget,null);
 touch.touchTarget={x:20,y:30};touch.canvas.height=300;api.resize('asteroid',640);assert.equal(touch.touchTarget,null);
+A.kinds.forEach(function(kind){var g=start(kind);g.pausedAt=1;var before=JSON.stringify(g);api.update(kind,1);api.action(kind,'left',true);assert.equal(JSON.stringify(g),before);g.canvas.height=300;api.draw(kind);g.canvas.height=960;api.draw(kind);});
+console.log('OK: canonical 2048 merges/no-op/spawn/rescue, reachable Doodle chain/bounce/wrap/recovery, connected maze/power/ghosts, inertial Asteroid split/wrap/respawn, pause and portrait/landscape rendering.');

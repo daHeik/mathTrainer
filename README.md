@@ -28,6 +28,38 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 
 ## Features
 
+### Halbschriftlich dividieren (Klasse 4)
+
+Ein eigener Startseiten-Modus vermittelt schrittweises Dividieren: den
+Dividenden in gut teilbare Teile zerlegen, jeden Teil durch denselben Divisor
+teilen, Teilergebnisse addieren und mit der Umkehraufgabe prüfen.
+Beispiel: 276 : 4 → 240 : 4 = 60 und 36 : 4 = 9 → 69;
+Probe: 69 × 4 = 276. Auch andere passende Zerlegungen sind richtig.
+
+- **Mit Hilfe:** dreistellige Aufgaben bis 999; passende Teile sind vorgegeben.
+- **Eigener Rechenweg:** vierstellige Aufgaben bis 9999, Teile selbst wählen.
+- **Mit Rest:** eigene Zerlegung, Rest kleiner als der Divisor und Probe
+  `Ergebnis × Divisor + Rest = Dividend`.
+
+Die Einführung erklärt den Weg und vergleicht zwei Zerlegungen. Tipps und
+gezielte Rückmeldungen unterstützen beim Üben. Alle Stufen teilen durch
+2 bis 9; sie sind unabhängig von der Freischaltung normaler Divisionsaufgaben.
+Eine vollständige Aufgabe einschließlich Probe zählt einmal für Statistik und
+Spielbelohnungen, nicht jede einzelne Teilrechnung. Fehler im Gesamtergebnis
+werden wie in anderen Lernmodi wiederholt. Lernstände, gewählte Stufe und
+Sicherungen bleiben erhalten; der bisherige Modus „Schriftlich dividieren“
+bleibt unverändert verfügbar.
+
+Didaktische Grundlage: [Mahiko/DZLM: Übungsreihe halbschriftliche Division](https://mahiko.dzlm.de/zahlraum-bis-1000-ueberblick/halbschriftliche-division/uebungen)
+und [KIRA/DZLM: flexible Rechenwege und typische Schwierigkeiten](https://kira.dzlm.de/arithmetik/halbschriftliches-rechnen/halbschriftliche-division).
+Umgesetzt ist die universell nutzbare Strategie „schrittweise“, nicht ein
+festgeschriebener schriftlicher Ziffernalgorithmus. Voraussetzung sind ein
+grundlegendes Verständnis des Teilens sowie das kleine Einmaleins. Texte,
+Aufgabengenerator und Oberfläche sind eigenständig; keine fremden Arbeitsblätter,
+Bilder oder Videos werden eingebunden.
+
+### Weitere Lern- und Spielfunktionen
+
 - Täglich eine konfigurierbare Anzahl Aufgaben (Standard: 5)
 - Konfigurierbarer Zahlenbereich von 1 bis 20
 - Einzelne Zahlen gezielt auswählbar; in normalen gemischten Runden kommen
@@ -173,6 +205,11 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
   Pause, Vollbild und eigene Profilrekorde. Fehlversuche erhalten Welt und Punkte;
   bei blockiertem 2048 werden für den nächsten Versuch die zwei kleinsten Steine
   entfernt. Langes Halten der Bildschirmtasten löst keine Textauswahl aus.
+  Doodle Jump ist etwas nachsichtiger: Plattformen sind 72 bis 48 Pixel breit,
+  die seitlichen Abstände liegen bei 102 bis 136, Höhenabstände bei 80 bis 106
+  Pixeln. Brüchige Plattformen verschwinden nach dem Absprung und kehren nach
+  vier aktiven Spielsekunden zurück. Pause und Wartezeit frieren diese Zeit ein;
+  nach einem Fehlversuch startet die Figur nur auf einer intakten Plattform.
   Asteroids lässt sich direkt mit dem Finger im Spielfeld steuern: Halten und
   Bewegen richtet das Schiff zum Finger aus und gibt Schub. Die bisherige
   Bewegung bleibt durch Trägheit erhalten; beim Loslassen gleitet es weiter.
