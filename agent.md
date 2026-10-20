@@ -127,7 +127,9 @@ Typing advances a cell; Enter skips blank zeros; the last cell validates the
 row/total automatically. Backspace on an empty cell goes to the previous one.
 
 Semi-written division is a separate mode family: `semi` (guided, 100..999),
-`semiFree` (own chunks, 1000..9999), `semiRest` (own chunks with nonzero rest).
+`semiFree` (own chunks), `semiRest` (own chunks with nonzero rest).
+All three stages use three-digit dividends 100..999, including the remainder;
+never generate four-digit exercises. Native input fields allow three digits.
 Keys `sd:mode:divisor` for divisors 2..9 (24 records) live in `semiSkills`;
 history operation `semiDivide`. Include in normalization, reward totals/backups.
 Intro `screen-semi-intro` explains and compares own examples; guided chunks

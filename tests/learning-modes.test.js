@@ -653,7 +653,7 @@ api.setState(semiProfile);api.ensureFactPool();
   skills.forEach(function(skill){
     for(var sample=0;sample<100;sample++){
       var q=api.semiDivisionQuestion(skill),remaining=q.dividend,sum=0;
-      assert(q.dividend>=(mode==='semi'?100:1000)&&q.dividend<=(mode==='semi'?999:9999));
+      assert(q.dividend>=100&&q.dividend<=999);
       assert(q.divisor>=2&&q.divisor<=9);assert.strictEqual(q.correct*q.divisor+q.rest,q.dividend);
       assert(q.rest>=0&&q.rest<q.divisor);assert.strictEqual(q.rest>0,mode==='semiRest');
       while(remaining>=q.divisor){
@@ -667,6 +667,18 @@ api.setState(semiProfile);api.ensureFactPool();
   assert.strictEqual(api.buildQueue(5,null,mode).length,5);
 });
 var semiForm=elements.semiDivisionForm;
+var beforeBoundaryRandom=context.Math.random;
+[0,.999999999].forEach(function(randomValue){
+  context.Math.random=function(){return randomValue;};
+  ['semi','semiFree','semiRest'].forEach(function(mode){
+    api.practiceSkillsInRange(null,mode).forEach(function(skill){
+      var task=api.semiDivisionQuestion(skill);
+      assert(task.dividend>=100&&task.dividend<=999,'Boundary dividend stays three-digit, including remainder');
+      assert.strictEqual(task.correct*task.divisor+task.rest,task.dividend);
+    });
+  });
+});
+context.Math.random=beforeBoundaryRandom;
 function semiFind(id){
   function visit(n){if(n.id===id)return n;for(var i=0;i<n.children.length;i++){var found=visit(n.children[i]);if(found)return found;}return null;}
   return visit(semiForm);

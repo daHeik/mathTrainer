@@ -573,8 +573,8 @@
     return Math.floor(quotient/place)*place*divisor;
   }
   function semiDivisionQuestion(skill){
-    var minimum=Math.ceil((skill.mode==='semi'?100:1000)/skill.divisor);
-    var maximum=skill.mode==='semi'?Math.min(99,Math.floor(999/skill.divisor)):Math.floor((9999-skill.divisor+1)/skill.divisor);
+    var minimum=Math.ceil(100/skill.divisor);
+    var maximum=skill.mode==='semi'?Math.min(99,Math.floor(999/skill.divisor)):Math.floor((999-(skill.mode==='semiRest'?skill.divisor-1:0))/skill.divisor);
     var quotient=minimum+Math.floor(Math.random()*(maximum-minimum+1));
     if(skill.mode==='semi'&&quotient%10===0)quotient++;
     var rest=skill.mode==='semiRest'?1+Math.floor(Math.random()*(skill.divisor-1)):0;
@@ -1843,7 +1843,7 @@
     function node(tag,cls,value){var n=document.createElement(tag);n.className=cls||'';if(value!==undefined)n.textContent=value;return n;}
     function field(label,id){
       var wrapper=node('label','semi-field',label),input=node('input','semi-input');
-      input.id=id;input.type='text';input.inputMode='numeric';input.pattern='[0-9]*';input.maxLength=4;input.value='';input.placeholder='?';input.autocomplete='off';
+      input.id=id;input.type='text';input.inputMode='numeric';input.pattern='[0-9]*';input.maxLength=3;input.value='';input.placeholder='?';input.autocomplete='off';
       input.setAttribute('aria-label',label);input.setAttribute('enterkeyhint','next');wrapper.appendChild(input);return {wrapper:wrapper,input:input};
     }
     function focus(input){input.focus();if(input.setSelectionRange)input.setSelectionRange(0,(input.value||'').length);}

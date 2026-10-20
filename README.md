@@ -37,8 +37,8 @@ Beispiel: 276 : 4 → 240 : 4 = 60 und 36 : 4 = 9 → 69;
 Probe: 69 × 4 = 276. Auch andere passende Zerlegungen sind richtig.
 
 - **Mit Hilfe:** dreistellige Aufgaben bis 999; passende Teile sind vorgegeben.
-- **Eigener Rechenweg:** vierstellige Aufgaben bis 9999, Teile selbst wählen.
-- **Mit Rest:** eigene Zerlegung, Rest kleiner als der Divisor und Probe
+- **Eigener Rechenweg:** dreistellige Aufgaben bis 999, Teile selbst wählen.
+- **Mit Rest:** ebenfalls bis 999, eigene Zerlegung, Rest kleiner als der Divisor und Probe
   `Ergebnis × Divisor + Rest = Dividend`.
 
 Die Einführung erklärt den Weg und vergleicht zwei Zerlegungen. Tipps und
