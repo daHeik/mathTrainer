@@ -27,17 +27,19 @@ function checkDoodleChain(g){
  var ordered=g.platforms.slice().sort(function(a,b){return b.y-a.y;});
  for(var i=1;i<ordered.length;i++){
   var prev=ordered[i-1],next=ordered[i],rise=prev.y-next.y;
-  assert(rise>=80&&rise<=106.01);
+  assert(rise>=70&&rise<=106.01);
   var shift=Math.abs(next.baseX+next.w/2-prev.baseX-prev.w/2);
-  assert(shift>=101.99&&shift<=136.01);
+  assert(shift>=85.99&&shift<=136.01);
   var moving=(prev.type==='moving'?14:0)+(next.type==='moving'?14:0);
   var descendingTime=(510+Math.sqrt(510*510-2*1100*rise))/1100;
   assert(shift+moving<245*descendingTime+next.w/2+11,'next platform remains reachable');
  }
 }
 for(var route=0;route<80;route++){
- var easy=start('doodle');checkDoodleChain(easy);assert(easy.platforms.slice(1).every(function(p){return p.w>=66;}));
- easy.cameraY=-6000;easy.topY=-5800;easy.topX=240;easy.player.y=-5700;easy.player.vy=0;easy.platforms=[];api.update('doodle',.001);
+ var easy=start('doodle');checkDoodleChain(easy);assert(easy.platforms.slice(1).every(function(p){return p.w===84;}));
+ easy.cameraY=-6000;easy.topY=-5800;easy.topX=240;easy.player.y=-5700;easy.player.vy=0;easy.platforms=[];api.update('doodle',.001);assert(easy.platforms.every(function(p){return p.w>83.9;}),'height cannot accelerate difficulty');
+ easy.elapsed=119;easy.topY=-5800;easy.topX=240;easy.platforms=[];api.update('doodle',.001);assert(easy.platforms.every(function(p){return p.w>48;}),'full difficulty cannot arrive before two active minutes');
+ easy.elapsed=120;easy.topY=-5800;easy.topX=240;easy.platforms=[];api.update('doodle',.001);
  checkDoodleChain(easy);assert(easy.platforms.length>=3);assert(easy.platforms.every(function(p){return p.w===48;}));
 }
 var doodle=start('doodle');

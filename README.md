@@ -60,6 +60,23 @@ Bilder oder Videos werden eingebunden.
 
 ### Weitere Lern- und Spielfunktionen
 
+- Name und Avatar lassen sich ohne Eltern-PIN über die Figur neben der
+  Begrüßung oder das Profil-Symbol gestalten. Haut-/Augen-/Haarfarben,
+  Frisuren, Brille, Kleidung, Kostüme und Accessoires werden pro Profil lokal
+  gespeichert und mitgesichert. Beim ersten normalen Start eines namenlosen
+  Profils erscheint die Auswahl; Demo-Spiele überspringen sie. Name und Avatar
+  sind von den Mathe-Einstellungen getrennt, bestehende Lernstände bleiben erhalten.
+  Es gibt neun Oberteil-Schnitte und zwölf Unterteile, jeweils mit eigener frei
+  wählbarer Farbe, außerdem weich nach innen fallende schulterlange Wellen
+  und glatte Haare bis zum Bauch.
+  Bisherige Kleidungsfarben und Kostüme bleiben bei der Umstellung erhalten.
+  Beim Bearbeiten bleibt die Avatar-Vorschau sichtbar; nur die Auswahl scrollt.
+  Ein Hinweis erklärt, wenn ein Kostüm die Alltagskleidung überdeckt.
+- Alle zwölf Spiele zeichnen mit einem Retina-Backing-Store für schärfere
+  Darstellung auf hochauflösenden Bildschirmen. Spielkoordinaten und
+  Touch-Steuerung bleiben davon unabhängig. Dialoge berücksichtigen die
+  Bildschirmtastatur, ohne die darunterliegende App zu verkleinern.
+  Pinch-Zoom bleibt im Mathetrainer nutzbar.
 - Täglich eine konfigurierbare Anzahl Aufgaben (Standard: 5)
 - Konfigurierbarer Zahlenbereich von 1 bis 20
 - Einzelne Zahlen gezielt auswählbar; in normalen gemischten Runden kommen
@@ -164,7 +181,7 @@ Bilder oder Videos werden eingebunden.
   Pac-Man und Asteroids. Die benötigte
   Anzahl richtiger Antworten pro Spiel ist im Eltern-Bereich konfigurierbar
   (Standard: 10); die Startseite zeigt, wie viele richtige Antworten bis zum
-  nächsten Spiel fehlen. Bricks endet nach höchstens fünf aktiven Minuten,
+  nächsten Spiel fehlen. Bricks und 2048 enden nach höchstens fünf aktiven Minuten,
   die anderen Spiele nach drei;
   Pausen, Wartezeit vor Versuchen und ausgeblendete Ansichten zählen nicht mit.
   Drei Fehlversuche beenden das Spiel (Dino kann einen Bonusversuch sammeln).
@@ -205,9 +222,11 @@ Bilder oder Videos werden eingebunden.
   Pause, Vollbild und eigene Profilrekorde. Fehlversuche erhalten Welt und Punkte;
   bei blockiertem 2048 werden für den nächsten Versuch die zwei kleinsten Steine
   entfernt. Langes Halten der Bildschirmtasten löst keine Textauswahl aus.
-  Doodle Jump ist etwas nachsichtiger: Plattformen sind 72 bis 48 Pixel breit,
-  die seitlichen Abstände liegen bei 102 bis 136, Höhenabstände bei 80 bis 106
-  Pixeln. Brüchige Plattformen verschwinden nach dem Absprung und kehren nach
+  Doodle Jump steigert die Schwierigkeit nur mit aktiver Spielzeit und erreicht
+  das Maximum frühestens nach 120 Sekunden. Plattformen werden von 84 auf 48
+  Pixel schmaler, seitliche Abstände wachsen von 86–110 auf 102–136,
+  Höhenabstände von 70–82 auf 94–106 Pixel. Die erreichte Höhe beschleunigt
+  diesen Verlauf nicht. Brüchige Plattformen verschwinden nach dem Absprung und kehren nach
   vier aktiven Spielsekunden zurück. Pause und Wartezeit frieren diese Zeit ein;
   nach einem Fehlversuch startet die Figur nur auf einer intakten Plattform.
   Asteroids lässt sich direkt mit dem Finger im Spielfeld steuern: Halten und
@@ -241,7 +260,7 @@ Bilder oder Videos werden eingebunden.
   Flugzeit. Gelände wird bei hohem Tempo weiter voraus erzeugt. Eis beschleunigt
   auf mindestens 150 % und nutzt dieselbe Begrenzung/Abklingregel statt eines
   zusätzlichen, unbegrenzten Tempoaufschlags.
-  Das Grundtempo bleibt konstant bei 220 Pixeln/Sekunde, ohne zeitabhängigen
+  Das Grundtempo bleibt konstant bei 286 Pixeln/Sekunde (+30 %), ohne zeitabhängigen
   Anstieg. Der Verfolger startet mit dem dann aktuellen Fahrtempo plus
   16 Pixeln/Sekunde und behält dieses Tempo während der Verfolgung bei.
 - Bricks steigert das Grundtempo mit jedem Level um 25 % gegenüber dem

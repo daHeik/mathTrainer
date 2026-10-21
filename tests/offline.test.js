@@ -16,6 +16,23 @@ assets.forEach(function(asset){ assert(fs.existsSync(path.join(root, asset)), 'M
 });
 ['index.html','app.js','arcade-extra.js','styles.css','icons.svg','manifest.json'].forEach(function(file){ assert(assets.indexOf('./' + file) !== -1); });
 var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+var css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
+// Avatar imports must not replace the app shell, learning forms or game layout.
+[
+  '.app-bar', '#app>.card', '.screen.active', '.app-navigation',
+  'body.standalone-app .app-navigation', 'body.focused-view',
+  '.game-immersive.active', '.game-immersive .game-toolbar',
+  '.game-immersive .game-wrap', '.written-equation', '.written-number',
+  '.semi-division', '.semi-work', '.runner-controls', '.classic-controls',
+  '.direction-pad', '.icon', '.snake-controls button', '.home-actions .action-label',
+  '.home-avatar', '.player-modal', '.avatar-settings'
+].forEach(function(selector){
+  assert(css.indexOf(selector + ' {') !== -1 || css.indexOf(selector + '{') !== -1,
+    'Required layout rule: ' + selector);
+});
+assert(/@media\s*\(min-width:760px\)/.test(css), 'Desktop sidebar layout remains available');
+assert(/@media\s*\(orientation:landscape\)/.test(css), 'Landscape layout remains available');
+assert(/\.modal-overlay\s*\{[^}]*height:var\(--modal-height,/.test(css), 'Modal follows keyboard viewport independently of app shell');
 var appVersion = html.match(/id="appVersion">Version (\d+)<\/p>/);
 assert(appVersion, 'Home screen shows the app version');
 assert.strictEqual('1x1-trainer-v' + appVersion[1], context.CACHE_NAME, 'Visible app version matches the release cache version');

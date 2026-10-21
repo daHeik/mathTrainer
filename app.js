@@ -10,6 +10,32 @@
   function iconLabel(node,value,name){node.textContent='';node.appendChild(makeIcon(name));node.appendChild(document.createTextNode(' '+value));}
   function text(id,value){el(id).textContent=value;}
 
+  var AVATAR_OPTIONS={
+    gender:[['neutral','Offen'],['female','Weiblich'],['male','Männlich']],
+    skin:[['#f8d8bb','Hell'],['#eaba91','Pfirsich'],['#ce956b','Goldbraun'],['#a76c47','Braun'],['#75472f','Dunkelbraun'],['#493024','Sehr dunkel']],
+    eyes:[['#427bb3','Blau'],['#58916a','Grün'],['#805635','Braun'],['#44424b','Dunkel'],['#939aa4','Grau']],
+    hairColor:[['#513323','Braun'],['#211d25','Schwarz'],['#eac66b','Blond'],['#ae5235','Rot'],['#ece7e2','Weiß'],['#a266c4','Lila'],['#e775a6','Rosa'],['#4da6bd','Türkis']],
+    hair:[['short','Kurz'],['bob','Bob'],['long','Lang bis zum Bauch'],['waves','Lange Wellen'],['shoulderCurls','Schulterlange Wellen'],['longCurls','Lange Locken'],['braids','Zwei Zöpfe'],['bun','Dutt'],['curls','Kurze Locken'],['ponytail','Pferdeschwanz'],['spiky','Stacheln'],['bald','Ohne Haare']],
+    glasses:[['no','Ohne Brille'],['yes','Mit Brille']],
+    top:[['tshirt','T-Shirt'],['longsleeve','Langarmshirt'],['sweater','Pullover'],['hoodie','Hoodie'],['tank','Trägertop'],['polo','Poloshirt'],['cardigan','Strickjacke'],['stripes','Ringelshirt'],['rainbow','Regenbogen-Shirt']],
+    bottom:[['jeans','Jeans'],['wide','Weite Hose'],['cargo','Cargohose'],['shorts','Kurze Hose'],['sportshorts','Sportshorts'],['culottes','Hosenrock'],['skirt','Kurzer Rock'],['pleated','Faltenrock'],['longskirt','Langer Rock'],['leggings','Leggings'],['overalls','Latzhose'],['rainbow','Regenbogenhose']],
+    shoes:[['white','Weiße Sneaker'],['red','Rote Sneaker'],['yellow','Gummistiefel'],['purple','Lila Schuhe']],
+    outfit:[['everyday','Alltagskleidung'],['dinosaur','Dinosaurier'],['astronaut','Astronaut'],['superhero','Superheld'],['halloween','Halloween-Hexe'],['pumpkin','Halloween-Kürbis'],['christmas','Weihnachtswichtel'],['easter','Osterhase']],
+    accessory:[['star','Stern'],['bow','Schleife'],['crown','Krone'],['headphones','Kopfhörer'],['wand','Zauberstab'],['bag','Umhängetasche']]
+  };
+  function normalizeAvatar(input){
+    input=input&&typeof input==='object'?Object.assign({},input):{};var a={};
+    // ui41/42 combined garment and colour. Migrate once without changing saved outfits.
+    var oldTops={blue:['tshirt','#508fe3'],coral:['tshirt','#ed7b79'],green:['sweater','#599d83'],purple:['hoodie','#9170c8']},oldTop=oldTops[input.top];
+    if(Array.isArray(oldTop)){input.top=oldTop[0];if(!input.topColor)input.topColor=oldTop[1];}
+    Object.keys(AVATAR_OPTIONS).forEach(function(key){if(key==='accessory')return;var values=AVATAR_OPTIONS[key].map(function(o){return o[0];});a[key]=values.indexOf(input[key])!==-1?input[key]:values[0];});
+    var defaultTop={stripes:'#f6e5c3',rainbow:'#e77c9c'}[a.top]||'#508fe3';
+    var defaultBottom={shorts:'#5573a8',skirt:'#b96eaa',pleated:'#b96eaa',longskirt:'#b96eaa',leggings:'#514f78',rainbow:'#9a75c3'}[a.bottom]||'#4e6eaa';
+    a.topColor=typeof input.topColor==='string'&&/^#[0-9a-f]{6}$/i.test(input.topColor)?input.topColor.toLowerCase():defaultTop;
+    a.bottomColor=typeof input.bottomColor==='string'&&/^#[0-9a-f]{6}$/i.test(input.bottomColor)?input.bottomColor.toLowerCase():defaultBottom;
+    a.accessory=AVATAR_OPTIONS.accessory.map(function(o){return o[0];}).filter(function(v){return Array.isArray(input.accessory)&&input.accessory.indexOf(v)!==-1;});return a;
+  }
+
   var STORAGE_KEY = "km_1x1_trainer_v1"; // legacy single-profile storage
   var ROOT_KEY = "km_1x1_trainer_v2";
   var INTERVALS = [1, 1, 2, 4, 7, 12, 20, 32]; // days, indexed by box level
@@ -20,7 +46,7 @@
   var CORRECT_ADVANCE_DELAY_MS = 1400;
   var WRONG_TAP_DELAY_MS = 1200; // minimum time to look at the correct answer before a tap advances
   var GAME_DURATION_MS = 3 * 60 * 1000;
-  function gameDurationMs(game){ return game && game.kind === 'brick' ? 5 * 60 * 1000 : GAME_DURATION_MS; }
+  function gameDurationMs(game){ return game && (game.kind === 'brick'||game.kind === 'tiles') ? 5 * 60 * 1000 : GAME_DURATION_MS; }
   function gameElapsedMs(g){return g&&g.playTimeMs||0;}
   function gameTimeStamp(g){return (g&&g.startedAt||0)+gameElapsedMs(g);}
   function finishGameTime(g){
@@ -28,7 +54,7 @@
     else if(g===flappyGame)finishFlappyGame('Drei Minuten geschafft!','Super geflattert!');
     else if(g===towerGame)finishTowerGame('Drei Minuten geschafft!','Super gebaut!');
     else if(g===gravityGame)finishGravityGame('Drei Minuten geschafft!');
-    else finishArcadeGame(g.kind,g.kind === 'brick' ? 'Fünf Minuten geschafft!' : 'Drei Minuten geschafft!');
+    else finishArcadeGame(g.kind,(g.kind === 'brick'||g.kind === 'tiles') ? 'Fünf Minuten geschafft!' : 'Drei Minuten geschafft!');
   }
   function activeGameStep(g,dt){
     if(!g||!g.running||g.pausedAt!=null)return 0;
@@ -167,7 +193,7 @@
       version: 2,
       config: {
         min: 1, max: 10, tasksPerDay: 5, rewardEvery: 10,
-        childName: "", sound: true, answerMode: "adaptive", gapTasks: false,
+        childName: "", avatar:normalizeAvatar(), sound: true, answerMode: "adaptive", gapTasks: false,
         enabledTables: [1,2,3,4,5,6,7,8,9,10], newFactsPerRound: 2,
         autoUnlockTables: false, divisionEnabled: false, accentTheme: 'purple'
       },
@@ -261,6 +287,8 @@
   function normalizeProfile(p){
     p.version = 2;
     if (!p.config) p.config = defaultProfile().config;
+    p.config.childName=String(p.config.childName||'').slice(0,80);
+    p.config.avatar=normalizeAvatar(p.config.avatar);
     if (p.config.sound === undefined) p.config.sound = true;
     if (!p.config.answerMode) p.config.answerMode = "choice";
     if (['choice','input','adaptive'].indexOf(p.config.answerMode) === -1) p.config.answerMode = 'choice';
@@ -1480,7 +1508,6 @@
   var pinError = document.getElementById('pinError');
   var pinSubmit = document.getElementById('pinSubmit');
   var pinClose = document.getElementById('pinClose');
-  var childNameInput = document.getElementById('childName');
   var accentThemeSel = document.getElementById('accentTheme');
   var rangeMinSel = document.getElementById('rangeMin');
   var rangeMaxSel = document.getElementById('rangeMax');
@@ -1523,7 +1550,7 @@
     ['screen-home','screen-question','screen-table-practice','screen-done','screen-stickers','screen-statistics','screen-achievements','screen-game-choice','screen-game','screen-flappy','screen-tower','screen-gravity','screen-brick','screen-snake','screen-snow','screen-runner','screen-doodle','screen-tiles','screen-maze','screen-asteroid'].map(el).forEach(function(s){s.classList.toggle('active',s===screen);});
     var game=[screenGame,screenFlappy,screenTower,el('screen-gravity'),el('screen-brick'),el('screen-snake'),el('screen-snow'),el('screen-runner'),el('screen-doodle'),el('screen-tiles'),el('screen-maze'),el('screen-asteroid')].indexOf(screen)!==-1;
     gearBtn.style.display=game || screen===screenQuestion?'none':'';
-    profileBtn.style.display=game || screen===screenQuestion || Object.keys(root.profiles).length<2?'none':'';
+    profileBtn.style.display=game || screen===screenQuestion?'none':'';
     abortSessionBtn.style.display=!game && screen!==screenHome?'':'none';
     abortSessionBtn.setAttribute('aria-label',screen===screenQuestion?'Runde abbrechen und zurück zur Startseite':'Zurück');
     abortSessionBtn.setAttribute('title',screen===screenQuestion?'Runde abbrechen und zurück zur Startseite':'Zurück');
@@ -1616,13 +1643,7 @@
     var name = state.config.childName;
     var recoveryPending = state.streakRecovery && state.streakRecovery.date === state.today.date;
     homeGreeting.textContent = name ? ("Hallo, " + name + "! 👋") : "1×1 Trainer";
-    var profileIds = Object.keys(root.profiles);
-    if (profileIds.length > 1){
-      profileBtn.style.display = 'block';
-      iconLabel(profileBtn, name || 'Profil', 'user');
-    } else {
-      profileBtn.style.display = 'none';
-    }
+    renderPlayerBadge();
     homeSubtitle.textContent = recoveryPending
       ? "Heute kannst du deine Serie mit zwei Runden retten! 🔥"
       : (state.config.divisionEnabled ? "Übe Mal- und Geteiltaufgaben!" : "Übe dein kleines Einmaleins!");
@@ -2747,6 +2768,7 @@
   }
 
   function drawRewardGame(){
+    prepareGameCanvas(el('gameCanvas'),gameCtx,480,270);
     var ctx = gameCtx;
     var game = rewardGame;
     ctx.clearRect(0, 0, 480, 270);
@@ -3136,6 +3158,7 @@
   }
 
   function drawFlappyGame(){
+    prepareGameCanvas(el('flappyCanvas'),flappyCtx,480,360);
     var ctx = flappyCtx;
     var sky = ctx.createLinearGradient(0, 0, 0, 320);
     var decorTime=flappyGame&&flappyGame.startedAt?(gameElapsedMs(flappyGame))/1000:0,zone=Math.floor(decorTime/45)%3;
@@ -3476,6 +3499,7 @@
   }
 
   function drawTowerGame(){
+    prepareGameCanvas(el('towerCanvas'),towerCtx,480,480);
     if (!towerGame) return;
     var g = towerGame, ctx = towerCtx, camera = g.cameraY || 0;
     var scene = towerSceneSpec(g.height, camera), time = gameElapsedMs(g) / 1000;
@@ -3753,6 +3777,7 @@
     return palettes[Math.floor(elapsed/20)%palettes.length];
   }
   function drawGravityGame(){
+    prepareGameCanvas(el('gravityCanvas'),gravityCtx,640,360);
     var ctx=gravityCtx,g=gravityGame;if(!g)return;
     var palette=gravityPalette(g.elapsed),sky=ctx.createLinearGradient(0,28,0,332);
     sky.addColorStop(0,palette.sky);sky.addColorStop(1,palette.deep);ctx.fillStyle=sky;ctx.fillRect(0,0,640,360);drawHalloweenSky(ctx,640,360,g.elapsed,false);
@@ -3803,7 +3828,7 @@
   var arcadeGames={brick:null,snake:null,snow:null,runner:null,doodle:null,tiles:null,maze:null,asteroid:null};
   var ARCADE_LABELS={brick:'Brick',snake:'Snake',snow:'Snow',runner:'Runner',doodle:'Doodle',tiles:'Tiles',maze:'Maze',asteroid:'Asteroid'};
   var ARCADE_RECORDS={brick:'bestBrickScore',snake:'bestSnakeScore',snow:'bestSnowScore',runner:'bestRunnerScore',doodle:'bestDoodleScore',tiles:'bestTilesScore',maze:'bestMazeScore',asteroid:'bestAsteroidScore'};
-  var extraArcade=VocabArcade.create({get:function(kind){return arcadeGames[kind];},begin:beginArcadeAttempt,lose:loseArcadeAttempt,finish:finishArcadeGame,advance:activeGameStep,decor:drawHalloweenSky});
+  var extraArcade=VocabArcade.create({prepare:prepareGameCanvas,get:function(kind){return arcadeGames[kind];},begin:beginArcadeAttempt,lose:loseArcadeAttempt,finish:finishArcadeGame,advance:activeGameStep,decor:drawHalloweenSky});
   function arcadeRecord(kind){var g=arcadeGames[kind],key=ARCADE_RECORDS[kind];if(g&&g.score>state.reward[key]){state.reward[key]=g.score;saveState();}}
   function arcadeHud(kind){
     var g=arcadeGames[kind];if(!g)return;
@@ -4026,6 +4051,7 @@
   }
   function arcadeBackground(ctx){ctx.fillStyle='#201a30';ctx.fillRect(0,0,480,480);ctx.strokeStyle='#71607d';ctx.lineWidth=1;ctx.strokeRect(8,8,464,464);drawHalloweenSky(ctx,480,480,arcadeGames.brick?arcadeGames.brick.elapsed:0,false);}
   function drawBrickGame(){
+    prepareGameCanvas(el('brickCanvas'),arcadeGames.brick.ctx,480,480);
     var g=arcadeGames.brick,ctx=g.ctx;arcadeBackground(ctx);
     g.bricks.forEach(function(o){ctx.fillStyle=o.color;ctx.fillRect(o.x,o.y,o.w,o.h);ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(o.x+3,o.y+3,o.w-6,3);if(o.hp>1){ctx.fillStyle='#263947';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.fillText(o.hp,o.x+o.w/2,o.y+16);}});
     ctx.fillStyle='#b5f2ec';ctx.fillRect(g.paddle.x,g.paddle.y,g.paddle.w,g.paddle.h);ctx.fillStyle='#55c8bd';ctx.fillRect(g.paddle.x,g.paddle.y+8,g.paddle.w,4);
@@ -4042,6 +4068,7 @@
     drawPumpkin(ctx,x,y+1,9);ctx.restore();
   }
   function drawSnakeGame(){
+    prepareGameCanvas(el('snakeCanvas'),arcadeGames.snake.ctx,480,480);
     var g=arcadeGames.snake,ctx=g.ctx,grass=ctx.createLinearGradient(0,0,480,480);grass.addColorStop(0,'#45434e');grass.addColorStop(.5,'#3e5149');grass.addColorStop(1,'#61505a');ctx.fillStyle=grass;ctx.fillRect(0,0,480,480);drawHalloweenSky(ctx,480,480,g.elapsed,true);
     // Quiet, irregular meadow textures do not form a second grid or mimic food.
     for(var i=0;i<28;i++){var x=(i*137+31)%480,y=(i*193+57)%480;ctx.fillStyle=i%2?'rgba(193,211,142,.15)':'rgba(49,94,54,.10)';ctx.beginPath();ctx.ellipse(x,y,19+i%4*8,10+i%3*6,i*.8,0,Math.PI*2);ctx.fill();}
@@ -4127,7 +4154,7 @@
     g.score=Math.floor(g.distance*2)+g.coins*20;g.objects=g.objects.filter(function(o){return !o.taken&&o.z-g.distance>-(o.length||0)-14;});
   }
   function runnerProject(g,lane,z){
-    var h=el('runnerCanvas').height,k=1/(1+Math.max(-14,z)*.065);
+    var h=logicalCanvasHeight(el('runnerCanvas')),k=1/(1+Math.max(-14,z)*.065);
     return {x:240+lane*122*k,y:h*.20+(h*.83-h*.20)*k,k:k};
   }
   function runnerPoly(ctx,points,color){
@@ -4256,7 +4283,8 @@
     ctx.restore();
   }
   function drawRunnerGame(){
-    var g=arcadeGames.runner,ctx=g.ctx,h=el('runnerCanvas').height,sky=ctx.createLinearGradient(0,0,0,h);
+    prepareGameCanvas(el('runnerCanvas'),arcadeGames.runner.ctx,480,logicalCanvasHeight(el('runnerCanvas')));
+    var g=arcadeGames.runner,ctx=g.ctx,h=logicalCanvasHeight(el('runnerCanvas')),sky=ctx.createLinearGradient(0,0,0,h);
     sky.addColorStop(0,'#17182f');sky.addColorStop(.34,'#594262');sky.addColorStop(1,'#985e64');ctx.fillStyle=sky;ctx.fillRect(0,0,480,h);drawHalloweenSky(ctx,480,h,g.elapsed,false);
     // Distant skyline, then ordered perspective scenery on either side of the tracks.
     for(var i=0;i<18;i++){ctx.fillStyle=i%2?'#55516c':'#41465e';ctx.fillRect(i*29-15,h*.2-35-i%5*12,28,60+i%5*12);}
@@ -4301,16 +4329,37 @@
   ['left','jump','slide','right'].forEach(function(action){el('runner'+action+'Btn').addEventListener('pointerdown',function(e){e.preventDefault();runnerAction(action);});});
   document.addEventListener('keydown',function(e){if(gameControlKey(e)||!arcadeGames.runner||!arcadeGames.runner.active||e.repeat)return;var action={ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',ArrowUp:'jump',' ':'jump',w:'jump',ArrowDown:'slide',s:'slide'}[e.key];if(action){e.preventDefault();runnerAction(action);}});
 
+  function logicalCanvasHeight(canvas){return canvas.viewHeight||canvas.height||640;}
+  function prepareGameCanvas(canvas,ctx,width,height){
+    var bounds=canvas.renderBounds||canvas.getBoundingClientRect();canvas.viewHeight=height;
+    if(!bounds.width||!bounds.height)return;canvas.renderBounds=bounds;
+    // Paths remain in world coordinates. Only the backing bitmap follows display pixels.
+    // Bound memory on large screens; no per-frame allocations when dimensions are stable.
+    var scale=Math.max(1,Math.min(8,Math.sqrt(8000000/(width*height)),Math.min(bounds.width/width,bounds.height/height)*(window.devicePixelRatio||1)));
+    var w=Math.round(width*scale),h=Math.round(height*scale);
+    if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
+    ctx.setTransform(w/width,0,0,w/width,0,0);return w/width;
+  }
   function resizeRunnerCanvas(){
-    if(!arcadeGames.runner)return;var c=el('runnerCanvas'),r=el('runnerWrap').getBoundingClientRect();if(r.width>0&&r.height>0){var height=Math.max(300,Math.min(960,Math.round(480*r.height/r.width)));if(c.height!==height)c.height=height;drawRunnerGame();}
+    if(!arcadeGames.runner)return;var c=el('runnerCanvas'),r=el('runnerWrap').getBoundingClientRect();if(r.width>0&&r.height>0){c.renderBounds=null;c.viewHeight=Math.max(300,Math.min(960,Math.round(480*r.height/r.width)));drawRunnerGame();}
   }
   function resizeExtraCanvases(){
-    extraArcade.kinds.forEach(function(kind){var g=arcadeGames[kind];if(!g)return;var bounds=el(kind+'Wrap').getBoundingClientRect();if(!bounds.width||!bounds.height)return;var h=Math.max(300,Math.min(960,Math.round(480*bounds.height/bounds.width))),old=g.canvas.height;if(old!==h){g.canvas.height=h;extraArcade.resize(kind,old);}extraArcade.draw(kind);});
+    extraArcade.kinds.forEach(function(kind){
+      var g=arcadeGames[kind];if(!g)return;var bounds=el(kind+'Wrap').getBoundingClientRect();if(!bounds.width||!bounds.height)return;
+      var h=Math.max(300,Math.min(960,Math.round(480*bounds.height/bounds.width))),old=g.viewHeight||logicalCanvasHeight(g.canvas);
+      g.viewHeight=h;g.canvas.viewHeight=h;g.canvas.renderBounds=null;
+      if(old!==h)extraArcade.resize(kind,old);
+      extraArcade.draw(kind);
+    });
+  }
+  function resizeFixedCanvases(){
+    ['game','flappy','tower','gravity','brick','snake'].forEach(function(kind){el(kind+'Canvas').renderBounds=null;});
+    if(rewardGame)drawRewardGame();if(flappyGame)drawFlappyGame();if(towerGame)drawTowerGame();if(gravityGame)drawGravityGame();if(arcadeGames.brick)drawBrickGame();if(arcadeGames.snake)drawSnakeGame();
   }
   var extraPointers={};
   extraArcade.kinds.forEach(function(kind){
     var wrap=el(kind+'Wrap');
-    function point(e){var c=el(kind+'Canvas'),r=c.getBoundingClientRect(),width=r.width||480,height=r.height||640,scale=Math.min(width/480,height/c.height),left=r.left+(width-480*scale)/2,top=r.top+(height-c.height*scale)/2;return {x:Math.max(0,Math.min(480,(e.clientX-left)/scale)),y:Math.max(0,Math.min(c.height,(e.clientY-top)/scale))};}
+    function point(e){var c=el(kind+'Canvas'),r=c.getBoundingClientRect(),width=r.width||480,height=r.height||640,scale=Math.min(width/480,height/logicalCanvasHeight(c)),left=r.left+(width-480*scale)/2,top=r.top+(height-logicalCanvasHeight(c)*scale)/2;return {x:Math.max(0,Math.min(480,(e.clientX-left)/scale)),y:Math.max(0,Math.min(logicalCanvasHeight(c),(e.clientY-top)/scale))};}
     wrap.addEventListener('pointerdown',function(e){
       var g=arcadeGames[kind];if(!g||!g.active||g.pausedAt!=null)return;e.preventDefault();if(extraPointers[kind])return;
       extraPointers[kind]={id:e.pointerId,x:e.clientX,y:e.clientY,done:false};if(wrap.setPointerCapture)wrap.setPointerCapture(e.pointerId);
@@ -4404,7 +4453,7 @@
   function snowSlope(x){return Math.atan((snowGround(x+2)-snowGround(x-2))/4);}
   function snowGapAt(g,x){return g.gaps.some(function(gap){return x>gap.x&&x<gap.x+gap.w;});}
   function snowSpeedPercent(g){return Math.max(100,Math.min(200,Number(g.speedPercent)||100));}
-  function snowBaseSpeed(){return 220;}
+  function snowBaseSpeed(){return 286;}
   function snowSpeed(g){return snowBaseSpeed(g)*snowSpeedPercent(g)/100;}
   function snowPhysicsScale(g){return 1+(snowSpeedPercent(g)-100)/200;}
   function decaySnowSpeed(g,dt){
@@ -4501,7 +4550,7 @@
     return y;
   }
   function snowSurfaceSlope(g,x){return Math.atan((snowSurface(g,x+1)-snowSurface(g,x-1))/2);}
-  function snowViewHeight(){return el('snowCanvas').height||360;}
+  function snowViewHeight(){return el('snowCanvas').viewHeight||360;}
   function updateSnowCamera(g,dt){
     var height=snowViewHeight(),scale=height/360,p=g.player;
     // Lead with the terrain entering at the right edge, not the rider's feet.
@@ -4519,8 +4568,7 @@
     var canvas=el('snowCanvas'),bounds=el('snowWrap').getBoundingClientRect();
     if(!bounds.width||!bounds.height)return;
     var height=Math.max(360,Math.min(1400,Math.round(640*bounds.height/bounds.width)));
-    if(canvas.width!==640)canvas.width=640;
-    if(canvas.height!==height){arcadeGames.snow.cameraY-=(height-(canvas.height||360))*245/360;canvas.height=height;drawSnowGame();}
+    canvas.renderBounds=null;var old=snowViewHeight();if(old!==height)arcadeGames.snow.cameraY-=(height-old)*245/360;canvas.viewHeight=height;drawSnowGame();
   }
   function snowRopeSlope(rope,x){return Math.atan((snowRopeY(rope,x+1)-snowRopeY(rope,x-1))/2);}
   function snowLandingAngle(rotation,slope){
@@ -4625,6 +4673,7 @@
   }
   function snowMountain(ctx,offset,height,color,scale){ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(0,snowViewHeight());for(var x=-120;x<800;x+=80){var y=height-30*Math.sin((x+offset*scale)/145)-22*Math.cos((x+offset*scale)/76);ctx.lineTo(x,y);}ctx.lineTo(640,snowViewHeight());ctx.closePath();ctx.fill();}
   function drawSnowGame(){
+    prepareGameCanvas(el('snowCanvas'),arcadeGames.snow.ctx,640,snowViewHeight());
     var g=arcadeGames.snow,ctx=g.ctx,p=g.player,phase=Math.floor(g.elapsed/45)%3,viewHeight=snowViewHeight(),horizon=viewHeight*.55;
     var sky=ctx.createLinearGradient(0,0,0,viewHeight);sky.addColorStop(0,['#171e38','#33243d','#101a30'][phase]);sky.addColorStop(1,['#695573','#8b5968','#465574'][phase]);ctx.fillStyle=sky;ctx.fillRect(0,0,640,viewHeight);drawHalloweenSky(ctx,640,viewHeight,g.elapsed,false);
     snowMountain(ctx,g.distance,horizon-43,'#48455f',.12);snowMountain(ctx,g.distance,horizon+6,'#343c55',.25);
@@ -4675,7 +4724,7 @@
   function enterGameFullscreen(screen){
     fullscreenScreen=screen;screen.classList.add('game-immersive');document.body.classList.add('game-immersive-open');
     if(arcadeGames.brick)arcadeGames.brick.inputRect=null;
-    if(screen.id==='screen-snow')resizeSnowCanvas();if(screen.id==='screen-runner')resizeRunnerCanvas();if(extraArcade.definitions[screen.id.replace('screen-','')])resizeExtraCanvases();
+    resizeFixedCanvases();if(screen.id==='screen-snow')resizeSnowCanvas();if(screen.id==='screen-runner')resizeRunnerCanvas();if(extraArcade.definitions[screen.id.replace('screen-','')])resizeExtraCanvases();
   }
   function resumeGame(screen){
     var g=gameForScreen(screen);if(!g||g.pausedAt==null)return;
@@ -4699,8 +4748,147 @@
     el(kind+'PauseBtn').addEventListener('click',function(){pauseGame(screen);});
     button.addEventListener('click',function(){if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(function(){});else if(screen.requestFullscreen)screen.requestFullscreen().catch(function(){});});
   });
-  document.addEventListener('fullscreenchange',function(){if(arcadeGames.brick)arcadeGames.brick.inputRect=null;});
+  document.addEventListener('fullscreenchange',function(){if(arcadeGames.brick)arcadeGames.brick.inputRect=null;requestAnimationFrame(function(){resizeExtraCanvases();resizeFixedCanvases();resizeSnowCanvas();resizeRunnerCanvas();});});
   document.addEventListener('visibilitychange',function(){if(document.hidden&&fullscreenScreen){var g=gameForScreen(fullscreenScreen);if(g&&g.pausedAt==null)pauseGame(fullscreenScreen);}});
+
+  var lastModalFocus=null;
+  function openModal(node){lastModalFocus=document.activeElement;node.classList.add('active');updateViewport();var focus=node.querySelector('input:not([hidden]),button');if(focus)focus.focus();}
+  function closeModal(node){if(node===el('playerOverlay')&&!state.config.childName.trim())return;node.classList.remove('active');if(lastModalFocus&&lastModalFocus.focus)lastModalFocus.focus();updateViewport();}
+  document.addEventListener('keydown',function(e){
+    var modal=document.querySelector('.modal-overlay.active');if(!modal)return;
+    if(e.key==='Escape'){e.preventDefault();closeModal(modal);return;}
+    if(e.key==='Tab'){var nodes=Array.from(modal.querySelectorAll('button,input,select,[tabindex="0"]')).filter(function(n){return !n.disabled&&n.getClientRects().length>0;});if(!nodes.length)return;var first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}
+  });
+  el('playerOverlay').addEventListener('click',function(e){if(e.target===el('playerOverlay'))closeModal(el('playerOverlay'));});
+  function avatarSvg(input){
+    var a=normalizeAvatar(input),ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');
+    svg.setAttribute('viewBox','0 0 240 320');svg.setAttribute('aria-hidden','true');svg.setAttribute('focusable','false');
+    function shape(tag,attrs){var n=document.createElementNS(ns,tag);Object.keys(attrs).forEach(function(k){n.setAttribute(k,String(attrs[k]));});svg.appendChild(n);return n;}
+    function path(d,fill,stroke,width){return shape('path',{d:d,fill:fill||'none',stroke:stroke||'none','stroke-width':width||3,'stroke-linecap':'round','stroke-linejoin':'round'});}
+    function ellipse(cx,cy,rx,ry,fill){return shape('ellipse',{cx:cx,cy:cy,rx:rx,ry:ry,fill:fill});}
+    function rect(x,y,w,h,fill,r){return shape('rect',{x:x,y:y,width:w,height:h,rx:r||0,fill:fill});}
+    var suit={dinosaur:'#66a96f',astronaut:'#e9edf5',superhero:'#4186d4',halloween:'#70409d',pumpkin:'#ed963c',christmas:'#d64c62',easter:'#eae3f4'}[a.outfit];
+    var top=suit||a.topColor,pants=suit||a.bottomColor;
+    function shade(color,factor){return '#'+[1,3,5].map(function(i){return Math.max(0,Math.min(255,Math.round(parseInt(color.slice(i,i+2),16)*factor))).toString(16).padStart(2,'0');}).join('');}
+    var topSeam=shade(top,.76),pantSeam=shade(pants,.72);
+    ellipse(120,303,66,9,'#d9dce9');
+    if(a.outfit==='superhero')path('M83 143 53 277Q120 250 187 277L157 143Z','#ed6b70');
+    if(a.outfit==='dinosaur'){path('M155 208Q218 237 190 271L151 255Z','#66a96f');for(var i=0;i<4;i++)path('M'+(174+i*6)+' '+(225+i*9)+'l19 2-13 13Z','#b4d482');}
+    var longHair=['long','waves','longCurls','shoulderCurls'].indexOf(a.hair)!==-1;
+    if(a.hair==='shoulderCurls')path('M68 99Q59 49 120 47Q181 49 172 99C170 119 178 133 173 147Q170 159 157 155L83 155Q70 159 67 147C62 133 70 119 68 99Z',a.hairColor);
+    else if(longHair){var hairEnd=a.hair==='long'?212:183;path('M65 96Q58 45 120 47Q182 45 175 96L183 '+hairEnd+'Q163 '+(hairEnd+20)+' 147 '+(hairEnd-1)+'L93 '+(hairEnd-1)+'Q76 '+(hairEnd+20)+' 57 '+hairEnd+'Z',a.hairColor);}
+    if(a.hair==='waves')for(var side=0;side<2;side++)for(var i=0;i<4;i++)ellipse(side?173:67,102+i*24,15,23,a.hairColor);
+    if(a.hair==='longCurls')for(var side=0;side<2;side++)for(var i=0;i<6;i++)ellipse((side?173:67)+(i%2?4:-3),88+i*19,16,17,a.hairColor);
+    if(a.hair==='ponytail')path('M158 70Q199 59 195 109Q180 140 191 180Q156 170 162 119Z',a.hairColor);
+    if(a.hair==='braids')for(var side=0;side<2;side++){for(var i=0;i<6;i++)ellipse((side?173:67)+(i%2?3:-3),116+i*13,11-i*.6,11,a.hairColor);rect(side?168:62,188,12,6,'#e98eaf',3);}
+    if(a.hair==='bun'){ellipse(120,42,26,23,a.hairColor);path('M100 49Q120 38 140 49','none','#e5a0be',4);}
+    if(a.outfit==='easter'){ellipse(98,42,15,35,suit);ellipse(142,42,15,35,suit);ellipse(98,42,7,25,'#e9aec8');ellipse(142,42,7,25,'#e9aec8');}
+    var everyday=a.outfit==='everyday',short=everyday&&['shorts','sportshorts','culottes'].indexOf(a.bottom)!==-1,skirt=everyday&&['skirt','pleated','longskirt'].indexOf(a.bottom)!==-1;
+    rect(88,220,28,68,a.skin,12);rect(124,220,28,68,a.skin,12);
+    if(skirt){
+      var hem=a.bottom==='longskirt'?280:258;
+      path('M88 207H152L'+(a.bottom==='longskirt'?174:166)+' '+hem+'H'+(a.bottom==='longskirt'?66:74)+'Z',pants);
+      if(a.bottom==='pleated')for(var i=0;i<5;i++)path('M'+(94+i*13)+' 222L'+(85+i*18)+' 256','none',pantSeam,2);
+      if(a.bottom==='longskirt')path('M96 229 83 274M144 229 157 274','none',pantSeam,2);
+    }else{
+      var wide=everyday&&['wide','culottes'].indexOf(a.bottom)!==-1,slim=everyday&&a.bottom==='leggings';
+      rect(86,215,68,25,pants,6);
+      if(wide){path('M86 231H116L117 '+(short?262:284)+'H77ZM124 231H154L163 '+(short?262:284)+'H123Z',pants);}
+      else {rect(slim?90:86,231,slim?25:31,short?24:53,pants,slim?9:6);rect(slim?125:123,231,slim?25:31,short?24:53,pants,slim?9:6);}
+      if(everyday&&a.bottom==='cargo'){rect(83,245,26,20,pantSeam,3);rect(131,245,26,20,pantSeam,3);path('M87 251H105M135 251H153','none',pants,2);}
+      if(everyday&&a.bottom==='sportshorts')path('M91 236v16M149 236v16','none','#fff6e9',4);
+      if(everyday&&a.bottom==='jeans')path('M92 228q0 12 14 12M148 228q0 12-14 12M120 225v12','none',pantSeam,2);
+    }
+    if(a.bottom==='rainbow'&&everyday)for(var i=0;i<5;i++){rect(86,238+i*9,31,5,['#ee9a76','#e9ca6f','#7bbd98','#7caad9','#c889be'][i]);rect(123,238+i*9,31,5,['#ee9a76','#e9ca6f','#7bbd98','#7caad9','#c889be'][i]);}
+    var shoe={white:'#fafafa',red:'#d65864',yellow:'#e9ba46',purple:'#8364b7'}[a.shoes];
+    rect(80,278,38,21,shoe,9);rect(122,278,38,21,shoe,9);path('M84 293H114M126 293H156','none','#b2afc5',3);
+    if(a.shoes==='yellow'){rect(88,267,27,23,shoe,5);rect(125,267,27,23,shoe,5);}
+    // Arms and sleeves share one centreline; garment width covers shoulder skin.
+    var longSleeves=!!suit||['longsleeve','sweater','hoodie','cardigan'].indexOf(a.top)!==-1,tank=everyday&&a.top==='tank';
+    path('M87 159Q74 163 69 183L64 216 63 230M153 159Q166 163 171 183L176 216 177 230','none',a.skin,17);
+    if(!tank){var sleeves=path(longSleeves?'M87 159Q74 163 69 183L64 216M153 159Q166 163 171 183L176 216':'M87 159Q74 163 69 183M153 159Q166 163 171 183','none',top,25);sleeves.setAttribute('data-avatar-part',longSleeves?'long-sleeves':'short-sleeves');}
+    if(everyday&&a.top==='hoodie')path('M94 153Q120 170 146 153L140 140Q120 128 100 140Z',topSeam);
+    path(tank?'M98 147H108Q120 160 132 147H142L151 216Q120 229 89 216Z':'M85 153Q120 133 155 153L163 211Q120 235 77 211Z',top);
+    if(longSleeves)path('M56 214l16 3M168 217l16-3','none',topSeam,5);
+    if(everyday&&a.top==='sweater'){path('M81 214Q120 229 159 214','none',topSeam,6);for(var i=0;i<9;i++)path('M'+(88+i*8)+' 215v6','none',top,1.5);}
+    if(everyday&&a.top==='hoodie'){path('M106 153v23M134 153v23','none','#fff4df',2);path('M99 197 94 211Q120 220 146 211L141 197Z','none',topSeam,2);}
+    if(everyday&&a.top==='polo'){path('M98 146 120 155 110 169ZM142 146 120 155 130 169Z',topSeam);path('M120 156v22','none',topSeam,2);ellipse(120,163,1.6,1.6,'#fff4df');ellipse(120,173,1.6,1.6,'#fff4df');}
+    if(everyday&&a.top==='cardigan'){path('M107 145 120 170 133 145 134 218Q120 223 106 218Z','#fff3df');path('M104 146 116 173 115 219M136 146 124 173 125 219','none',topSeam,3);for(var i=0;i<3;i++)ellipse(128,181+i*13,2,2,topSeam);}
+    if(everyday&&a.top==='stripes')for(var i=0;i<5;i++)path('M83 '+(165+i*10)+'H157','none',topSeam,4);
+    if(everyday&&a.top==='rainbow')for(var i=0;i<5;i++)path('M92 '+(196+i*4)+'Q120 '+(160+i*4)+' 148 '+(196+i*4),'none',['#ed7d81','#e9b962','#88b88c','#73aad2','#a57db9'][i],4);
+    if(everyday&&a.bottom==='overalls'){rect(99,178,42,47,pants,7);path('M95 148 105 190M145 148 135 190','none',pants,10);ellipse(105,188,3,3,'#e9c778');ellipse(135,188,3,3,'#e9c778');path('M109 201v12h22v-12Z','none',pantSeam,2);}
+    if(a.outfit==='pumpkin'){path('M100 172l-7 12h14ZM140 172l-7 12h14ZM98 197Q120 213 142 197Z','#67453a');}
+    if(a.outfit==='superhero')path('M120 163l21 13-21 27-21-27Z','#ffe082');
+    if(a.outfit==='astronaut'){rect(102,169,36,31,'#7894b3',5);ellipse(112,180,3,3,'#82d3ca');ellipse(127,180,3,3,'#ed9a8c');}
+    if(a.outfit==='christmas'){path('M80 209H160','none','#39445a',9);rect(114,203,14,13,'#f4cf77',2);}
+    rect(108,129,24,25,a.skin,8);
+    if(a.outfit==='astronaut')ellipse(120,99,64,63,'#e5edf7');
+    ellipse(120,100,51,48,a.hair==='bald'?a.skin:a.hairColor);ellipse(70,106,8,12,a.skin);ellipse(170,106,8,12,a.skin);ellipse(120,106,47,46,a.skin);
+    if(a.hair==='short'||a.hair==='ponytail'||a.hair==='bun')path('M72 102Q63 48 120 50Q179 48 168 103L152 77Q123 95 85 77Z',a.hairColor);
+    if(a.hair==='bob'||longHair||a.hair==='braids'){
+      path('M70 106Q59 48 120 48Q181 48 170 106L157 92Q134 88 120 66Q106 88 83 92Z',a.hairColor);
+      if(a.hair==='bob'){path('M72 91Q62 116 69 139L87 137 82 92ZM168 91Q178 116 171 139L153 137 158 92Z',a.hairColor);}
+      if(a.hair==='long'){
+        // Back hair is behind the torso; two tapered locks lie over the shirt to the navel.
+        path('M72 91Q65 138 78 169Q82 187 91 202Q102 207 105 195Q87 164 84 92ZM168 91Q175 138 162 169Q158 187 149 202Q138 207 135 195Q153 164 156 92Z',a.hairColor);
+        path('M77 116Q77 163 96 196M163 116Q163 163 144 196','none','rgba(255,255,255,.14)',2);
+      }
+      if(a.hair==='waves')for(var side=0;side<2;side++)path(side?'M163 95Q179 117 166 134Q157 151 172 178':'M77 95Q61 117 74 134Q83 151 68 178','none',a.hairColor,14);
+    }
+    if(a.hair==='longCurls')for(var side=0;side<2;side++)for(var i=0;i<4;i++){ellipse(side?164:76,100+i*22,10,14,a.hairColor);path('M'+(side?165:75)+' '+(94+i*22)+'q-7 4 0 9','none','rgba(255,255,255,.16)',2);}
+    if(a.hair==='shoulderCurls'){
+      // Continuous, inward-falling waves rather than separate round curls or tufts.
+      path('M76 91C70 108 82 121 77 136Q75 146 85 154Q94 158 98 149C84 143 90 132 87 123C80 112 85 99 85 92ZM164 91C170 108 158 121 163 136Q165 146 155 154Q146 158 142 149C156 143 150 132 153 123C160 112 155 99 155 92Z',a.hairColor);
+      path('M78 103C78 118 86 121 83 134Q82 144 90 149M162 103C162 118 154 121 157 134Q158 144 150 149','none','rgba(255,255,255,.13)',1.5);
+    }
+    if(a.hair==='spiky')path('M72 91 70 58 86 64 92 42 108 58 125 36 136 59 157 49 160 69 174 66 167 99 146 78 116 86 85 78Z',a.hairColor);
+    if(a.hair==='curls')for(var i=0;i<8;i++){var t=Math.PI+i*Math.PI/7;ellipse(120+45*Math.cos(t),89+30*Math.sin(t),14,14,a.hairColor);}
+    path('M90 98q9-5 18 0M132 98q9-5 18 0','none',a.hairColor,3);
+    ellipse(99,109,8,9,'#fff9f1');ellipse(141,109,8,9,'#fff9f1');ellipse(100,109,5,6,a.eyes);ellipse(140,109,5,6,a.eyes);ellipse(101,109,2,3,'#252437');ellipse(139,109,2,3,'#252437');ellipse(102,107,1.4,1.4,'white');ellipse(140,107,1.4,1.4,'white');
+    if(a.gender==='female')path('M91 107l-4-3M149 107l4-3','none','#51445b',2);
+    path('M120 112l-3 10h6','none','#a97d66',2);path('M108 132q12 10 24 0','none','#955768',3);
+    if(a.glasses==='yes'){shape('rect',{x:84,y:101,width:29,height:22,rx:8,fill:'none',stroke:'#423f61','stroke-width':3});shape('rect',{x:127,y:101,width:29,height:22,rx:8,fill:'none',stroke:'#423f61','stroke-width':3});path('M113 109Q120 105 127 109M74 107H84M156 107H166','none','#423f61',3);}
+    if(a.outfit==='halloween')path('M58 77Q120 60 182 77L158 88H81ZM87 73 119 10 151 73Z','#654183');
+    if(a.outfit==='christmas'){path('M73 73Q93 15 156 53L174 73Z','#d64c62');path('M76 75H164','none','#fff5e5',13);ellipse(160,50,12,12,'#fff5e5');}
+    a.accessory.forEach(function(v){
+      if(v==='star')path('M120 175l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1Z','#f6d074');
+      if(v==='bow')path('M143 69l-17-10v23l17-10 17 10V59Z','#ed80ac');
+      if(v==='crown')path('M87 61 81 35 105 47 120 27 135 47 159 35 153 61Z','#edc260');
+      if(v==='headphones'){path('M67 105V88a53 53 0 0 1 106 0v17','none','#585c83',7);rect(62,96,13,28,'#8b91c8',5);rect(165,96,13,28,'#8b91c8',5);}
+      if(v==='wand'){path('M180 225l20-64','none','#825e9e',5);path('M203 144l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1Z','#f4cf76');}
+      if(v==='bag'){path('M89 151 159 225','none','#cf9d64',6);rect(131,208,39,36,'#dca573',9);path('M138 220H161','none','#946744',3);}
+    });return svg;
+  }
+  function renderPlayerBadge(){
+    profileBtn.textContent='';profileBtn.appendChild(makeIcon('user'));profileBtn.setAttribute('aria-label','Profil von '+(state.config.childName||'dir'));
+    var button=el('homeAvatarBtn');button.textContent='';button.appendChild(avatarSvg(state.config.avatar));button.setAttribute('aria-label',(state.config.childName||'Mein Avatar')+' – Name und Avatar gestalten');
+  }
+  var avatarDraft=null,avatarInputs={};
+  function openPlayerEditor(){
+    avatarDraft=normalizeAvatar(state.config.avatar);el('playerName').value=state.config.childName;el('playerError').textContent='';el('avatarFields').textContent='';avatarInputs={};
+    var labels={gender:'Geschlecht',skin:'Hautfarbe',eyes:'Augenfarbe',hairColor:'Haarfarbe',hair:'Frisur',glasses:'Brille',top:'Oberteil',bottom:'Unterteil',shoes:'Schuhe',outfit:'Kostüme und saisonale Outfits',accessory:'Accessoires'};
+    function preview(){el('avatarClothesHint').hidden=avatarDraft.outfit==='everyday';el('avatarPreview').textContent='';el('avatarPreview').appendChild(avatarSvg(avatarDraft));}
+    Object.keys(AVATAR_OPTIONS).forEach(function(key){
+      var field=document.createElement(key==='accessory'?'fieldset':'div');field.className='field';var label=document.createElement(key==='accessory'?'legend':'label');label.textContent=labels[key];label.setAttribute('for','avatar-'+key);field.appendChild(label);
+      if(key==='accessory'){AVATAR_OPTIONS[key].forEach(function(o){var l=document.createElement('label'),c=document.createElement('input');c.type='checkbox';c.checked=avatarDraft.accessory.indexOf(o[0])!==-1;c.addEventListener('change',function(){avatarDraft.accessory=avatarDraft.accessory.filter(function(v){return v!==o[0];});if(c.checked)avatarDraft.accessory.push(o[0]);preview();});l.appendChild(c);l.appendChild(document.createTextNode(' '+o[1]));field.appendChild(l);});}
+      else {var select=document.createElement('select');select.id='avatar-'+key;AVATAR_OPTIONS[key].forEach(function(o){var option=document.createElement('option');option.value=o[0];option.textContent=o[1];select.appendChild(option);});select.value=avatarDraft[key];avatarInputs[key]=select;select.addEventListener('change',function(){avatarDraft[key]=select.value;preview();});
+        if(key==='top'||key==='bottom'){
+          var row=document.createElement('div');row.className='garment-row';row.appendChild(select);
+          var colorLabel=document.createElement('label'),picker=document.createElement('input');colorLabel.className='garment-color';colorLabel.textContent='Farbe';picker.type='color';picker.id='avatar-'+key+'Color';picker.value=avatarDraft[key+'Color'];picker.setAttribute('aria-label','Farbe für '+labels[key]);
+          function updateColor(){if(/^#[0-9a-f]{6}$/i.test(picker.value)){avatarDraft[key+'Color']=picker.value;preview();}}
+          picker.addEventListener('input',updateColor);picker.addEventListener('change',updateColor);avatarInputs[key+'Color']=picker;colorLabel.appendChild(picker);row.appendChild(colorLabel);field.appendChild(row);
+        }else field.appendChild(select);}
+      el('avatarFields').appendChild(field);
+    });
+    el('avatarSettings').scrollTop=0;var first=!state.config.childName.trim();el('playerClose').hidden=first;el('cancelPlayerBtn').hidden=first;text('playerTitle',first?'Willkommen! Wer bist du?':'Dein Name und Avatar');preview();openModal(el('playerOverlay'));
+    // Do not open the keyboard immediately: show the full avatar first.
+    el('savePlayerBtn').focus();
+  }
+  el('homeAvatarBtn').addEventListener('click',openPlayerEditor);
+  el('editPlayerBtn').addEventListener('click',function(){closeModal(profileOverlay);openPlayerEditor();});
+  el('playerClose').addEventListener('click',function(){closeModal(el('playerOverlay'));});el('cancelPlayerBtn').addEventListener('click',function(){closeModal(el('playerOverlay'));});
+  el('playerForm').addEventListener('submit',function(e){e.preventDefault();var name=el('playerName').value.trim().slice(0,80);if(!name){text('playerError','Bitte gib deinen Namen ein.');el('playerName').focus();return;}state.config.childName=name;state.config.avatar=normalizeAvatar(avatarDraft);saveState();closeModal(el('playerOverlay'));renderHome();});
+
 
   // ---------- Profiles ----------
   function openProfileOverlay(){
@@ -4713,18 +4901,18 @@
       btn.textContent = p.config.childName || 'Ohne Namen';
       btn.addEventListener('click', function(){
         setActiveProfile(id);
-        profileOverlay.classList.remove('active');
+        closeModal(profileOverlay);
         renderHome();
       });
       profileList.appendChild(btn);
     });
-    profileOverlay.classList.add('active');
+    openModal(profileOverlay);
   }
 
   profileBtn.addEventListener('click', openProfileOverlay);
-  profileClose.addEventListener('click', function(){ profileOverlay.classList.remove('active'); });
+  profileClose.addEventListener('click', function(){ closeModal(profileOverlay); });
   profileOverlay.addEventListener('click', function(e){
-    if (e.target === profileOverlay) profileOverlay.classList.remove('active');
+    if (e.target === profileOverlay) closeModal(profileOverlay);
   });
 
   function renderAdminProfiles(){
@@ -5000,7 +5188,6 @@
   function openAdmin(){
     populateRangeSelects();
     renderAdminProfiles();
-    childNameInput.value = state.config.childName || '';
     accentThemeSel.value = state.config.accentTheme || 'purple';
     rangeMinSel.value = state.config.min;
     rangeMaxSel.value = state.config.max;
@@ -5018,16 +5205,16 @@
     selectDashboardOperation('multiply');
     renderBackupReminder();
     showAdminTab('adminPanelOverview', false);
-    adminOverlay.classList.add('active');
+    adminOverlay.classList.add('active');updateViewport();
   }
   function closeAdminModal(){
-    adminOverlay.classList.remove('active');
+    adminOverlay.classList.remove('active');updateViewport();
   }
 
   function openPinPrompt(){
     pinInput.value = '';
     pinError.textContent = '';
-    pinOverlay.classList.add('active');
+    pinOverlay.classList.add('active');updateViewport();
     // Keep focus inside the original tap gesture so mobile browsers open the
     // numeric keyboard immediately. The animation-frame retry covers slower
     // modal rendering without delaying the primary focus call.
@@ -5035,7 +5222,7 @@
     requestAnimationFrame(function(){ pinInput.focus(); });
   }
   function closePinPrompt(){
-    pinOverlay.classList.remove('active');
+    pinOverlay.classList.remove('active');updateViewport();
   }
   function submitPin(){
     if (pinInput.value === (root.pin || "6969")){
@@ -5119,7 +5306,6 @@
     state.config.newFactsPerDay = newFactsPerRound;
     state.config.autoUnlockTables = autoUnlockTablesToggle.checked;
     state.config.rewardEvery = rewardEvery;
-    state.config.childName = childNameInput.value.trim();
     state.config.accentTheme = ACCENT_THEMES[accentThemeSel.value] ? accentThemeSel.value : 'purple';
     state.config.sound = soundToggle.checked;
     state.config.answerMode = answerModeSel.value;
@@ -5216,16 +5402,29 @@
     renderHome();
   });
 
+  function keepModalInputVisible(){
+    var modal=document.querySelector('.modal-overlay.active'),active=document.activeElement;
+    if(!modal||!active||!/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName))return;
+    var viewport=window.visualViewport;if(viewport&&viewport.scale&&viewport.scale!==1)return;
+    var panel=modal.getBoundingClientRect(),field=active.getBoundingClientRect();
+    if(!Number.isFinite(panel.bottom)||!Number.isFinite(field.bottom))return;
+    if(field.bottom>panel.bottom-16)modal.scrollTop=(modal.scrollTop||0)+field.bottom-panel.bottom+16;
+    else if(field.top<panel.top+16)modal.scrollTop=Math.max(0,(modal.scrollTop||0)+field.top-panel.top-16);
+  }
   function updateViewport(){
     var viewport=window.visualViewport;
     var active=document.activeElement,editing=active&&/^(INPUT|TEXTAREA)$/.test(active.tagName);
     var standalone=navigator.standalone===true||!!(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches);
     document.body.classList.toggle('standalone-app',standalone);
-    var height=viewport&&editing?viewport.height:0;
+    var modal=document.querySelector('.modal-overlay.active');
+    var modalViewport=modal&&viewport&&viewport.height>0&&(!viewport.scale||viewport.scale===1);
+    document.documentElement.style.setProperty('--modal-height',modalViewport?viewport.height+'px':standalone?'100vh':'100dvh');
+    document.documentElement.style.setProperty('--modal-top',modalViewport?(viewport.offsetTop||0)+'px':'0px');
+    var height=viewport&&editing&&!modal?viewport.height:0;
     // Installed iOS apps can report dvh/visualViewport without the safe areas
     // on launch. With no browser toolbar, vh is the full app window height.
     document.documentElement.style.setProperty('--app-height',height>0?height+'px':standalone?'100vh':'100dvh');
-    requestAnimationFrame(function(){resizeSnowCanvas();resizeRunnerCanvas();resizeExtraCanvases();});
+    requestAnimationFrame(function(){keepModalInputVisible();resizeFixedCanvases();resizeSnowCanvas();resizeRunnerCanvas();resizeExtraCanvases();});
     if(arcadeGames.brick)arcadeGames.brick.inputRect=null;
   }
   function settleViewport(){
@@ -5253,6 +5452,8 @@
 
   var demoMatch=location.search.match(/[?&]demo=(flappy|tower|gravity|brick|snake|snow|runner|doodle|tiles|maze|asteroid)(?:&|$)/);
   if(demoMatch){if(demoMatch[1]==='flappy')startFlappyGame(true);else if(demoMatch[1]==='gravity')startGravityGame(true);else if(demoMatch[1]==='brick'||demoMatch[1]==='snake'||demoMatch[1]==='snow'||demoMatch[1]==='runner'||extraArcade.definitions[demoMatch[1]])startArcadeGame(demoMatch[1],true);else startTowerGame(true);}
+
+  if(!demoMatch&&!state.config.childName.trim())openPlayerEditor();
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:'){
     navigator.serviceWorker.register('sw.js').catch(function(){ /* offline support only */ });

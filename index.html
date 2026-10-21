@@ -25,8 +25,10 @@
 
     <!-- HOME SCREEN -->
     <div class="screen active" id="screen-home">
+      <div class="home-heading"><button class="home-avatar" id="homeAvatarBtn" type="button" aria-label="Name und Avatar gestalten"></button><div class="home-greeting">
       <h1 id="homeGreeting">1×1 Trainer</h1>
       <p class="subtitle" id="homeSubtitle">Übe dein kleines Einmaleins!</p>
+      </div></div>
 
       <div class="home-columns"><div><div class="learn-hero">
         <button class="primary-btn" id="startBtn">Los geht's!</button>
@@ -44,7 +46,7 @@
         <button class="primary-btn extra-round-btn" id="writtenBtn">Schriftlich dividieren</button>
         <button class="primary-btn extra-round-btn" id="semiBtn">Halbschriftlich dividieren</button>
       </div></div></div>
-      <p class="app-version" id="appVersion">Version 43</p>
+      <p class="app-version" id="appVersion">Version 45</p>
     </div>
 
     <div class="screen semi-intro" id="screen-semi-intro">
@@ -347,12 +349,23 @@
 <button id="navStatistics" type="button"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#statistics"/></svg><span>Statistik</span></button>
 </nav>
 
+<div class="modal-overlay" id="playerOverlay">
+  <div class="modal player-modal" role="dialog" aria-modal="true" aria-labelledby="playerTitle">
+    <button class="close-x" id="playerClose" aria-label="Profilgestaltung schließen" type="button">×</button>
+    <h2 id="playerTitle">Das bist du!</h2><p class="hint">Gestalte deinen eigenen Lernbegleiter.</p>
+    <form id="playerForm"><div class="player-layout"><div class="avatar-stage" id="avatarPreview" aria-label="Dein Avatar"></div><div class="avatar-settings" id="avatarSettings">
+    <div class="field"><label for="playerName">Dein Name</label><input id="playerName" type="text" maxlength="80" autocomplete="nickname" placeholder="Wie heißt du?" required></div>
+    <p class="hint" id="avatarClothesHint" hidden>Ein Kostüm ist aktiv. Wähle „Alltagskleidung“, um deine Ober- und Unterteile zu sehen.</p><div id="avatarFields"></div></div></div><p id="playerError" class="feedback bad" role="status"></p>
+    <div class="player-actions"><button class="primary-btn" type="submit" id="savePlayerBtn">Das bin ich!</button><button class="secondary-btn" type="button" id="cancelPlayerBtn">Abbrechen</button></div></form>
+  </div>
+</div>
+
 <!-- PROFILE SWITCH MODAL -->
 <div class="modal-overlay" id="profileOverlay">
   <div class="modal" style="text-align:center;">
     <button class="close-x" id="profileClose">✕</button>
     <h2>Wer übt gerade?</h2>
-    <div id="profileList"></div>
+    <div id="profileList"></div><button class="primary-btn" id="editPlayerBtn" type="button">Name und Avatar gestalten</button>
   </div>
 </div>
 
@@ -422,10 +435,7 @@
       <div class="hint">Die Einstellungen unten gelten für das aktive Profil.</div>
     </div>
 
-    <div class="field">
-      <label for="childName">Name des Kindes</label>
-      <input type="text" id="childName" placeholder="z.B. Mia">
-    </div>
+    <p class="hint">Name und Avatar änderst du direkt über das Profil-Symbol.</p>
 
     <div class="field">
       <label for="accentTheme">Akzentfarbe</label>

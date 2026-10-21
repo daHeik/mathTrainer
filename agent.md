@@ -168,8 +168,9 @@ platforms and long-press control fixes. There are now twelve games.
 keep `ARCADE_LABELS`/`ARCADE_RECORDS`, profile normalization, all screen lists,
 availability, pause/resize observers, demo routing and offline assets in sync.
 Records: bestDoodleScore/bestTilesScore/bestMazeScore/bestAsteroidScore.
-Doodle easing synced from Vocabulator `ba7a476`: widths 72..48, horizontal
-shifts 102..136 and rises 80..106. Crumb platforms stay stored but invisible
+Doodle now follows Vocabulator `6a619ac`: difficulty uses active elapsed/120,
+not altitude. Widths 84..48, horizontal shifts 86..110 initially to 102..136,
+rises 70..82 to 94..106. Crumb platforms stay stored but invisible
 and non-solid until respawnAt (elapsed + 4 active seconds). Recovery must
 choose an intact platform; pause/waiting freeze the cooldown. Offscreen
 platform cleanup still applies. Other game mechanics remain unchanged.
@@ -185,7 +186,7 @@ it. Clear pending pointers on pause so resume requires a fresh contact.
 Preserve buttons/keyboard and auto-fire. Cache stays one version above HEAD.
 Math learning records and storage keys stay unchanged. Games consume a play
 on their first move, not selection. All games use active simulation time with
-a three-minute cap (Bricks: five minutes) and pause/hidden-view suspension.
+a three-minute cap (Bricks and 2048: five minutes) and pause/hidden-view suspension.
 Use `gameDurationMs(game)` in shared arcade loops, attempt checks and HUDs.
 Bricks' base speed is `351 * 1.25^(level-1)`; extras multiply this base.
 Higher levels cycle six layouts with breakable armor and moving rows.
@@ -203,7 +204,7 @@ one future turn, rejecting further gestures until consumed. Render wrapped
 edge copies to avoid seam jumps. Pause freezes interpolation; recovery resets it.
 Snow uses `speedPercent` (100..200): +20 points per landed flip, -1 point per
 full active second. Pause/waiting freeze decay; only a new game resets speed.
-Base speed is a constant 220 px/s, never elapsed-time dependent. Each chaser
+Base speed is a constant 286 px/s, never elapsed-time dependent. Each chaser
 locks `speed` to the rider's actual speed at chase start plus 16 px/s; later
 boosts/decay affect only the rider. No extra chaser-speed escalation per escape.
 Actual speed is current base speed times this percentage, without a second
@@ -220,8 +221,33 @@ Do not extend this window during ordinary grounded riding; reset on recovery.
 New record keys and game
 counts are normalized for old backups. `gamesPlayed` starts at zero on migration
 with `gamesTrackedSince`; never infer historical counts from earned rewards.
+General Vocabulator UI 42 sync (`6a619ac`): allowlisted `config.avatar` via
+normalizeAvatar(), inline SVG customization beside the greeting, public name/
+avatar editor and first-launch identity for nameless profiles (not demo mode).
+Name editing no longer belongs to the PIN-protected learning settings.
+Preserve identity on profile switches/backup/reset-with-config; do not touch
+learning records when saving/canceling an avatar draft. Shape/appearance options
+are allowlisted; garment colours additionally permit validated six-digit hex
+values, never arbitrary imported SVG/HTML or CSS. Keep refined sleeves/hairstyles.
+Avatar UI 43 sync from Vocabulator `93963df` / `ca8afcd`: nine top cuts and
+twelve bottom cuts with independent topColor/bottomColor; migrate old blue/
+coral/green/purple tops without changing saved colours or costumes. Preserve
+shoulderCurls and long hair to the belly. Preview/actions stay fixed while
+avatarSettings scrolls; show avatarClothesHint whenever a costume hides garments.
+Shoulder hairstyle updated from Vocabulator `71c9fe9` / `fcfbc1a`: label
+"Schulterlange Wellen", continuous inward-falling locks instead of separate
+round curls. Keep persisted key shoulderCurls unchanged for existing profiles.
+All games use prepareGameCanvas() for Retina bitmaps, bounded by ~8M pixels.
+Logical dimensions are canvas.viewHeight/game.viewHeight, not canvas.height;
+touch mapping, physics and resizing must not depend on backing pixel density.
+Modal height/top follow visualViewport independently of the app shell; scroll
+only enough to keep the focused modal input visible. Unlike the source, keep
+pinch zoom enabled per this project's accessibility convention.
 Run `node tests/offline.test.js` for the cached asset graph and open
 `tests/layout-preview.html` for narrow portrait/landscape visual checks.
+The offline suite also guards essential shell, responsive, learning-form and
+game CSS rules. When syncing avatar styles, retain the complete app-shell
+section and the written/semi-written division and game-control rules.
 
 ## Offline behavior
 

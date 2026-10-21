@@ -11,7 +11,8 @@ var html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 
 function Element(){
   this.children = [];
-  this.style = { setProperty:function(){} };
+  this.style = { setProperty:function(key,value){this[key]=value;} };
+  this.attributes = {};
   this.dataset = {};
   this.events = {};
   this.textContent = '';
@@ -25,9 +26,10 @@ function Element(){
 }
 Element.prototype.addEventListener = function(name, callback){ this.events[name] = callback; };
 Element.prototype.appendChild = function(child){ this.children.push(child); };
-Element.prototype.setAttribute = function(){};
-Element.prototype.removeAttribute = function(){};
-Element.prototype.getAttribute = function(){ return ''; };
+Element.prototype.setAttribute = function(key,value){this.attributes[key]=String(value);};
+Element.prototype.removeAttribute = function(key){delete this.attributes[key];};
+Element.prototype.getAttribute = function(key){ return this.attributes[key] || ''; };
+Element.prototype.getClientRects = function(){return [{}];};
 Element.prototype.blur = function(){};
 Element.prototype.remove = function(){ this.removed = true; };
 Element.prototype.getContext = function(){
@@ -72,7 +74,10 @@ var context = {
       if(/^(doodle|tiles|maze|asteroid)(left|right|up|down|fire)Btn$/.test(id))return elements[id]||null;
       assert(elements[id], 'Missing DOM id ' + id); return elements[id];
     },
-    querySelector:function(){ return new Element(); }, querySelectorAll:function(){ return []; },
+    querySelector:function(selector){
+      if(selector==='.modal-overlay.active')return Object.keys(elements).map(function(id){return elements[id];}).find(function(n){return /^(admin|pin|profile|player)Overlay$/.test(n.id)&&n.classList.contains('active');})||null;
+      return new Element();
+    }, querySelectorAll:function(){ return []; },
     createElement:function(){ return new Element(); },
     createElementNS:function(){ return new Element(); },
     createTextNode:function(value){ var node = new Element(); node.textContent = value; return node; },
@@ -101,6 +106,10 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'refreshDailySessionIfNeeded:refreshDailySessionIfNeeded, repeatRoundLabel:repeatRoundLabel,',
   'tapAdvance:tapAdvance,',
   'getConfetti:function(){return confettiLayer;},',
+  'normalizeAvatar:normalizeAvatar, avatarOptions:AVATAR_OPTIONS, avatarSvg:avatarSvg,',
+  'openPlayerEditor:openPlayerEditor, getRoot:function(){return root;}, renderHome:renderHome,',
+  'viewport:updateViewport, keepModalVisible:keepModalInputVisible,',
+  'prepareGameCanvas:prepareGameCanvas, logicalCanvasHeight:logicalCanvasHeight,',
   'games:function(){return {dino:rewardGame,flappy:flappyGame,tower:towerGame,gravity:gravityGame,brick:arcadeGames.brick,snake:arcadeGames.snake,snow:arcadeGames.snow,runner:arcadeGames.runner,doodle:arcadeGames.doodle,tiles:arcadeGames.tiles,maze:arcadeGames.maze,asteroid:arcadeGames.asteroid};},',
   'extras:extraArcade, resizeExtraCanvases:resizeExtraCanvases,',
   'runnerAction:runnerAction, runnerUpdate:updateRunnerGame, runnerResize:resizeRunnerCanvas,',
@@ -132,6 +141,14 @@ source = source.replace(/\}\)\(\);\s*$/, [
 ].join('\n'));
 vm.runInContext(source, context);
 var api = context.testApi;
+// First launch offers identity without opening a keyboard; name is required.
+assert(elements.playerOverlay.classList.contains('active'));
+assert.strictEqual(context.document.activeElement,elements.savePlayerBtn);
+elements.playerName.value='';elements.playerForm.events.submit({preventDefault:function(){}});
+assert(elements.playerError.textContent.indexOf('Namen')!==-1);
+elements.playerName.value='Testkind';elements.playerForm.events.submit({preventDefault:function(){}});
+assert(!elements.playerOverlay.classList.contains('active'));
+assert.strictEqual(api.getState().config.childName,'Testkind');
 // Calculations wrap as one inline unit; surrounding words keep normal spaces.
 [
   ['Wie heißt die Rechenart bei 40 ÷ 4?', ['40 ÷ 4?']],
@@ -785,7 +802,7 @@ api.ensureFactPool();
   assert.strictEqual(game.playTimeMs, 2000);
   api.stepGame(spec[2], 0.1);
   assert(game.playTimeMs > 2000, spec[2] + ' physics must advance active time');
-  var limit = spec[2] === 'brick' ? 300000 : 180000;
+  var limit = (spec[2] === 'brick'||spec[2] === 'tiles') ? 300000 : 180000;
   assert.strictEqual(api.gameDurationMs(game), limit);
   if (spec[2] === 'brick'){
     api.activeGameStep(game, (180000 - game.playTimeMs) / 1000);
@@ -1024,8 +1041,8 @@ snow=api.games().snow;
 snow.distance=600;
 snow.terrainCache[0]={knots:[0,160,480,1400],heights:[250,250,440,440]};
 snow.player.y=222;snow.cameraY=5;
-var originalSnowHeight=elements.snowCanvas.height;
-elements.snowCanvas.height=360;
+var originalSnowHeight=elements.snowCanvas.viewHeight;
+elements.snowCanvas.viewHeight=360;
 snow.gaps=[{x:1050,w:170}];
 api.updateSnowCamera(snow,1/60);
 assert(snow.cameraY>=128,'Upcoming low terrain must retain 48px bottom clearance');
@@ -1039,13 +1056,13 @@ snow.cameraY=5;
 api.updateSnowCamera(snow,1/60);
 assert(snow.cameraY>=128,'Visible valley must not be cropped by a higher right bank');
 // Portrait view scales framing; a high jump keeps the rider on screen.
-elements.snowCanvas.height=720;snow.cameraY=5;
+elements.snowCanvas.viewHeight=720;snow.cameraY=5;
 api.updateSnowCamera(snow,1/60);
 assert(snow.player.y-snow.cameraY>=120);
-elements.snowCanvas.height=360;snow.player.y=-100;snow.cameraY=5;
+elements.snowCanvas.viewHeight=360;snow.player.y=-100;snow.cameraY=5;
 api.updateSnowCamera(snow,1/60);
 assert(snow.player.y-snow.cameraY>=60);
-elements.snowCanvas.height=originalSnowHeight;
+elements.snowCanvas.viewHeight=originalSnowHeight;
 elements.snowHomeBtn.events.click();
 console.log('Snow camera: right-edge lookahead, early ravine visibility, valley framing, portrait and jumps OK');
 // A successful landing grants one active second of rock smashing at base speed.
@@ -1080,22 +1097,22 @@ console.log('Snow landing: one active second of rock smashing, including landing
 // Base speed never grows with elapsed time. Each chase locks its starting speed.
 api.startArcadeGame('snow',true);snow=api.games().snow;
 [0,35,143,180].forEach(function(seconds){
-  snow.elapsed=seconds;snow.speedPercent=100;assert.strictEqual(api.snowSpeed(snow),220);
-  snow.speedPercent=200;assert.strictEqual(api.snowSpeed(snow),440);
+  snow.elapsed=seconds;snow.speedPercent=100;assert.strictEqual(api.snowSpeed(snow),286);
+  snow.speedPercent=200;assert.strictEqual(api.snowSpeed(snow),572);
 });
 snow.elapsed=35;snow.nextChaseAt=35;snow.speedPercent=150;
 api.updateSnowChaser(snow,0);
-assert.strictEqual(snow.chaser.speed,346,'Chaser starts 16px/s faster than current 150% pace');
+assert.strictEqual(snow.chaser.speed,445,'Chaser starts 16px/s faster than current 150% pace');
 api.updateSnowChaser(snow,1);
 assert.strictEqual(snow.chaser.gap,164,'Chaser gains ground at unchanged rider speed');
 snow.speedPercent=170;api.updateSnowChaser(snow,1);
-assert.strictEqual(snow.chaser.speed,346,'Later boosts do not accelerate the chaser');
-assert.strictEqual(snow.chaser.gap,192,'A later boost lets the rider pull away');
+assert.strictEqual(snow.chaser.speed,445,'Later boosts do not accelerate the chaser');
+assert(Math.abs(snow.chaser.gap-205.2)<1e-8,'A later boost lets the rider pull away');
 snow.speedPercent=140;api.updateSnowChaser(snow,1);
-assert.strictEqual(snow.chaser.gap,154,'Boost decay lets the chaser catch up');
+assert(Math.abs(snow.chaser.gap-160.6)<1e-8,'Boost decay lets the chaser catch up');
 snow.chaser=null;snow.nextChaseAt=snow.elapsed;snow.speedPercent=100;snow.chasesEscaped=3;
 api.updateSnowChaser(snow,0);
-assert.strictEqual(snow.chaser.speed,236,'Next chase samples its own starting rider speed');
+assert.strictEqual(snow.chaser.speed,302,'Next chase samples its own starting rider speed');
 elements.snowHomeBtn.events.click();
 console.log('Snow pace: fixed base speed and chaser locked to starting rider speed plus 16px/s OK');
 // Cleo glides along locked grid segments, with only one future turn buffered.
@@ -1293,7 +1310,7 @@ console.log('Halloween: slow distant weather, reduced motion, no screen flash, p
  api.extras.action(kind,action,false);
  assert(elements['screen-'+kind].classList.contains('game-immersive'));
  if(kind==='asteroid'){
-  var canvas=elements.asteroidCanvas,oldBounds=canvas.getBoundingClientRect;canvas.height=640;
+  var canvas=elements.asteroidCanvas,oldBounds=canvas.getBoundingClientRect;canvas.height=640;canvas.viewHeight=640;g.viewHeight=640;
   canvas.getBoundingClientRect=function(){return {left:100,top:20,width:800,height:300};};
   function finger(id,x,y){return {pointerId:id,clientX:x,clientY:y,preventDefault:function(){}};}
   var wrap=elements.asteroidWrap;
@@ -1317,7 +1334,7 @@ console.log('Halloween: slow distant weather, reduced motion, no screen flash, p
  }
  var before=g.playTimeMs||0;elements[kind+'PauseBtn'].click();api.runArcadeGame(kind,2000);assert.equal(g.playTimeMs||0,before);assert(g.active);
  elements[kind+'PauseBtn'].click();api.extras.draw(kind);
- g.score=321;g.playTimeMs=180000;api.runArcadeGame(kind,1000);assert.equal(g.active,false);
+ g.score=321;g.playTimeMs=api.gameDurationMs(g);api.runArcadeGame(kind,1000);assert.equal(g.active,false);
  var field={doodle:'bestDoodleScore',tiles:'bestTilesScore',maze:'bestMazeScore',asteroid:'bestAsteroidScore'}[kind];assert.equal(api.getState().reward[field],321);
  elements[kind+'HomeBtn'].click();assert.equal(api.games()[kind],null);
 });
@@ -1344,4 +1361,122 @@ assert(/^\d{4}-\d{2}-\d{2}$/.test(migratedGames.reward.gamesTrackedSince));
 console.log('Twelve games: rewards, replay without confetti, pause, per-game timers and migration OK');
 console.log('Bricks: six layouts, 25% speed growth, moving rows and extras; Gravity: high-contrast gaps OK');
 console.log('Sticker awards: unseen first, balanced repeats and existing albums OK');
+// Public avatar customization uses allowlisted values and leaves learning untouched.
+var identity=api.normalizeProfile(api.defaultProfile());identity.config.childName='Cleo';api.setState(identity);api.ensureFactPool();api.renderHome();
+assert.notStrictEqual(elements.profileBtn.style.display,'none');
+var identityRecords=JSON.stringify(identity.facts);
+elements.homeAvatarBtn.events.click();assert(elements.playerOverlay.classList.contains('active'));
+var outfitSelect=elements.avatarFields.children.find(function(field){return field.children[0].textContent==='Kostüme und saisonale Outfits';}).children[1];
+outfitSelect.value='halloween';outfitSelect.events.change();
+elements.playerName.value='Mia';elements.playerForm.events.submit({preventDefault:function(){}});
+assert.strictEqual(identity.config.avatar.outfit,'halloween');assert.strictEqual(identity.config.childName,'Mia');
+assert.strictEqual(JSON.stringify(identity.facts),identityRecords);
+var identityBackup=JSON.parse(storage.km_1x1_trainer_v2);
+assert.strictEqual(identityBackup.profiles[identityBackup.activeProfileId].config.avatar.outfit,'halloween');
+elements.profileBtn.events.click();elements.editPlayerBtn.events.click();
+elements.playerName.value='Nicht speichern';elements.cancelPlayerBtn.events.click();
+assert.strictEqual(identity.config.childName,'Mia');assert.strictEqual(identity.config.avatar.outfit,'halloween');
+var identityRoot=api.getRoot(),identityId=identityRoot.activeProfileId;
+var secondIdentity=api.normalizeProfile(api.defaultProfile());secondIdentity.config.childName='Lina-Test';secondIdentity.config.avatar.hair='waves';
+identityRoot.profiles.avatarTest=secondIdentity;
+elements.profileBtn.events.click();elements.profileList.children.find(function(button){return button.textContent==='Lina-Test';}).events.click();
+assert.strictEqual(api.getState().config.avatar.hair,'waves');assert(elements.homeGreeting.textContent.indexOf('Lina-Test')!==-1);
+elements.profileBtn.events.click();elements.profileList.children.find(function(button){return button.textContent==='Mia';}).events.click();
+assert.strictEqual(identityRoot.activeProfileId,identityId);assert.strictEqual(api.getState().config.avatar.outfit,'halloween');
+delete identityRoot.profiles.avatarTest;
+var safeAvatar=api.normalizeAvatar({skin:'url(javascript:bad)',hair:'<script>',accessory:['star','<script>','star'],outfit:'unknown'});
+assert.strictEqual(safeAvatar.skin,api.avatarOptions.skin[0][0]);assert.strictEqual(safeAvatar.hair,'short');
+assert.strictEqual(JSON.stringify(safeAvatar.accessory),'["star"]');
+['longCurls','waves','braids','bun'].forEach(function(hair){
+  var backup=api.defaultProfile();backup.config.avatar.hair=hair;api.normalizeProfile(backup);assert.strictEqual(backup.config.avatar.hair,hair);
+  assert(api.avatarSvg(backup.config.avatar).children.length>20);
+});
+var oldIdentity=api.defaultProfile();delete oldIdentity.config.avatar;api.normalizeProfile(oldIdentity);
+assert.strictEqual(JSON.stringify(oldIdentity.config.avatar),JSON.stringify(api.normalizeAvatar()));
+var longSleeves=api.avatarSvg({top:'purple'}).children.find(function(shape){return shape.getAttribute('data-avatar-part')==='long-sleeves';});
+assert(longSleeves);
+// Modal keyboard viewport must not shrink the learning/game shell underneath.
+elements.adminOverlay.classList.add('active');context.document.activeElement=elements.rewardEvery;elements.rewardEvery.tagName='INPUT';
+context.window.visualViewport={height:520,offsetTop:28,scale:1};api.viewport();
+assert.strictEqual(context.document.documentElement.style['--app-height'],'100dvh');
+assert.strictEqual(context.document.documentElement.style['--modal-height'],'520px');
+assert.strictEqual(context.document.documentElement.style['--modal-top'],'28px');
+var oldModalBounds=elements.adminOverlay.getBoundingClientRect,oldInputBounds=elements.rewardEvery.getBoundingClientRect;
+elements.adminOverlay.scrollTop=0;
+elements.adminOverlay.getBoundingClientRect=function(){return {top:28,bottom:548};};
+elements.rewardEvery.getBoundingClientRect=function(){return {top:576-elements.adminOverlay.scrollTop,bottom:620-elements.adminOverlay.scrollTop};};
+api.keepModalVisible();assert.strictEqual(elements.adminOverlay.scrollTop,88);api.keepModalVisible();assert.strictEqual(elements.adminOverlay.scrollTop,88);
+elements.adminOverlay.getBoundingClientRect=oldModalBounds;elements.rewardEvery.getBoundingClientRect=oldInputBounds;
+elements.adminOverlay.classList.remove('active');delete context.window.visualViewport;context.document.activeElement=context.document.body;
+console.log('Avatar: first launch, public save/cancel, allowlists, hairstyles, sleeves, backup/migration and modal keyboard viewport OK');
+// Expanded avatar options: garment cut and colour are independent, with old looks migrated.
+[['blue','tshirt','#508fe3'],['coral','tshirt','#ed7b79'],['green','sweater','#599d83'],['purple','hoodie','#9170c8']].forEach(function(old){
+  var original={top:old[0],outfit:'pumpkin'},migrated=api.normalizeAvatar(original);
+  assert.strictEqual(migrated.top,old[1]);assert.strictEqual(migrated.topColor,old[2]);
+  assert.strictEqual(migrated.outfit,'pumpkin');assert.strictEqual(original.top,old[0],'Migration does not mutate draft/source');
+});
+assert.strictEqual(api.normalizeAvatar({topColor:'url(bad)',bottomColor:'#abc'}).topColor,'#508fe3');
+assert.strictEqual(api.normalizeAvatar({topColor:'#ABCDEF'}).topColor,'#abcdef');
+['shoulderCurls','long','longCurls','waves','braids','bun'].forEach(function(hair){
+  var profile=api.defaultProfile();profile.config.avatar.hair=hair;api.normalizeProfile(profile);
+  assert.strictEqual(profile.config.avatar.hair,hair);assert(api.avatarSvg(profile.config.avatar).children.length>20);
+});
+api.avatarOptions.top.forEach(function(option){assert(api.avatarSvg({top:option[0],topColor:'#123abc'}).children.length>20);});
+api.avatarOptions.bottom.forEach(function(option){assert(api.avatarSvg({bottom:option[0],bottomColor:'#abcdef'}).children.length>20);});
+elements.homeAvatarBtn.events.click();
+assert(!elements.avatarClothesHint.hidden,'Explain when a costume hides everyday garments');
+function garmentField(label){return elements.avatarFields.children.find(function(field){return field.children[0].textContent===label;}).children[1];}
+var topRow=garmentField('Oberteil'),bottomRow=garmentField('Unterteil');
+assert.strictEqual(topRow.children[0].children.length,9);assert.strictEqual(bottomRow.children[0].children.length,12);
+assert.strictEqual(topRow.children[1].children[0].type,'color');
+var wardrobe=garmentField('Kostüme und saisonale Outfits');wardrobe.value='everyday';wardrobe.events.change();assert(elements.avatarClothesHint.hidden);
+topRow.children[0].value='tank';topRow.children[0].events.change();
+topRow.children[1].children[0].value='#12ab89';topRow.children[1].children[0].events.input();
+bottomRow.children[0].value='pleated';bottomRow.children[0].events.change();
+bottomRow.children[1].children[0].value='#be5678';bottomRow.children[1].children[0].events.change();
+elements.playerName.value=api.getState().config.childName;elements.playerForm.events.submit({preventDefault:function(){}});
+var savedWardrobeRoot=JSON.parse(storage.km_1x1_trainer_v2);
+var savedWardrobe=api.normalizeProfile(savedWardrobeRoot.profiles[savedWardrobeRoot.activeProfileId]).config.avatar;
+assert.strictEqual(savedWardrobe.top,'tank');assert.strictEqual(savedWardrobe.topColor,'#12ab89');
+assert.strictEqual(savedWardrobe.bottom,'pleated');assert.strictEqual(savedWardrobe.bottomColor,'#be5678');
+var wardrobeBeforeCancel=JSON.stringify(api.getState().config.avatar);
+elements.homeAvatarBtn.events.click();var cancelColor=garmentField('Oberteil').children[1].children[0];cancelColor.value='#998877';cancelColor.events.input();elements.cancelPlayerBtn.events.click();
+assert.strictEqual(JSON.stringify(api.getState().config.avatar),wardrobeBeforeCancel);
+console.log('Avatar wardrobe: nine tops/twelve bottoms, independent colours, hairstyle options, migration, backup and cancel OK');
+// Shoulder waves use continuous inward-falling locks, with the saved key unchanged.
+assert.strictEqual(api.avatarOptions.hair.find(function(option){return option[0]==='shoulderCurls';})[1],'Schulterlange Wellen');
+var shoulderWaves=api.avatarSvg({hair:'shoulderCurls'});
+assert(shoulderWaves.children.some(function(shape){return shape.getAttribute('d').indexOf('M76 91C70 108')===0;}));
+var waveProfile=api.defaultProfile();waveProfile.config.avatar.hair='shoulderCurls';
+assert.strictEqual(api.normalizeProfile(JSON.parse(JSON.stringify(waveProfile))).config.avatar.hair,'shoulderCurls');
+// High-DPI 2048 preserves its board and runs for five active minutes.
+api.startArcadeGame('tiles',true);var retina=api.games().tiles;
+var oldSlot=elements.tilesWrap.getBoundingClientRect,oldCanvasSlot=elements.tilesCanvas.getBoundingClientRect;
+elements.tilesWrap.getBoundingClientRect=function(){return {width:1024,height:720};};
+elements.tilesCanvas.getBoundingClientRect=function(){return elements.tilesWrap.getBoundingClientRect();};context.window.devicePixelRatio=2;
+var boardBefore=JSON.stringify(retina.board);api.resizeExtraCanvases();
+assert(retina.canvas.width>=2044&&retina.canvas.width<=2048);assert.strictEqual(retina.viewHeight,338);assert(retina.canvas.height>=1439);
+assert.strictEqual(JSON.stringify(retina.board),boardBefore);
+var transforms=[];retina.ctx.setTransform=function(){transforms.push(Array.from(arguments));};api.resizeExtraCanvases();
+assert.strictEqual(transforms[0][0],transforms[0][3]);assert(Math.abs(transforms[0][0]-retina.canvas.width/480)<1e-8);
+api.extras.action('tiles','left',true);retina.playTimeMs=180000;api.runArcadeGame('tiles',1000);assert(retina.active);
+retina.playTimeMs=300000;api.runArcadeGame('tiles',2000);assert(!retina.active);assert(elements.tilesOverlayTitle.textContent.indexOf('Fünf Minuten')!==-1);
+elements.tilesWrap.getBoundingClientRect=oldSlot;elements.tilesCanvas.getBoundingClientRect=oldCanvasSlot;elements.tilesHomeBtn.events.click();
+// Each game's bitmap is sharp, while its world dimensions remain logical.
+[
+  ['Dino','game','dino'],['Flappy','flappy','flappy'],['Tower','tower','tower'],['Gravity','gravity','gravity'],
+  ['Brick','brick','brick'],['Snake','snake','snake'],['Snow','snow','snow'],['Runner','runner','runner'],
+  ['Doodle','doodle','doodle'],['Tiles','tiles','tiles'],['Maze','maze','maze'],['Asteroid','asteroid','asteroid']
+].forEach(function(spec){
+  api.getState().reward.availablePlays=1;elements['choose'+spec[0]+'Btn'].events.click();
+  var canvas=elements[spec[1]+'Canvas'],game=api.games()[spec[2]];
+  assert(canvas.height>canvas.viewHeight,spec[2]+' has separate logical and physical dimensions');
+  var before=JSON.stringify([game.player,game.ship,game.board,game.distance]);
+  api.prepareGameCanvas(canvas,canvas.getContext('2d'),spec[1]==='gravity'||spec[1]==='snow'?640:480,canvas.viewHeight);
+  assert.strictEqual(JSON.stringify([game.player,game.ship,game.board,game.distance]),before);
+  elements[spec[1]+'HomeBtn'].events.click();
+});
+context.window.devicePixelRatio=1;
+assert(!html.includes('user-scalable=no'),'Keep pinch zoom accessible');
+console.log('Retina: all twelve games preserve world coordinates; 2048 board and five-minute limit OK');
 console.log('Learning modes: generation, UI answers, retries, rewards, migration, replay and completion OK');
