@@ -24,7 +24,7 @@ var css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
   '.game-immersive.active', '.game-immersive .game-toolbar',
   '.game-immersive .game-wrap', '.written-equation', '.written-number',
   '.semi-division', '.semi-work', '.runner-controls', '.classic-controls',
-  '.direction-pad', '.icon', '.snake-controls button', '.home-actions .action-label',
+  '.direction-pad', '.icon', '.snake-controls button', '.home-actions .action-label', '.remainder-answer',
   '.home-avatar', '.player-modal', '.avatar-settings'
 ].forEach(function(selector){
   assert(css.indexOf(selector + ' {') !== -1 || css.indexOf(selector + '{') !== -1,

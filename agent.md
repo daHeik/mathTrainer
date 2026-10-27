@@ -109,6 +109,15 @@ Use `setQuestionText()` for question updates and `renderMathText()` for textual
 math feedback. Arithmetic expressions and operand pairs use local nowrap
 `.math-expression` spans; do not insert HTML or forbid wrapping whole sentences.
 
+Ordinary remainder division is mode `remainder`, keys such as `rd:3x7`,
+with independent `fact.remainder` learning records and
+history operation `remainderDivide`. Use configured/active fact families;
+exclude divisor 1. Each generated exercise independently has nonzero remainder
+with probability .95, otherwise zero; always require an explicitly entered
+remainder, including 0. Quotient choices/input/adaptive follow normal division;
+submit both fields once through onAnswer. Preserve normal progress, reward
+totals, migrations/backups, retry limits, repeat mode and abort contracts.
+
 Written place-value division uses mode `written` and keys `w:divisor:digits`
 (divisors 2..9, result digits 2 or 3). Its 16 records live in
 `profile.writtenSkills`, with history operation `writtenDivide`. Include them

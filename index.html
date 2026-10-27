@@ -40,13 +40,14 @@
       </div><p class="reward-note" id="rewardNote"></p></div>
       <div><h2 class="section-label">Gezielt üben</h2><div class="home-actions">
         <button class="secondary-btn" id="tablePracticeBtn">Zahlenreihe auswählen</button>
+        <button class="primary-btn extra-round-btn" id="remainderBtn">Division mit Rest</button>
         <button class="primary-btn extra-round-btn" id="hundredsBtn">Rechnen mit 100ern</button>
         <button class="primary-btn extra-round-btn" id="termsBtn">Rechenbegriffe lernen</button>
         <button class="primary-btn extra-round-btn" id="riddlesBtn">Zahlenrätsel lösen</button>
         <button class="primary-btn extra-round-btn" id="writtenBtn">Schriftlich dividieren</button>
         <button class="primary-btn extra-round-btn" id="semiBtn">Halbschriftlich dividieren</button>
       </div></div></div>
-      <p class="app-version" id="appVersion">Version 45</p>
+      <p class="app-version" id="appVersion">Version 46</p>
     </div>
 
     <div class="screen semi-intro" id="screen-semi-intro">
@@ -84,6 +85,7 @@
     <div class="screen" id="screen-question">
       <div class="progress-dots" id="progressDots"></div>
       <div class="question" id="questionText">7 × 8</div>
+      <form id="remainderDivisionForm" class="remainder-division" autocomplete="off" hidden aria-label="Ergebnis und Rest eintragen" novalidate></form>
       <div class="choices" id="choicesWrap"></div>
       <form id="writtenDivisionForm" class="written-division" autocomplete="off" hidden aria-label="Schriftlich dividieren mit Teilrechnungen"></form>
       <form id="semiDivisionForm" class="semi-division" autocomplete="off" hidden aria-label="Halbschriftlich dividieren in eigenen Schritten"></form>

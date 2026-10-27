@@ -100,6 +100,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'specialQuestion:specialQuestion, applyAnswerResult:applyAnswerResult,',
   'renderMathText:renderMathText,',
   'writtenDivisionQuestion:writtenDivisionQuestion, renderWrittenDivision:renderWrittenDivision,',
+  'remainderDivisionQuestion:remainderDivisionQuestion, renderRemainderDivision:renderRemainderDivision,',
   'semiDivisionQuestion:semiDivisionQuestion, semiSuggestedPart:semiSuggestedPart, checkSemiPart:checkSemiPart, renderSemiDivision:renderSemiDivision,',
   'correctAnswersForProfile:correctAnswersForProfile, startSession:startSession,',
   'renderQuestion:renderQuestion, onAnswer:onAnswer, finishSession:finishSession,',
@@ -1479,4 +1480,96 @@ elements.tilesWrap.getBoundingClientRect=oldSlot;elements.tilesCanvas.getBoundin
 context.window.devicePixelRatio=1;
 assert(!html.includes('user-scalable=no'),'Keep pinch zoom accessible');
 console.log('Retina: all twelve games preserve world coordinates; 2048 board and five-minute limit OK');
+// Ordinary division with a required remainder, including explicitly entered zero.
+var remainderProfile=api.normalizeProfile(api.defaultProfile());
+remainderProfile.config.sound=false;remainderProfile.config.rewardEvery=1;
+api.setState(remainderProfile);api.ensureFactPool();
+assert.strictEqual(api.practiceSkill('rd:1x1'),null);
+assert(api.practiceSkillsInRange(null,'remainder').length>0);
+assert(api.practiceSkillsInRange(null,'remainder').every(function(skill){return skill.kind==='remainder';}));
+var oldRandom=context.Math.random,zeroRemainders=0;
+for(var percentile=0;percentile<100;percentile++){
+  context.Math.random=function(){return percentile/100;};
+  var remainderTask=api.remainderDivisionQuestion(api.practiceSkill('rd:5x5'));
+  assert.strictEqual(remainderTask.dividend,remainderTask.correct*remainderTask.divisor+remainderTask.rest);
+  assert(remainderTask.rest>=0&&remainderTask.rest<remainderTask.divisor);
+  if(remainderTask.rest===0)zeroRemainders++;
+}
+assert.strictEqual(zeroRemainders,5,'Exactly the upper 5% random interval generates rest zero');
+context.Math.random=oldRandom;
+for(var remainderSample=0;remainderSample<300;remainderSample++){
+  var unitTask=api.remainderDivisionQuestion(api.practiceSkill('rd:1x7'));
+  assert.strictEqual(unitTask.divisor,7,'Never divide by 1 in remainder practice');
+  assert.strictEqual(Math.floor(unitTask.dividend/unitTask.divisor),unitTask.correct);
+}
+remainderProfile.config.min=5;remainderProfile.config.max=7;remainderProfile.config.enabledTables=[5,7];
+api.normalizeProfile(remainderProfile);
+assert.strictEqual(api.practiceSkillsInRange(null,'remainder').length,3,'Honor configured numbers');
+assert.strictEqual(api.buildQueue(10,null,'remainder').length,10,'No mixed-round new-fact limit');
+remainderProfile.config.answerMode='choice';
+elements.remainderBtn.events.click();assert.strictEqual(remainderProfile.today.mode,'remainder');
+var remainderForm=elements.remainderDivisionForm;
+function remainderFind(id){
+  function visit(node){if(node.id===id)return node;for(var i=0;i<node.children.length;i++){var found=visit(node.children[i]);if(found)return found;}}
+  return visit(remainderForm);
+}
+function remainderSubmit(){remainderForm.onsubmit({preventDefault:function(){}});}
+function showRemainder(rest){
+  remainderProfile.today.queue=['rd:5x5'];remainderProfile.today.index=0;remainderProfile.today.correct=0;
+  remainderProfile.today.requeueCounts={};api.renderQuestion();
+  api.renderRemainderDivision('rd:5x5',{dividend:25+rest,divisor:5,correct:5,rest:rest});
+}
+showRemainder(0);
+assert(!remainderForm.hidden&&elements.writtenDivisionForm.hidden&&elements.semiDivisionForm.hidden);
+assert.strictEqual(remainderFind('remainderRest').value,'','Never prefill even rest zero');
+assert(remainderFind('remainderQuotient').readOnly);
+var quotientChoices=elements.choicesWrap.children;
+assert.strictEqual(quotientChoices.length,4);
+quotientChoices.find(function(button){return String(button.textContent)==='5';}).click();
+assert.strictEqual(context.document.activeElement,remainderFind('remainderRest'));
+assert.strictEqual(api.correctAnswersForProfile(remainderProfile),0,'Selecting quotient alone earns nothing');
+remainderSubmit();assert.strictEqual(remainderProfile.today.index,0,'Blank rest is not zero');
+remainderFind('remainderRest').value='0';remainderSubmit();remainderSubmit();
+assert.strictEqual(remainderProfile.facts['5x5'].remainder.correctCount,1);
+assert.strictEqual(remainderProfile.facts['5x5'].division.correctCount,0,'Keep normal division progress independent');
+assert.strictEqual(remainderProfile.reward.availablePlays,1);
+assert.strictEqual(remainderProfile.history[remainderProfile.today.date].byOperation.remainderDivide.correct,1);
+api.finishSession();assert(api.repeatRoundLabel(false).includes('Division mit Rest'));
+elements.doneBonusBtn.events.click();assert.strictEqual(remainderProfile.today.mode,'remainder');
+remainderProfile.config.answerMode='input';showRemainder(3);
+assert(!remainderFind('remainderQuotient').readOnly);
+assert.strictEqual(context.document.activeElement,remainderFind('remainderQuotient'));
+function remainderKey(label){elements.choicesWrap.children.find(function(button){return button.textContent===label;}).click();}
+remainderKey('5');remainderKey('OK');
+assert.strictEqual(context.document.activeElement,remainderFind('remainderRest'));
+remainderKey('3');remainderKey('OK');
+assert.strictEqual(remainderProfile.facts['5x5'].remainder.correctCount,2);
+assert.strictEqual(remainderProfile.reward.availablePlays,2);
+showRemainder(3);remainderFind('remainderQuotient').value='5';remainderFind('remainderRest').value='8';remainderSubmit();
+assert.strictEqual(remainderProfile.facts['5x5'].remainder.wrongCount,1);
+assert.strictEqual(remainderProfile.today.queue.length,2,'Wrong rest repeats like a normal wrong answer');
+assert(elements.feedbackText.textContent.includes('5 R 3'));
+showRemainder(3);remainderFind('remainderQuotient').value='4';remainderFind('remainderRest').value='3';remainderSubmit();
+assert.strictEqual(remainderProfile.facts['5x5'].remainder.wrongCount,2);
+remainderProfile.config.answerMode='adaptive';remainderProfile.facts['5x5'].remainder.seen=true;
+remainderProfile.facts['5x5'].remainder.box=2;showRemainder(3);
+assert(!remainderFind('remainderQuotient').readOnly,'Adaptive input follows normal box >= 2 rule');
+remainderProfile.facts['5x5'].remainder.box=1;showRemainder(3);
+assert(remainderFind('remainderQuotient').readOnly,'Adaptive mode retains choices for newer skills');
+var staleRemainderSubmit=remainderForm.onsubmit;
+elements.abortSessionBtn.events.click();
+assert.strictEqual(remainderProfile.today.mode,'mixed');
+assert.strictEqual(remainderProfile.reward.availablePlays,2,'Abort keeps earned rewards');
+staleRemainderSubmit({preventDefault:function(){}});
+assert.strictEqual(api.correctAnswersForProfile(remainderProfile),2,'Aborted form cannot submit');
+var remainderBackup=api.normalizeProfile(JSON.parse(JSON.stringify(remainderProfile)));
+assert.strictEqual(remainderBackup.facts['5x5'].remainder.correctCount,2);
+assert.strictEqual(remainderBackup.history[remainderBackup.today.date].byOperation.remainderDivide.wrong,2);
+delete remainderBackup.facts['5x5'].remainder;api.normalizeProfile(remainderBackup);
+assert.strictEqual(remainderBackup.facts['5x5'].remainder.correctCount,0,'Old backups acquire safe defaults');
+assert.strictEqual(remainderBackup.facts['5x5'].division.correctCount,0);
+remainderBackup.config.min=1;remainderBackup.config.max=1;remainderBackup.config.enabledTables=[1];
+api.normalizeProfile(remainderBackup);api.setState(remainderBackup);api.renderHome();
+assert(elements.remainderBtn.disabled,'Explain unavailable mode instead of generating impossible remainders for divisor 1');
+console.log('Division with remainder: 95/5 generation, explicit zero, choice/input/adaptive, retry, rewards, abort and backup OK');
 console.log('Learning modes: generation, UI answers, retries, rewards, migration, replay and completion OK');

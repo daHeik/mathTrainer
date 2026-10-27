@@ -956,6 +956,16 @@ body.focused-view .app-bar {padding-top:calc(4px + var(--safe-top));padding-bott
  #screen-tiles .direction-pad,#screen-maze .direction-pad {grid-row:3;grid-column:2;align-self:center;justify-self:center;}
 }
 
+.remainder-division {width:100%;max-width:480px;margin:0 auto;flex:none;}
+.remainder-answer {display:flex;align-items:flex-end;justify-content:center;gap:12px;font-size:1.5rem;}
+.remainder-answer>span {padding-bottom:10px;}
+.remainder-field {display:flex;flex-direction:column;gap:6px;min-width:0;flex:0 1 120px;}
+.remainder-field>span {font-size:.85rem;color:var(--ink-soft);}
+.remainder-field input {width:100%;min-width:0;min-height:48px;border:2px solid var(--theme-border);border-radius:10px;background:var(--theme-surface);color:var(--ink);font:inherit;text-align:center;padding:8px;}
+.remainder-field input:focus {outline:3px solid var(--bg-1);outline-offset:2px;}
+.remainder-field input:disabled {opacity:1;-webkit-text-fill-color:var(--ink);}
+.choices .choice-btn[aria-pressed="true"] {outline:3px solid var(--bg-1);outline-offset:-3px;background:var(--theme-soft);}
+
 /* Player-owned identity: vector portrait, independent of learning settings. */
  .home-heading{display:flex;align-items:center;gap:16px;}
 .home-greeting{min-width:0;overflow-wrap:anywhere;}

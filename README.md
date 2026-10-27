@@ -28,6 +28,20 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 
 ## Features
 
+### Division mit Rest
+
+Der eigene Startbutton übt Division mit den eingestellten Zahlenreihen und
+der üblichen Rundengröße. Pro Aufgabe beträgt die Wahrscheinlichkeit für
+einen Rest 95 %, für Rest 0 sind es 5 % (keine feste Quote pro kurzer Runde).
+Beispiel: `28 ÷ 5 = 5 R 3`. Divisor 1 wird ausgeschlossen.
+Das Ergebnis wird wie gewohnt aus vier Antworten gewählt oder per Zahleneingabe
+eingegeben; der adaptive Modus schaltet nach demselben Lernstand um wie bei
+normaler Division. Der Rest wird immer in ein eigenes R-Feld eingetragen,
+auch die 0 muss ausdrücklich eingegeben werden. Eine Antwort zählt erst,
+wenn Ergebnis und Rest gemeinsam geprüft wurden. Lernstand, Fehlerwiederholungen,
+Statistik und Spielbelohnungen werden wie üblich gespeichert; normale Division
+und halbschriftliches Dividieren behalten ihre eigenen Lernstände.
+
 ### Halbschriftlich dividieren (Klasse 4)
 
 Ein eigener Startseiten-Modus vermittelt schrittweises Dividieren: den
