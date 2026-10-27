@@ -88,7 +88,7 @@
       s.coins.forEach(function(p){dot(c,p.x,p.y-s.cameraY,8,'#ffd266');text(c,'★',p.x,p.y-s.cameraY+4,11,'#a36b35');});
       var p=s.player,y=p.y-s.cameraY,bob=s.running?Math.sin(s.elapsed*12)*2:0;
       [-480,0,480].forEach(function(offset){var x=p.x+offset;if(x<-30||x>510)return;c.save();c.translate(x,y);c.strokeStyle='#42334e';c.lineWidth=4;c.lineCap='round';c.beginPath();c.moveTo(-7,27);c.lineTo(-10,35);c.moveTo(7,27);c.lineTo(11,35);c.stroke();
-        round(c,-17,2,34,29,12,'#b8d780');dot(c,-6,12,5,'#fff8de');dot(c,7,12,5,'#fff8de');dot(c,-5+s.axis,12,2,'#343749');dot(c,8+s.axis,12,2,'#343749');c.strokeStyle='#4b6047';c.lineWidth=2;c.beginPath();c.arc(1,19,5,0,Math.PI);c.stroke();path(c,[[-20,4],[0,-18+bob],[16,4]],'#674979');round(c,-22,2,42,4,2,'#efa957');c.restore();});
+        round(c,-17,2,34,29,12,'#b8d780');dot(c,-6,12,5,'#fff8de');dot(c,7,12,5,'#fff8de');dot(c,-5+s.axis,12,2,'#343749');dot(c,8+s.axis,12,2,'#343749');c.strokeStyle='#4b6047';c.lineWidth=2;c.beginPath();c.arc(1,19,5,0,Math.PI);c.stroke();var season=host.season?host.season():null;if(season==='halloween'){path(c,[[-20,4],[0,-18+bob],[16,4]],'#674979');round(c,-22,2,42,4,2,'#efa957');}else if(season==='christmas'){path(c,[[-18,3],[2,-17+bob],[21,-2]],'#cf4e63');round(c,-19,0,38,6,3,'#fff4df');dot(c,21,-2,5,'#fff4df');}c.restore();});
       text(c,Math.floor(s.height/10)+' m · '+s.coinCount+' Münzen',240,h-15,13,'#46384f');banner(s);
     }
 

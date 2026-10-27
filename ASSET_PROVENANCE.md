@@ -44,3 +44,11 @@ Geometrie, ohne externe Iconbibliotheken oder Originalassets anderer Spiele.
 Die Spielprinzipien von Gravity Run bzw. Schneefahrt wurden durch JindoBlu
 „2 Player Games“ bzw. Alto's Adventure inspiriert. Vokabel- oder Buchdaten
 wurden nicht übernommen. Das bestehende Mathe-App-Icon bleibt unverändert.
+
+Am 27. Oktober 2026 wurden die Saisonsteuerung und saisonalen Canvas-Gimmicks
+aus Vocabulator `624222e` (UI 53, MIT, gleicher Urheber) übernommen. Halloween
+gilt jährlich vom 20.–31. Oktober, Weihnachten vom 1.–27. Dezember. Tannen,
+Geschenke, Schneeflocken, Lichterketten, Weihnachtsmützen, Schneemänner und
+Schlitten sind eigene Canvas-Geometrie ohne externe Grafiken oder Sounds.
+Die dunkleren mathServer-Halloween-Paletten und reduzierte Animationen bleiben
+erhalten. Die Viewport-Flackervermeidung stammt aus `90f1ef5` (UI 52).

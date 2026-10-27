@@ -258,6 +258,20 @@ The offline suite also guards essential shell, responsive, learning-form and
 game CSS rules. When syncing avatar styles, retain the complete app-shell
 section and the written/semi-written division and game-control rules.
 
+Vocabulator updates from 2026-10-27 (`90f1ef5`, `624222e`, UI 52/53): viewport
+deduplication via lastViewport/setViewportStyle, rounded visualViewport sizes,
+coalesced animation-frame work and game canvas resizing only on size changes.
+Do not write the same scroll position while typing. No vocab-only answer-form
+helpers are needed here; retain math native forms/keypad and modal visibility.
+GAME_SEASONS is the shared local annual calendar: Halloween Oct 20..31 and
+Christmas Dec 1..27 (exclusive ends Nov 1 / Dec 28). Recheck at midnight and
+after clock changes; all twelve games share currentGameSeason, extras via host.
+Gate existing costumes, Halloween-only palettes and Cleo food rendering too;
+do not mutate saved food/world or avatar values when the season switches.
+Decoration must consume no gameplay random numbers, change no collisions or
+rewards, use active game time, and respect reduced motion. Preserve the darker
+mathServer Halloween palette/weather while restoring normal colors out of season.
+
 ## Offline behavior
 
 `sw.js` uses a network-first strategy and falls back to cached assets or

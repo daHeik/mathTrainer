@@ -28,6 +28,29 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 
 ## Features
 
+### Automatische Spielsaisons und ruhige Tastatureingabe
+
+Alle zwölf Spiele richten ihre Dekoration nach dem lokalen Gerätedatum aus,
+jährlich wiederkehrend und auch offline:
+
+- **Halloween, 20.–31. Oktober:** dunkle Paletten, Mond, Kürbisse, Spinnweben,
+  Fledermäuse und Hexen; Cleos Kürbis-Futter, saisonale Kostüme und Metro-Deko.
+- **Weihnachten, 1.–27. Dezember:** Schneeflocken, Lichterketten, geschmückte
+  Tannen, Geschenke, Weihnachtsmützen, Schneemänner und gelegentlich ein Schlitten.
+- Außerhalb dieser Zeitfenster kehren normale Farben und Figuren zurück,
+  bei Cleo Obst statt Kürbisse beziehungsweise Geschenke.
+
+Der Wechsel erfolgt beim nächsten Zeichnen, auch über einen lokalen
+Mitternachtswechsel hinweg. Dekorationen nutzen nur aktive Spielzeit und
+beeinflussen weder Spielphysik, Level-Zufall, Punkte noch Kontingente.
+Selbst gewählte Avatar-Outfits bleiben unverändert. Reduzierte Bewegung wird
+bei den saisonalen Animationen berücksichtigt; Blitze sind langsam und fern,
+keine bildschirmfüllenden Lichtblitze.
+
+Wiederholte Tastatur-/Viewport-Meldungen ohne tatsächliche Änderung lösen
+keine erneuten CSS-/Scroll-Schreibzugriffe aus. Größenänderungen werden pro
+Bild zusammengefasst; bloßes Scrollen baut Spiel-Canvases nicht neu auf.
+
 ### Division mit Rest
 
 Der eigene Startbutton übt Division mit den eingestellten Zahlenreihen und
@@ -253,7 +276,7 @@ Bilder oder Videos werden eingebunden.
   maximal 8 Sekunden bis zum ersten Treffer, Magnet sammelt 10 Sekunden lang.
   Drei aktive Minuten und drei Versuche, Fortsetzung erhält Strecke und Punkte;
   eigener Profilrekord und offline spielbarer Demo-Einstieg über `runner.html`.
-- Freundliche Halloween-Dekoration aus dem Vocabulator in allen Spielen:
+- Während der Halloween-Saison (20.–31. Oktober) Dekoration aus dem Vocabulator in allen Spielen:
   Kürbisse, Spinnweben, Fledermäuse und Hexen; bei Metro Run zusätzlich lustige
   Straßenschilder, tanzende Skelette und Geisterballons. Rein gezeichnete Deko
   ohne zusätzliche Hindernisse oder Änderungen der Trefferflächen.

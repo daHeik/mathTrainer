@@ -75,6 +75,7 @@ var context = {
       assert(elements[id], 'Missing DOM id ' + id); return elements[id];
     },
     querySelector:function(selector){
+      if(selector==='.screen.active')return Object.keys(elements).map(function(id){return elements[id];}).find(function(n){return /^screen-/.test(n.id)&&n.classList.contains('active');})||null;
       if(selector==='.modal-overlay.active')return Object.keys(elements).map(function(id){return elements[id];}).find(function(n){return /^(admin|pin|profile|player)Overlay$/.test(n.id)&&n.classList.contains('active');})||null;
       return new Element();
     }, querySelectorAll:function(){ return []; },
@@ -110,6 +111,10 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'normalizeAvatar:normalizeAvatar, avatarOptions:AVATAR_OPTIONS, avatarSvg:avatarSvg,',
   'openPlayerEditor:openPlayerEditor, getRoot:function(){return root;}, renderHome:renderHome,',
   'viewport:updateViewport, keepModalVisible:keepModalInputVisible,',
+  'seasonAt:gameSeasonForDate, season:currentGameSeason, seasonDraw:drawSeasonSky, seasonToken:drawSeasonToken,',
+  'streetDraw:drawRunnerStreetFun,',
+  'drawGame:function(kind){if(extraArcade.definitions[kind])extraArcade.draw(kind);else ({dino:drawRewardGame,flappy:drawFlappyGame,tower:drawTowerGame,gravity:drawGravityGame,brick:drawBrickGame,snake:drawSnakeGame,snow:drawSnowGame,runner:drawRunnerGame})[kind]();},',
+  'gravityContext:function(value){if(value)gravityCtx=value;return gravityCtx;},',
   'prepareGameCanvas:prepareGameCanvas, logicalCanvasHeight:logicalCanvasHeight,',
   'games:function(){return {dino:rewardGame,flappy:flappyGame,tower:towerGame,gravity:gravityGame,brick:arcadeGames.brick,snake:arcadeGames.snake,snow:arcadeGames.snow,runner:arcadeGames.runner,doodle:arcadeGames.doodle,tiles:arcadeGames.tiles,maze:arcadeGames.maze,asteroid:arcadeGames.asteroid};},',
   'extras:extraArcade, resizeExtraCanvases:resizeExtraCanvases,',
@@ -1572,4 +1577,114 @@ remainderBackup.config.min=1;remainderBackup.config.max=1;remainderBackup.config
 api.normalizeProfile(remainderBackup);api.setState(remainderBackup);api.renderHome();
 assert(elements.remainderBtn.disabled,'Explain unavailable mode instead of generating impossible remainders for divisor 1');
 console.log('Division with remainder: 95/5 generation, explicit zero, choice/input/adaptive, retry, rewards, abort and backup OK');
+// Repeated keyboard notifications do not rewrite CSS, scroll or clear canvases.
+api.startArcadeGame('brick',true);
+var savedRaf=context.requestAnimationFrame,savedCancel=context.cancelAnimationFrame;
+var savedSetStyle=context.document.documentElement.style.setProperty;
+var pendingViewport=new Map(),viewportSerial=100,viewportWrites=0,modalScrollWrites=0;
+context.requestAnimationFrame=function(fn){var id=++viewportSerial;pendingViewport.set(id,fn);return id;};
+context.cancelAnimationFrame=function(id){pendingViewport.delete(id);};
+context.document.documentElement.style.setProperty=function(key,value){viewportWrites++;savedSetStyle.call(this,key,value);};
+function flushViewport(){var frames=Array.from(pendingViewport.values());pendingViewport.clear();frames.forEach(function(fn){fn();});}
+var fittingModal=elements.adminOverlay,editingField=elements.rewardEvery,modalScroll=0;
+var savedPanelRect=fittingModal.getBoundingClientRect,savedFieldRect=editingField.getBoundingClientRect;
+Object.defineProperty(fittingModal,'scrollTop',{configurable:true,get:function(){return modalScroll;},set:function(value){modalScrollWrites++;modalScroll=value;}});
+fittingModal.classList.add('active');editingField.tagName='INPUT';editingField.value='12';
+context.document.activeElement=editingField;
+context.window.visualViewport={width:390,height:420,offsetTop:0,scale:1};
+fittingModal.getBoundingClientRect=function(){return {top:0,bottom:420};};
+var fieldBottom=300;editingField.getBoundingClientRect=function(){return {top:fieldBottom-44-modalScroll,bottom:fieldBottom-modalScroll};};
+api.viewport();flushViewport();viewportWrites=0;modalScrollWrites=0;
+var brickForViewport=api.games().brick,retainedRect={x:1};brickForViewport.inputRect=retainedRect;
+for(var typingEvent=0;typingEvent<20;typingEvent++){editingField.value+='1';api.viewport();api.keepModalVisible();}
+assert.strictEqual(viewportWrites,0,'Unchanged keyboard viewport performs no CSS writes');
+assert.strictEqual(modalScrollWrites,0,'Fitting modal input is never rescrolled');
+assert.strictEqual(pendingViewport.size,0,'Unchanged viewport queues no layout');
+context.window.visualViewport.height=420.2;api.viewport();
+assert.strictEqual(pendingViewport.size,0,'Subpixel viewport noise is ignored');
+context.window.visualViewport.offsetTop=8;api.viewport();flushViewport();
+assert.strictEqual(brickForViewport.inputRect,retainedRect,'Scrolling without resizing does not rebuild game canvases');
+fieldBottom=470;context.window.visualViewport.height=415;api.viewport();
+context.window.visualViewport.height=410;api.viewport();assert.strictEqual(pendingViewport.size,1,'Coalesce keyboard resize into one frame');
+flushViewport();assert(modalScroll>0,'Covered input becomes visible');
+modalScrollWrites=0;api.keepModalVisible();assert.strictEqual(modalScrollWrites,0,'No repeat scroll once visible');
+assert.notStrictEqual(brickForViewport.inputRect,retainedRect,'Actual resize invalidates game bounds');
+fittingModal.classList.remove('active');context.document.activeElement=context.document.body;
+delete context.window.visualViewport;api.viewport();flushViewport();
+assert.strictEqual(context.document.documentElement.style['--app-height'],'100dvh');
+fittingModal.getBoundingClientRect=savedPanelRect;editingField.getBoundingClientRect=savedFieldRect;
+delete fittingModal.scrollTop;fittingModal.scrollTop=0;
+context.requestAnimationFrame=savedRaf;context.cancelAnimationFrame=savedCancel;context.document.documentElement.style.setProperty=savedSetStyle;
+elements.brickHomeBtn.click();
+console.log('Viewport: no typing/subpixel CSS or scroll writes, coalesced resize, covered input reveal and no canvas reset on scroll OK');
+
+// Shared local-date seasons: annual inclusive starts, exclusive ends, midnight.
+[2026,2027,2028].forEach(function(year){
+  [[10,19,null],[10,20,'halloween'],[10,31,'halloween'],[11,1,null],[11,30,null],[12,1,'christmas'],[12,27,'christmas'],[12,28,null],[1,1,null]].forEach(function(spec){
+    assert.strictEqual(api.seasonAt(new Date(year,spec[0]-1,spec[1])),spec[2]);
+  });
+});
+var realDate=context.Date,seasonClock=0;
+function SeasonalDate(){return Reflect.construct(realDate,arguments.length?Array.from(arguments):[seasonClock]);}
+SeasonalDate.now=function(){return seasonClock;};SeasonalDate.prototype=realDate.prototype;
+context.Date=SeasonalDate;
+function seasonDate(month,day,hour,minute,second,ms){seasonClock=new realDate(2026,month-1,day,hour||0,minute||0,second||0,ms||0).getTime();}
+[[10,19,null,'halloween'],[10,31,'halloween',null],[11,30,null,'christmas'],[12,27,'christmas',null]].forEach(function(edge){
+  seasonDate(edge[0],edge[1],23,59,59,999);assert.strictEqual(api.season(),edge[2]);seasonClock++;assert.strictEqual(api.season(),edge[3]);
+});
+seasonDate(10,27);assert.strictEqual(api.season(),'halloween','Clock moved backwards refreshes the cached season');
+var seasonalPaint=[],seasonalCtx=new Proxy({}, {
+  get:function(target,key){return function(){seasonalPaint.push([key].concat(Array.from(arguments)));};},
+  set:function(target,key,value){seasonalPaint.push([key,value]);return true;}
+});
+seasonDate(11,1);api.seasonDraw(seasonalCtx,480,640,30,false);api.seasonToken(seasonalCtx,10,10,8);
+assert.strictEqual(seasonalPaint.length,0,'No automatic decorations outside the season windows');
+seasonDate(10,27);api.seasonDraw(seasonalCtx,480,640,30,true);
+assert(seasonalPaint.some(function(op){return op[0]==='arc'&&op[3]===20;}),'Moon also appears in quiet scenes');
+assert(seasonalPaint.some(function(op){return op[0]==='fillStyle'&&op[1]==='#df6f28';}));
+seasonalPaint=[];seasonDate(12,1);api.seasonDraw(seasonalCtx,480,640,30,false);
+assert(seasonalPaint.some(function(op){return op[0]==='fillStyle'&&op[1]==='#ce475b';}));
+assert(!seasonalPaint.some(function(op){return op[0]==='fillStyle'&&op[1]==='#df6f28';}),'No Halloween pumpkins at Christmas');
+seasonalPaint=[];seasonDate(12,28);api.seasonDraw(seasonalCtx,480,640,30,false);assert.strictEqual(seasonalPaint.length,0);
+var seasonRandom=context.Math.random;context.Math.random=function(){throw Error('Decoration must not use gameplay random');};
+seasonDate(10,27);api.seasonDraw(seasonalCtx,480,640,30,false);seasonDate(12,1);api.seasonDraw(seasonalCtx,480,640,30,false);
+context.Math.random=seasonRandom;
+// Reduced-motion Christmas decorations freeze their animation geometry too.
+context.window.matchMedia=function(){return {matches:true};};seasonalPaint=[];api.seasonDraw(seasonalCtx,480,640,5,false);
+var stillChristmas=JSON.stringify(seasonalPaint);seasonalPaint=[];api.seasonDraw(seasonalCtx,480,640,30,false);
+assert.strictEqual(JSON.stringify(seasonalPaint),stillChristmas);delete context.window.matchMedia;
+var seasonProfile=api.normalizeProfile(api.defaultProfile());seasonProfile.config.sound=false;api.setState(seasonProfile);api.ensureFactPool();
+function seasonalWorld(game){
+  var world={};['player','dino','bird','body','food','bombs','board','platforms','obstacles','objects','bricks','balls','gaps','items','ship','rocks','terrainCache','cameraY','height','distance','elapsed','score','attempts','playTimeMs','speedPercent'].forEach(function(key){world[key]=game[key];});
+  return JSON.stringify(world);
+}
+[
+  ['Dino','game','dino'],['Flappy','flappy','flappy'],['Tower','tower','tower'],['Gravity','gravity','gravity'],
+  ['Brick','brick','brick'],['Snake','snake','snake'],['Snow','snow','snow'],['Runner','runner','runner'],
+  ['Doodle','doodle','doodle'],['Tiles','tiles','tiles'],['Maze','maze','maze'],['Asteroid','asteroid','asteroid']
+].forEach(function(spec){
+  seasonProfile.reward.availablePlays=2;elements['choose'+spec[0]+'Btn'].click();
+  var game=api.games()[spec[2]],before=seasonalWorld(game),identity=JSON.stringify(seasonProfile.config.avatar);
+  [[10,27],[11,1],[12,1],[12,28]].forEach(function(date){
+    seasonDate(date[0],date[1]);var paints=[];
+    var originalCtx=spec[2]==='gravity'?api.gravityContext():game.ctx;
+    var wrapped=new Proxy(originalCtx||new Element().getContext(),{set:function(target,key,value){if(key==='fillStyle'||key==='strokeStyle')paints.push(value);target[key]=value;return true;}});
+    if(spec[2]==='gravity')api.gravityContext(wrapped);else if(originalCtx)game.ctx=wrapped;
+    context.Math.random=function(){throw Error('Season rendering changed random stream: '+spec[2]);};
+    api.drawGame(spec[2]);context.Math.random=seasonRandom;
+    assert.strictEqual(seasonalWorld(game),before,spec[2]+' season does not change gameplay');
+    var costume={gravity:'#f8edcd',snake:'#684575',doodle:'#674979'}[spec[2]];
+    if(costume)assert.strictEqual(paints.indexOf(costume)!==-1,date[0]===10,spec[2]+' Halloween costume switches off');
+    if(spec[2]==='snake')assert.strictEqual(paints.indexOf('#df6f28')!==-1,date[0]===10,'Cleo pumpkins only during Halloween');
+    if(spec[2]==='gravity')api.gravityContext(originalCtx);else if(originalCtx)game.ctx=originalCtx;
+    assert.strictEqual(JSON.stringify(seasonProfile.config.avatar),identity,'Season does not overwrite chosen avatar outfit');
+  });
+  elements[spec[1]+'HomeBtn'].click();
+});
+seasonalPaint=[];seasonDate(11,1);api.streetDraw({ctx:seasonalCtx,elapsed:30,distance:0,viewHeight:360},300,1,0);
+assert(!seasonalPaint.some(function(op){return op[0]==='fillText';}));
+seasonalPaint=[];seasonDate(12,1);api.streetDraw({ctx:seasonalCtx,elapsed:30,distance:0,viewHeight:360},300,1,1);
+assert(seasonalPaint.some(function(op){return op[0]==='fillStyle'&&op[1]==='#fff4df';}),'Metro Christmas snowman');
+context.Date=realDate;
+console.log('Seasons: annual/midnight/backwards-clock boundaries, decorations and costumes in all twelve games, reduced motion, unchanged worlds/avatars/random OK');
 console.log('Learning modes: generation, UI answers, retries, rewards, migration, replay and completion OK');

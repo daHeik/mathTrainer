@@ -2901,13 +2901,14 @@
     ctx.clearRect(0, 0, 480, 270);
 
     var sky = ctx.createLinearGradient(0, 0, 0, 230);
-    sky.addColorStop(0, '#16192f');
-    sky.addColorStop(1, '#795069');
+    var halloween=currentGameSeason()==='halloween';
+    sky.addColorStop(0, halloween?'#16192f':'#bce8fa');
+    sky.addColorStop(1, halloween?'#795069':'#fff7d6');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, 480, 270);
 
 
-    ctx.fillStyle = 'rgba(122,119,155,.45)';
+    ctx.fillStyle = halloween?'rgba(122,119,155,.45)':'rgba(255,255,255,.85)';
     game.clouds.forEach(function(cloud){
       ctx.beginPath();
       ctx.arc(cloud.x, cloud.y, 14, 0, Math.PI * 2);
@@ -2916,11 +2917,11 @@
       ctx.fill();
     });
 
-    ctx.fillStyle = '#535442';
+    ctx.fillStyle = halloween?'#535442':'#c7e6a2';
     ctx.fillRect(0, 226, 480, 44);
-    ctx.fillStyle = '#8c7958';
+    ctx.fillStyle = halloween?'#8c7958':'#81b64c';
     ctx.fillRect(0, 226, 480, 5);
-    drawHalloweenSky(ctx,480,270,gameElapsedMs(game)/1000,false);drawPumpkin(ctx,452,249,12);
+    drawSeasonSky(ctx,480,270,gameElapsedMs(game)/1000,false);drawSeasonToken(ctx,452,249,12);
 
     if (!game || !game.dino) return;
     game.obstacles.forEach(function(obstacle){
@@ -3289,20 +3290,21 @@
     var ctx = flappyCtx;
     var sky = ctx.createLinearGradient(0, 0, 0, 320);
     var decorTime=flappyGame&&flappyGame.startedAt?(gameElapsedMs(flappyGame))/1000:0,zone=Math.floor(decorTime/45)%3;
-    sky.addColorStop(0,['#201b39','#362440','#101a32'][zone]);sky.addColorStop(1,['#76536e','#8a5664','#434c6d'][zone]);
+    var halloween=currentGameSeason()==='halloween';
+    sky.addColorStop(0,(halloween?['#201b39','#362440','#101a32']:['#72d4eb','#edaa9c','#263857'])[zone]);sky.addColorStop(1,(halloween?['#76536e','#8a5664','#434c6d']:['#d9f6f1','#fff1c4','#829eac'])[zone]);
     ctx.fillStyle = sky; ctx.fillRect(0, 0, 480, 360);
     if (!flappyGame) return;
-    ctx.fillStyle = 'rgba(144,132,163,.35)';
+    ctx.fillStyle = halloween?'rgba(144,132,163,.35)':'rgba(255,255,255,.78)';
     flappyGame.clouds.forEach(drawFlappyCloud);
-    ctx.fillStyle=['#514761','#624559','#303f59'][zone];
+    ctx.fillStyle=(halloween?['#514761','#624559','#303f59']:['#8abdc0','#bc9096','#536d88'])[zone];
     for(var i=0;i<7;i++){var hillX=((i*115-decorTime*10)%780+780)%780-150;ctx.beginPath();ctx.moveTo(hillX,320);ctx.lineTo(hillX+90,220+(i%3)*15);ctx.lineTo(hillX+190,320);ctx.fill();}
     if(zone===2)for(var i=0;i<20;i++){ctx.fillRect((i*73)%480,18+(i*41)%155,2,2);}
     else if(Math.floor(decorTime/12)%2===1){ctx.fillStyle='#dc89a8';ctx.beginPath();ctx.ellipse(400-(decorTime*7)%500,105,14,20,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#bca78d';ctx.beginPath();ctx.moveTo(400-(decorTime*7)%500,125);ctx.lineTo(400-(decorTime*7)%500,150);ctx.stroke();}
-    drawHalloweenSky(ctx,480,360,decorTime,false);
+    drawSeasonSky(ctx,480,360,decorTime,false);
     flappyGame.pipes.forEach(drawFlappyPipe);
     drawFlappyBird(flappyGame.bird);
-    ctx.fillStyle = '#4a5148'; ctx.fillRect(0, 320, 480, 40);
-    ctx.fillStyle = '#9b825b'; ctx.fillRect(0, 320, 480, 6);drawPumpkin(ctx,455,343,10);
+    ctx.fillStyle = halloween?'#4a5148':'#9bd36a'; ctx.fillRect(0, 320, 480, 40);
+    ctx.fillStyle = halloween?'#9b825b':'#68ad46'; ctx.fillRect(0, 320, 480, 6);drawSeasonToken(ctx,455,343,10);
     for(var i=0;i<12;i++){var flowerX=((i*47-decorTime*14)%500+500)%500;ctx.fillStyle=['#ef96af','#f3d079','#abbef9'][i%3];ctx.beginPath();ctx.arc(flowerX,338+(i%3)*6,3,0,Math.PI*2);ctx.fill();}
   }
 
@@ -3631,9 +3633,10 @@
     var g = towerGame, ctx = towerCtx, camera = g.cameraY || 0;
     var scene = towerSceneSpec(g.height, camera), time = gameElapsedMs(g) / 1000;
     var sky = ctx.createLinearGradient(0, 0, 0, 480);
-    sky.addColorStop(0, towerBlendColor([27,24,49], [7,12,36], scene.space));
-    sky.addColorStop(1, towerBlendColor([119,70,88], [26,16,64], scene.space));
-    ctx.fillStyle = sky; ctx.fillRect(0, 0, 480, 480);drawHalloweenSky(ctx,480,480,time,false);
+    var halloween=currentGameSeason()==='halloween';
+    sky.addColorStop(0, towerBlendColor(halloween?[27,24,49]:[223,246,255], [7,12,36], scene.space));
+    sky.addColorStop(1, towerBlendColor(halloween?[119,70,88]:[255,242,211], [26,16,64], scene.space));
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, 480, 480);drawSeasonSky(ctx,480,480,time,false);
     if (scene.space > 0){
       ctx.save(); ctx.globalAlpha = scene.space;
       for (var star = 0; star < 48; star++){
@@ -3901,13 +3904,14 @@
   }
   function gravityPalette(elapsed){
     var palettes=[{sky:'#111526',deep:'#382d49',rail:'#263947',accent:'#74d9c5'},{sky:'#1a142d',deep:'#493052',rail:'#34304b',accent:'#b7a2f3'},{sky:'#261a2b',deep:'#633b48',rail:'#43323d',accent:'#ffba8b'},{sky:'#14222b',deep:'#35463f',rail:'#26413e',accent:'#99e0af'}];
+    if(currentGameSeason()!=='halloween')palettes=[{sky:'#102635',deep:'#193d4c',rail:'#263947',accent:'#74d9c5'},{sky:'#201e3c',deep:'#3b3259',rail:'#34304b',accent:'#b7a2f3'},{sky:'#322637',deep:'#58404b',rail:'#43323d',accent:'#ffba8b'},{sky:'#143538',deep:'#23534d',rail:'#26413e',accent:'#99e0af'}];
     return palettes[Math.floor(elapsed/20)%palettes.length];
   }
   function drawGravityGame(){
     prepareGameCanvas(el('gravityCanvas'),gravityCtx,640,360);
     var ctx=gravityCtx,g=gravityGame;if(!g)return;
     var palette=gravityPalette(g.elapsed),sky=ctx.createLinearGradient(0,28,0,332);
-    sky.addColorStop(0,palette.sky);sky.addColorStop(1,palette.deep);ctx.fillStyle=sky;ctx.fillRect(0,0,640,360);drawHalloweenSky(ctx,640,360,g.elapsed,false);
+    sky.addColorStop(0,palette.sky);sky.addColorStop(1,palette.deep);ctx.fillStyle=sky;ctx.fillRect(0,0,640,360);drawSeasonSky(ctx,640,360,g.elapsed,false);
     // Parallax architecture and light dots are decoration, visually behind terrain.
     ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=1;
     for(var x=-(g.distance*.2)%110;x<640;x+=110){ctx.beginPath();ctx.moveTo(x,28);ctx.lineTo(x+45,120);ctx.lineTo(x+45,240);ctx.lineTo(x,332);ctx.stroke();}
@@ -3927,7 +3931,7 @@
     if(gravitySuperRemaining()>0){ctx.fillStyle='#e85b63';ctx.beginPath();ctx.moveTo(-6,-1);ctx.lineTo(-23,4+Math.sin(g.elapsed*18)*3);ctx.lineTo(-17,12);ctx.lineTo(-4,6);ctx.fill();}
     // User requested a 50% enlargement: drawing and collision body both scale.
     ctx.fillStyle='#f6c650';ctx.fillRect(-7,-13,15,10);ctx.fillStyle='#102635';ctx.fillRect(1,-10,6,4);
-    ctx.fillStyle='#573d75';ctx.fillRect(-6,-2,12,9);ctx.strokeStyle='#f8edcd';ctx.lineWidth=1;for(var rib=0;rib<3;rib++){ctx.beginPath();ctx.moveTo(-4,rib*2);ctx.lineTo(4,rib*2);ctx.stroke();}
+    var season=currentGameSeason();ctx.fillStyle=season==='halloween'?'#573d75':season==='christmas'?'#ce475b':'#58c3ec';ctx.fillRect(-6,-2,12,9);if(season==='halloween'){ctx.strokeStyle='#f8edcd';ctx.lineWidth=1;for(var rib=0;rib<3;rib++){ctx.beginPath();ctx.moveTo(-4,rib*2);ctx.lineTo(4,rib*2);ctx.stroke();}}else if(season==='christmas'){ctx.fillStyle='#fff4df';ctx.fillRect(-6,5,12,2);drawChristmasHat(ctx,0,-13,8);}
     ctx.strokeStyle='#f6c650';ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-3,6);ctx.lineTo(-3+step,11);ctx.moveTo(3,6);ctx.lineTo(3-step,11);ctx.moveTo(-6,0);ctx.lineTo(-8-step/2,5);ctx.moveTo(6,0);ctx.lineTo(8+step/2,4);ctx.stroke();ctx.restore();
     var remaining=gravitySuperRemaining();if(remaining>0){ctx.fillStyle=remaining<=5?'#ff8b77':'#ffda74';ctx.font='bold 18px sans-serif';ctx.textAlign='center';ctx.fillText('SUPERMAN · '+Math.ceil(remaining)+' s',320,58);ctx.fillRect(220,66,200*(remaining/10),4);}
     // Telegraph offscreen outer hazards before they enter the short visible runway.
@@ -3955,7 +3959,7 @@
   var arcadeGames={brick:null,snake:null,snow:null,runner:null,doodle:null,tiles:null,maze:null,asteroid:null};
   var ARCADE_LABELS={brick:'Brick',snake:'Snake',snow:'Snow',runner:'Runner',doodle:'Doodle',tiles:'Tiles',maze:'Maze',asteroid:'Asteroid'};
   var ARCADE_RECORDS={brick:'bestBrickScore',snake:'bestSnakeScore',snow:'bestSnowScore',runner:'bestRunnerScore',doodle:'bestDoodleScore',tiles:'bestTilesScore',maze:'bestMazeScore',asteroid:'bestAsteroidScore'};
-  var extraArcade=VocabArcade.create({prepare:prepareGameCanvas,get:function(kind){return arcadeGames[kind];},begin:beginArcadeAttempt,lose:loseArcadeAttempt,finish:finishArcadeGame,advance:activeGameStep,decor:drawHalloweenSky});
+  var extraArcade=VocabArcade.create({prepare:prepareGameCanvas,get:function(kind){return arcadeGames[kind];},begin:beginArcadeAttempt,lose:loseArcadeAttempt,finish:finishArcadeGame,advance:activeGameStep,decor:drawSeasonSky,season:currentGameSeason});
   function arcadeRecord(kind){var g=arcadeGames[kind],key=ARCADE_RECORDS[kind];if(g&&g.score>state.reward[key]){state.reward[key]=g.score;saveState();}}
   function arcadeHud(kind){
     var g=arcadeGames[kind];if(!g)return;
@@ -4176,7 +4180,7 @@
       }
     }
   }
-  function arcadeBackground(ctx){ctx.fillStyle='#201a30';ctx.fillRect(0,0,480,480);ctx.strokeStyle='#71607d';ctx.lineWidth=1;ctx.strokeRect(8,8,464,464);drawHalloweenSky(ctx,480,480,arcadeGames.brick?arcadeGames.brick.elapsed:0,false);}
+  function arcadeBackground(ctx){var halloween=currentGameSeason()==='halloween';ctx.fillStyle=halloween?'#201a30':'#112838';ctx.fillRect(0,0,480,480);ctx.strokeStyle=halloween?'#71607d':'#294454';ctx.lineWidth=1;ctx.strokeRect(8,8,464,464);drawSeasonSky(ctx,480,480,arcadeGames.brick?arcadeGames.brick.elapsed:0,false);}
   function drawBrickGame(){
     prepareGameCanvas(el('brickCanvas'),arcadeGames.brick.ctx,480,480);
     var g=arcadeGames.brick,ctx=g.ctx;arcadeBackground(ctx);
@@ -4194,14 +4198,42 @@
     ctx.save();ctx.fillStyle='rgba(255,191,88,.18)';ctx.beginPath();ctx.arc(x,y,12,0,Math.PI*2);ctx.fill();
     drawPumpkin(ctx,x,y+1,9);ctx.restore();
   }
+  function drawSnakeFruit(ctx,food){
+    var x=food.x*24+12,y=food.y*24+12,type=food.type||'apple';ctx.save();ctx.translate(x,y);
+    ctx.lineWidth=1.5;ctx.strokeStyle='#764d2c';
+    if(type==='banana'){
+      ctx.fillStyle='#ffdc50';ctx.beginPath();ctx.moveTo(-8,-8);ctx.bezierCurveTo(-10,9,4,14,10,-3);ctx.bezierCurveTo(4,5,-3,4,-8,-8);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#725335';ctx.fillRect(-9,-10,3,4);ctx.fillRect(8,-4,3,3);
+    }else if(type==='grapes'){
+      ctx.fillStyle='#a65be0';ctx.strokeStyle='#673596';[[-5,-3],[3,-4],[-7,3],[0,3],[6,2],[-3,8],[3,8],[0,12]].forEach(function(p){ctx.beginPath();ctx.arc(p[0],p[1]-3,3.7,0,Math.PI*2);ctx.fill();ctx.stroke();});
+      ctx.strokeStyle='#537a30';ctx.beginPath();ctx.moveTo(0,-8);ctx.lineTo(3,-12);ctx.stroke();
+    }else if(type==='pear'){
+      ctx.fillStyle='#d4e75c';ctx.strokeStyle='#7d9b35';ctx.beginPath();ctx.moveTo(0,-10);ctx.bezierCurveTo(-6,-10,-4,-3,-8,2);ctx.bezierCurveTo(-13,14,13,14,8,2);ctx.bezierCurveTo(4,-3,6,-10,0,-10);ctx.fill();ctx.stroke();
+    }else if(type==='lemon'){
+      ctx.fillStyle='#ffe351';ctx.strokeStyle='#c49d26';ctx.beginPath();ctx.moveTo(-11,0);ctx.bezierCurveTo(-7,-11,7,-11,11,0);ctx.bezierCurveTo(7,11,-7,11,-11,0);ctx.fill();ctx.stroke();
+    }else{
+      ctx.fillStyle=type==='orange'?'#ffad32':'#f16c60';ctx.strokeStyle=type==='orange'?'#ce7728':'#b44441';ctx.beginPath();ctx.arc(0,1,8.5,0,Math.PI*2);ctx.fill();ctx.stroke();
+      if(type==='orange'){ctx.fillStyle='#e18a26';[[-4,2],[3,5],[5,-1],[-2,-3]].forEach(function(p){ctx.fillRect(p[0],p[1],1.4,1.4);});}
+    }
+    if(type!=='banana'&&type!=='grapes'){
+      ctx.strokeStyle='#765439';ctx.beginPath();ctx.moveTo(0,-7);ctx.lineTo(1,-12);ctx.stroke();ctx.fillStyle='#629339';ctx.beginPath();ctx.ellipse(5,-9,4,2,-.5,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
   function drawSnakeGame(){
     prepareGameCanvas(el('snakeCanvas'),arcadeGames.snake.ctx,480,480);
-    var g=arcadeGames.snake,ctx=g.ctx,grass=ctx.createLinearGradient(0,0,480,480);grass.addColorStop(0,'#45434e');grass.addColorStop(.5,'#3e5149');grass.addColorStop(1,'#61505a');ctx.fillStyle=grass;ctx.fillRect(0,0,480,480);drawHalloweenSky(ctx,480,480,g.elapsed,true);
+    var g=arcadeGames.snake,ctx=g.ctx,grass=ctx.createLinearGradient(0,0,480,480);
+    var season=currentGameSeason(),meadow=season==='halloween'?['#45434e','#3e5149','#61505a']:season==='christmas'?['#dcece4','#b7d3c6','#e7eee0']:['#a4cc85','#88b97a','#c3d99a'];
+    grass.addColorStop(0,meadow[0]);grass.addColorStop(.5,meadow[1]);grass.addColorStop(1,meadow[2]);ctx.fillStyle=grass;ctx.fillRect(0,0,480,480);drawSeasonSky(ctx,480,480,g.elapsed,true);
     // Quiet, irregular meadow textures do not form a second grid or mimic food.
     for(var i=0;i<28;i++){var x=(i*137+31)%480,y=(i*193+57)%480;ctx.fillStyle=i%2?'rgba(193,211,142,.15)':'rgba(49,94,54,.10)';ctx.beginPath();ctx.ellipse(x,y,19+i%4*8,10+i%3*6,i*.8,0,Math.PI*2);ctx.fill();}
     ctx.strokeStyle='rgba(40,83,42,.20)';ctx.lineWidth=1;
     for(var i=0;i<80;i++){var x=(i*157+19)%480,y=(i*211+43)%480;ctx.beginPath();ctx.moveTo(x-3,y);ctx.quadraticCurveTo(x-5,y-5,x-3,y-7);ctx.moveTo(x,y+1);ctx.quadraticCurveTo(x+1,y-4,x+4,y-6);ctx.stroke();}
-    if(g.food)drawSnakePumpkin(ctx,g.food);
+    if(g.food){
+      if(season==='halloween')drawSnakePumpkin(ctx,g.food);
+      else if(season==='christmas')drawGift(ctx,g.food.x*24+12,g.food.y*24+12,9);
+      else drawSnakeFruit(ctx,g.food);
+    }
     g.bombs.forEach(function(b){var x=b.x*24+12,y=b.y*24+13;ctx.fillStyle='#111317';ctx.strokeStyle='#c3b9d1';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#51565a';ctx.beginPath();ctx.ellipse(x-3,y-3,2.5,1.5,-.7,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ffdc45';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+3,y-7);ctx.quadraticCurveTo(x+3,y-12,x+7,y-11);ctx.stroke();ctx.fillStyle='#fff39a';ctx.fillRect(x+6,y-13,2.5,2.5);});
     // Rounded rainbow segments, little walking feet, a face and antennae.
     for(var i=g.body.length-1;i>=0;i--){
@@ -4216,7 +4248,7 @@
       ctx.fillStyle=CATERPILLAR_COLORS[i%CATERPILLAR_COLORS.length];ctx.beginPath();ctx.arc(0,0,i===0?11:10.5,0,Math.PI*2);ctx.fill();
       ctx.fillStyle='rgba(255,255,255,.28)';ctx.beginPath();ctx.ellipse(-2,-4,5,2.5,0,0,Math.PI*2);ctx.fill();
       if(i===0){
-        runnerPoly(ctx,[[-8,-5],[-6,-16],[3,-7]],'#684575');ctx.fillStyle='#f5b65b';ctx.fillRect(-10,-8,16,2);
+        if(season==='halloween'){runnerPoly(ctx,[[-8,-5],[-6,-16],[3,-7]],'#684575');ctx.fillStyle='#f5b65b';ctx.fillRect(-10,-8,16,2);}else if(season==='christmas')drawChristmasHat(ctx,-2,-7,8);
         ctx.strokeStyle='#ffe6ab';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(3,-8);ctx.lineTo(6,-11);ctx.moveTo(8,-4);ctx.lineTo(11,-7);ctx.stroke();
         ctx.fillStyle='#fff8e5';[-4,4].forEach(function(eye){ctx.beginPath();ctx.arc(3,eye,3,0,Math.PI*2);ctx.fill();});
         ctx.fillStyle='#193637';[-4,4].forEach(function(eye){ctx.beginPath();ctx.arc(4,eye,1.5,0,Math.PI*2);ctx.fill();});
@@ -4301,7 +4333,7 @@
       runnerPoly(ctx,[[48,-100],[48*rk,ry-100*rk],[48*rk,ry],[48,0]],'#226d83');
       var paint=ctx.createLinearGradient(-48,0,48,0);paint.addColorStop(0,'#2589a1');paint.addColorStop(.5,'#4bbbc4');paint.addColorStop(1,'#267a95');ctx.fillStyle=paint;ctx.fillRect(-48,-100,96,100);
       ctx.fillStyle='#193f60';ctx.fillRect(-39,-89,78,37);ctx.fillStyle='#7ac7e8';runnerPoly(ctx,[[-36,-86],[30,-86],[-20,-56],[-36,-56]],'#7ac7e8');
-      ctx.fillStyle='#fff2cc';[-22,22].forEach(function(ex){ctx.beginPath();ctx.arc(ex,-68,9,0,Math.PI*2);ctx.fill();});ctx.fillStyle='#2d3754';[-22,22].forEach(function(ex){ctx.beginPath();ctx.arc(ex+Math.sin(g.elapsed*3)*2,-67,4,0,Math.PI*2);ctx.fill();});
+      if(currentGameSeason()==='halloween'){ctx.fillStyle='#fff2cc';[-22,22].forEach(function(ex){ctx.beginPath();ctx.arc(ex,-68,9,0,Math.PI*2);ctx.fill();});ctx.fillStyle='#2d3754';[-22,22].forEach(function(ex){ctx.beginPath();ctx.arc(ex+Math.sin(g.elapsed*3)*2,-67,4,0,Math.PI*2);ctx.fill();});}else if(currentGameSeason()==='christmas'){drawGift(ctx,0,-68,12);}
       ctx.fillStyle='#ffcf59';ctx.fillRect(-48,-43,96,9);ctx.fillStyle='#fff0ad';[-30,30].forEach(function(l){ctx.beginPath();ctx.arc(l,-20,6,0,Math.PI*2);ctx.fill();});
       ctx.fillStyle='#173849';ctx.fillRect(-32,-7,64,10);ctx.fillStyle='#d3f3ee';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText('METRO',0,-94);
     }else if(o.type==='barrier'){
@@ -4315,6 +4347,70 @@
     }
     ctx.restore();
   }
+  // Annual local-calendar windows; end dates are exclusive. Add future events here.
+  var GAME_SEASONS=[{id:'halloween',start:1020,end:1101},{id:'christmas',start:1201,end:1228}];
+  var cachedGameSeason=null,seasonCheckedAt=0,seasonCheckUntil=0;
+  function gameSeasonForDate(date){
+    var day=(date.getMonth()+1)*100+date.getDate();
+    var match=GAME_SEASONS.find(function(s){return day>=s.start&&day<s.end;});
+    return match?match.id:null;
+  }
+  function currentGameSeason(){
+    var now=Date.now();
+    if(now<seasonCheckedAt||now>=seasonCheckUntil){
+      var date=new Date(now);cachedGameSeason=gameSeasonForDate(date);seasonCheckedAt=now;
+      seasonCheckUntil=Math.min(now+1000,new Date(date.getFullYear(),date.getMonth(),date.getDate()+1).getTime());
+    }
+    return cachedGameSeason;
+  }
+  function drawChristmasHat(ctx,x,y,r){
+    ctx.save();ctx.translate(x,y);runnerPoly(ctx,[[-r,0],[r*.15,-r*1.2],[r*1.25,-r*.15]],'#ce475b');ctx.fillStyle='#fff4df';ctx.fillRect(-r,-r*.15,r*2,r*.3);ctx.beginPath();ctx.arc(r*1.25,-r*.15,r*.25,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+  function drawGift(ctx,x,y,r){
+    ctx.save();ctx.translate(x,y);ctx.fillStyle='#ce475b';ctx.fillRect(-r,-r*.65,r*2,r*1.5);
+    ctx.fillStyle='#ffdf83';ctx.fillRect(-r*.13,-r*.7,r*.26,r*1.6);ctx.fillRect(-r,-r*.18,r*2,r*.25);
+    ctx.strokeStyle='#ffdf83';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(-r*.3,-r*.85,r*.35,r*.22,-.4,0,Math.PI*2);ctx.ellipse(r*.3,-r*.85,r*.35,r*.22,.4,0,Math.PI*2);ctx.stroke();ctx.restore();
+  }
+  function drawSeasonToken(ctx,x,y,r){
+    var season=currentGameSeason();if(season==='halloween')drawPumpkin(ctx,x,y,r);else if(season==='christmas')drawGift(ctx,x,y,r);
+  }
+  function drawChristmasTree(ctx,x,y,r){
+    ctx.fillStyle='#96765b';ctx.fillRect(x-r*.1,y-r*.15,r*.2,r*.3);
+    runnerPoly(ctx,[[x,y-r*1.8],[x-r*.65,y-r*.65],[x+r*.65,y-r*.65]],'#387b72');
+    runnerPoly(ctx,[[x,y-r*1.3],[x-r,y],[x+r,y]],'#286c62');
+    ctx.fillStyle='#fff2d6';ctx.beginPath();ctx.arc(x,y-r*1.83,r*.1,0,Math.PI*2);ctx.fill();
+    ['#ffda77','#e97d83','#ffda77'].forEach(function(color,i){ctx.fillStyle=color;ctx.beginPath();ctx.arc(x+(i%2?-.35:.28)*r,y-r*(.35+i*.35),r*.1,0,Math.PI*2);ctx.fill();});
+  }
+  function drawChristmasSky(ctx,w,h,time,quiet){
+    if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)time=0;
+    ctx.save();ctx.globalAlpha=quiet?.25:.8;
+    // All ornamentation stays behind the playable world and has no hitboxes.
+    ctx.fillStyle='rgba(153,207,222,.12)';ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle='#547b70';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,8);ctx.quadraticCurveTo(w*.5,32,w,8);ctx.stroke();
+    for(var bulb=0;bulb<13;bulb++){var bx=w*(bulb+.5)/13,by=8+12*Math.sin(Math.PI*(bulb+.5)/13);ctx.fillStyle=bulb%2?'#f5d785':'#e7949b';ctx.beginPath();ctx.arc(bx,by,2.5,0,Math.PI*2);ctx.fill();}
+    for(var i=0;i<18;i++){
+      var x=(i*73+Math.sin(time*.3+i)*7)%w,y=(i*47+time*(3+i%3))%h;
+      ctx.strokeStyle='#fff7e9';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x-3,y);ctx.lineTo(x+3,y);ctx.moveTo(x,y-3);ctx.lineTo(x,y+3);ctx.stroke();
+    }
+    drawChristmasTree(ctx,24,h*.76,15);drawChristmasTree(ctx,w-24,h*.72,19);
+    drawGift(ctx,34,h*.8,8);drawGift(ctx,w-40,h*.79,10);
+    ctx.fillStyle='#ffdf83';var sx=w*.78,sy=Math.min(70,h*.13),points=[];
+    for(var j=0;j<10;j++){var angle=-Math.PI/2+j*Math.PI/5,r=j%2?5:12;points.push([sx+Math.cos(angle)*r,sy+Math.sin(angle)*r]);}runnerPoly(ctx,points,'#ffdf83');
+    // A rare little sleigh crosses the distant sky, using active game time only.
+    if(!quiet&&time%45>=25&&time%45<35){
+      var x=w*(time%45-25)/10,y=Math.min(95,h*.22);ctx.strokeStyle='#ffdf83';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-18,y+8);ctx.lineTo(x+16,y+8);ctx.quadraticCurveTo(x+25,y+8,x+25,y);ctx.stroke();
+      ctx.fillStyle='#c94f62';ctx.fillRect(x-16,y-5,27,10);drawGift(ctx,x-5,y-13,7);ctx.fillStyle='#fff5dd';ctx.beginPath();ctx.arc(x+8,y-12,4,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+  function drawSeasonSky(ctx,w,h,time,quiet){
+    var season=currentGameSeason();
+    if(season==='halloween'){
+      drawHalloweenSky(ctx,w,h,time,quiet);
+      ctx.save();ctx.globalAlpha=quiet?.22:.85;drawPumpkin(ctx,w*.07,h*.77,Math.min(13,w*.025));drawPumpkin(ctx,w*.93,h*.8,Math.min(16,w*.03));ctx.restore();
+    }else if(season==='christmas')drawChristmasSky(ctx,w,h,time,quiet);
+  }
+
   // Friendly seasonal decorations are paint only: no hitboxes, randomness or timers.
   function drawPumpkin(ctx,x,y,r){
     ctx.save();ctx.translate(x,y);ctx.fillStyle='#df6f28';ctx.beginPath();ctx.ellipse(0,0,r,r*.78,0,0,Math.PI*2);ctx.fill();
@@ -4347,8 +4443,8 @@
     [0,w].forEach(function(edge){var sign=edge? -1:1,top=quiet?0:42;ctx.beginPath();for(var i=0;i<4;i++){ctx.moveTo(edge,top);ctx.lineTo(edge+sign*(12+i*12),top+48-i*12);}ctx.stroke();
       [15,28,41].forEach(function(r){ctx.beginPath();ctx.moveTo(edge,top+r);ctx.quadraticCurveTo(edge+sign*r*.28,top+r*.35,edge+sign*r,top);ctx.stroke();});
     });
+    var moonX=w*.78,moonY=Math.min(80,h*.13);ctx.fillStyle='#d3cee2';ctx.beginPath();ctx.arc(moonX,moonY,20,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(72,66,98,.30)';ctx.beginPath();ctx.arc(moonX-6,moonY-4,5,0,Math.PI*2);ctx.arc(moonX+7,moonY+7,3,0,Math.PI*2);ctx.fill();
     if(!quiet){
-      var moonX=w*.78,moonY=Math.min(80,h*.13);ctx.fillStyle='#d3cee2';ctx.beginPath();ctx.arc(moonX,moonY,20,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(72,66,98,.30)';ctx.beginPath();ctx.arc(moonX-6,moonY-4,5,0,Math.PI*2);ctx.arc(moonX+7,moonY+7,3,0,Math.PI*2);ctx.fill();
       // Small bat silhouettes and a broom-riding witch cross the distant sky.
       for(var i=0;i<3;i++){var x=(w*.14+i*58+time*6)%(w+60)-30,y=58+i%2*20,wing=5+Math.sin(time*6+i)*3;
         ctx.fillStyle='#493454';ctx.beginPath();ctx.moveTo(x-12,y-wing);ctx.quadraticCurveTo(x-7,y+5,x,y);ctx.quadraticCurveTo(x+7,y+5,x+12,y-wing);ctx.lineTo(x+4,y-3);ctx.lineTo(x+2,y-7);ctx.lineTo(x,y-4);ctx.lineTo(x-2,y-7);ctx.lineTo(x-4,y-3);ctx.closePath();ctx.fill();}
@@ -4368,7 +4464,7 @@
     ctx.fillStyle='#fcf4dd';ctx.beginPath();ctx.ellipse(-11,-2,7,4,0,0,Math.PI*2);ctx.ellipse(11,-2,7,4,0,0,Math.PI*2);ctx.fill();
     ctx.strokeStyle='#e9b285';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(-14,-26);ctx.lineTo(-24,-12+wiggle);ctx.moveTo(14,-26);ctx.lineTo(24,-12-wiggle);ctx.stroke();
     ctx.fillStyle='#ef705d';ctx.beginPath();ctx.ellipse(0,-23,19,13,0,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#bc4b56';ctx.beginPath();ctx.ellipse(0,-25,13,10,0,0,Math.PI*2);ctx.fill();drawPumpkin(ctx,0,-25,7);
+    ctx.fillStyle='#bc4b56';ctx.beginPath();ctx.ellipse(0,-25,13,10,0,0,Math.PI*2);ctx.fill();drawSeasonToken(ctx,0,-25,7);
     ctx.fillStyle='#ddac7b';ctx.beginPath();ctx.ellipse(0,-39,11,7,0,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='#274567';ctx.beginPath();ctx.ellipse(0,-43,14,8,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#58c8c8';ctx.fillRect(-7,-48,14,4);
     if(g.elapsed<g.shieldUntil||g.elapsed<g.graceUntil){ctx.strokeStyle='#b7fbff';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,-23,35,33,0,0,Math.PI*2);ctx.stroke();}
@@ -4377,9 +4473,17 @@
   function drawRunnerStreetFun(g,z,side,index){
     var ctx=g.ctx,p=runnerProject(g,side*1.95,z),k=p.k;
     ctx.save();ctx.translate(p.x,p.y);ctx.scale(k,k);
+    var season=currentGameSeason();
+    if(season!=='halloween'){
+      if(season==='christmas'){
+        drawChristmasTree(ctx,0,0,25);drawGift(ctx,22,-6,10);
+        if(index%3===1){ctx.fillStyle='#fff4df';ctx.beginPath();ctx.arc(0,-18,16,0,Math.PI*2);ctx.arc(0,-40,11,0,Math.PI*2);ctx.fill();ctx.fillStyle='#cf4e63';ctx.fillRect(-12,-34,24,5);ctx.fillStyle='#425163';ctx.beginPath();ctx.arc(-4,-43,1.5,0,Math.PI*2);ctx.arc(4,-43,1.5,0,Math.PI*2);ctx.fill();}
+      }else{ctx.fillStyle='#657d89';ctx.fillRect(-2,-65,4,65);ctx.fillStyle='#ffe5a1';ctx.beginPath();ctx.arc(0,-69,8,0,Math.PI*2);ctx.fill();}
+      ctx.restore();return;
+    }
     if(index%3===0){
       ctx.fillStyle='#5c4867';ctx.fillRect(-2,-80,4,80);ctx.fillStyle='#f9d795';ctx.fillRect(-49,-103,98,38);
-      ctx.fillStyle='#6a365b';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText(index%2?'NÄCHSTER HALT:':'BITTE NICHT',0,-88);ctx.fillText(index%2?'KÜRBISSUPPE!':'DIE HEXE FÜTTERN',0,-76);drawPumpkin(ctx,16,-13,14);
+      ctx.fillStyle='#6a365b';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText(index%2?'NÄCHSTER HALT:':'BITTE NICHT',0,-88);ctx.fillText(index%2?'KÜRBISSUPPE!':'DIE HEXE FÜTTERN',0,-76);drawSeasonToken(ctx,16,-13,14);
     }else if(index%3===1){
       // A cheerful dancing skeleton on the pavement.
       var wave=Math.sin(g.elapsed*5+index)*10;ctx.strokeStyle='#f4e9d7';ctx.lineWidth=4;ctx.lineCap='round';
@@ -4390,7 +4494,7 @@
       // A ghost balloon with a tiny pumpkin friend; both stay off the tracks.
       var lift=Math.sin(g.elapsed*2+index)*5;ctx.strokeStyle='#d8becd';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,-26);ctx.lineTo(0,-84+lift);ctx.stroke();
       ctx.fillStyle='#f8efdf';ctx.beginPath();ctx.arc(0,-96+lift,15,Math.PI,0);ctx.lineTo(15,-76+lift);ctx.lineTo(8,-81+lift);ctx.lineTo(0,-76+lift);ctx.lineTo(-8,-81+lift);ctx.lineTo(-15,-76+lift);ctx.closePath();ctx.fill();
-      ctx.fillStyle='#493454';ctx.beginPath();ctx.arc(-5,-95+lift,2,0,Math.PI*2);ctx.arc(5,-95+lift,2,0,Math.PI*2);ctx.fill();drawPumpkin(ctx,0,-12,12);
+      ctx.fillStyle='#493454';ctx.beginPath();ctx.arc(-5,-95+lift,2,0,Math.PI*2);ctx.arc(5,-95+lift,2,0,Math.PI*2);ctx.fill();drawSeasonToken(ctx,0,-12,12);
     }
     ctx.restore();
   }
@@ -4403,7 +4507,7 @@
     ctx.lineCap='round';ctx.lineWidth=9;ctx.strokeStyle='#243556';ctx.beginPath();ctx.moveTo(-7,-26);ctx.lineTo(-9+swing*.4,-4);ctx.moveTo(7,-26);ctx.lineTo(10-swing*.4,-4);ctx.stroke();
     ctx.strokeStyle='#f9f1e5';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(-11+swing*.4,-3);ctx.lineTo(-3+swing*.4,-3);ctx.moveTo(7-swing*.4,-3);ctx.lineTo(15-swing*.4,-3);ctx.stroke();
     ctx.strokeStyle='#e7a879';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(-13,-51);ctx.lineTo(-19,-32-swing*.45);ctx.moveTo(13,-51);ctx.lineTo(20,-32+swing*.45);ctx.stroke();
-    ctx.fillStyle='#ff775f';ctx.fillRect(-14,-60,28,34);ctx.fillStyle='#df5a56';ctx.fillRect(-8,-53,16,25);ctx.fillStyle='#ffc668';ctx.fillRect(-6,-51,12,20);drawPumpkin(ctx,0,-43,7);
+    ctx.fillStyle='#ff775f';ctx.fillRect(-14,-60,28,34);ctx.fillStyle='#df5a56';ctx.fillRect(-8,-53,16,25);ctx.fillStyle='#ffc668';ctx.fillRect(-6,-51,12,20);drawSeasonToken(ctx,0,-43,7);
     ctx.fillStyle='#edbd91';ctx.beginPath();ctx.arc(0,-72,13,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='#274567';ctx.beginPath();ctx.arc(0,-76,14,Math.PI,Math.PI*2);ctx.fill();ctx.fillRect(-16,-77,34,7);ctx.fillStyle='#4dc4c8';ctx.fillRect(-10,-86,20,7);
     ctx.fillStyle='#f9d781';runnerPoly(ctx,[[12,-54],[34,-47-Math.sin(phase)*5],[13,-43]],'#f9d781');
@@ -4412,9 +4516,10 @@
   function drawRunnerGame(){
     prepareGameCanvas(el('runnerCanvas'),arcadeGames.runner.ctx,480,logicalCanvasHeight(el('runnerCanvas')));
     var g=arcadeGames.runner,ctx=g.ctx,h=logicalCanvasHeight(el('runnerCanvas')),sky=ctx.createLinearGradient(0,0,0,h);
-    sky.addColorStop(0,'#17182f');sky.addColorStop(.34,'#594262');sky.addColorStop(1,'#985e64');ctx.fillStyle=sky;ctx.fillRect(0,0,480,h);drawHalloweenSky(ctx,480,h,g.elapsed,false);
+    var halloween=currentGameSeason()==='halloween';
+    sky.addColorStop(0,halloween?'#17182f':'#685a97');sky.addColorStop(.34,halloween?'#594262':'#edb594');sky.addColorStop(1,halloween?'#985e64':'#b98b91');ctx.fillStyle=sky;ctx.fillRect(0,0,480,h);drawSeasonSky(ctx,480,h,g.elapsed,false);
     // Distant skyline, then ordered perspective scenery on either side of the tracks.
-    for(var i=0;i<18;i++){ctx.fillStyle=i%2?'#55516c':'#41465e';ctx.fillRect(i*29-15,h*.2-35-i%5*12,28,60+i%5*12);}
+    for(var i=0;i<18;i++){ctx.fillStyle=halloween?(i%2?'#55516c':'#41465e'):(i%2?'#a2afc7':'#8b9fbb');ctx.fillRect(i*29-15,h*.2-35-i%5*12,28,60+i%5*12);}
     var road=ctx.createLinearGradient(0,h*.2,0,h);road.addColorStop(0,'#9a8191');road.addColorStop(1,'#574e69');ctx.fillStyle=road;ctx.fillRect(0,h*.25,480,h);
     function quad(lane1,lane2,z1,z2,color){var a=runnerProject(g,lane1,z1),b=runnerProject(g,lane2,z1),c=runnerProject(g,lane2,z2),d=runnerProject(g,lane1,z2);runnerPoly(ctx,[[a.x,a.y],[b.x,b.y],[c.x,c.y],[d.x,d.y]],color);}
     quad(-1.58,1.58,-4,180,'#6a647c');
@@ -4802,8 +4907,9 @@
   function drawSnowGame(){
     prepareGameCanvas(el('snowCanvas'),arcadeGames.snow.ctx,640,snowViewHeight());
     var g=arcadeGames.snow,ctx=g.ctx,p=g.player,phase=Math.floor(g.elapsed/45)%3,viewHeight=snowViewHeight(),horizon=viewHeight*.55;
-    var sky=ctx.createLinearGradient(0,0,0,viewHeight);sky.addColorStop(0,['#171e38','#33243d','#101a30'][phase]);sky.addColorStop(1,['#695573','#8b5968','#465574'][phase]);ctx.fillStyle=sky;ctx.fillRect(0,0,640,viewHeight);drawHalloweenSky(ctx,640,viewHeight,g.elapsed,false);
-    snowMountain(ctx,g.distance,horizon-43,'#48455f',.12);snowMountain(ctx,g.distance,horizon+6,'#343c55',.25);
+    var halloween=currentGameSeason()==='halloween';
+    var sky=ctx.createLinearGradient(0,0,0,viewHeight);sky.addColorStop(0,(halloween?['#171e38','#33243d','#101a30']:['#bfdce2','#d4a7b2','#26394e'])[phase]);sky.addColorStop(1,(halloween?['#695573','#8b5968','#465574']:['#eff4ec','#f8dcc0','#a5bdc5'])[phase]);ctx.fillStyle=sky;ctx.fillRect(0,0,640,viewHeight);drawSeasonSky(ctx,640,viewHeight,g.elapsed,false);
+    snowMountain(ctx,g.distance,horizon-43,halloween?'#48455f':'#91aebb',.12);snowMountain(ctx,g.distance,horizon+6,halloween?'#343c55':'#688c9b',.25);
     // Distant village and pines move slowly; the foreground is collision terrain.
     for(var i=0;i<8;i++){var treeX=((i*130-g.distance*.4)%800+800)%800-80,treeY=horizon+47;ctx.fillStyle='#557c85';ctx.beginPath();ctx.moveTo(treeX,treeY-45);ctx.lineTo(treeX-15,treeY);ctx.lineTo(treeX+15,treeY);ctx.fill();}
     ctx.save();ctx.translate(0,-g.cameraY);ctx.fillStyle='#f5faf7';
@@ -5538,21 +5644,37 @@
     if(field.bottom>panel.bottom-16)modal.scrollTop=(modal.scrollTop||0)+field.bottom-panel.bottom+16;
     else if(field.top<panel.top+16)modal.scrollTop=Math.max(0,(modal.scrollTop||0)+field.top-panel.top-16);
   }
+  var lastViewport=null,viewportStyles=Object.create(null),viewportFrame=0,viewportResizeGames=false;
+  function setViewportStyle(name,value){
+    if(viewportStyles[name]===value)return;
+    viewportStyles[name]=value;document.documentElement.style.setProperty(name,value);
+  }
   function updateViewport(){
     var viewport=window.visualViewport;
     var active=document.activeElement,editing=active&&/^(INPUT|TEXTAREA)$/.test(active.tagName);
     var standalone=navigator.standalone===true||!!(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches);
-    document.body.classList.toggle('standalone-app',standalone);
     var modal=document.querySelector('.modal-overlay.active');
+    var screen=document.querySelector('.screen.active');
+    // iOS can emit viewport events while typing without changing the layout.
+    // Ignore those events; even rewriting the same scroll position can flicker.
+    var size=[window.innerWidth,window.innerHeight,viewport&&Math.round(viewport.width),viewport&&Math.round(viewport.height),window.devicePixelRatio].join('|');
+    var position=[viewport&&Math.round(viewport.offsetTop||0),viewport&&viewport.scale,window.scrollY||0,standalone].join('|');
+    if(lastViewport&&lastViewport.size===size&&lastViewport.position===position&&lastViewport.active===active&&lastViewport.modal===modal&&lastViewport.screen===screen)return;
+    viewportResizeGames=viewportResizeGames||!lastViewport||lastViewport.size!==size;
+    lastViewport={size:size,position:position,active:active,modal:modal,screen:screen};
+    if(document.body.classList.contains('standalone-app')!==standalone)document.body.classList.toggle('standalone-app',standalone);
     var modalViewport=modal&&viewport&&viewport.height>0&&(!viewport.scale||viewport.scale===1);
-    document.documentElement.style.setProperty('--modal-height',modalViewport?viewport.height+'px':standalone?'100vh':'100dvh');
-    document.documentElement.style.setProperty('--modal-top',modalViewport?(viewport.offsetTop||0)+'px':'0px');
+    setViewportStyle('--modal-height',modalViewport?Math.round(viewport.height)+'px':standalone?'100vh':'100dvh');
+    setViewportStyle('--modal-top',modalViewport?Math.round(viewport.offsetTop||0)+'px':'0px');
     var height=viewport&&editing&&!modal?viewport.height:0;
     // Installed iOS apps can report dvh/visualViewport without the safe areas
     // on launch. With no browser toolbar, vh is the full app window height.
-    document.documentElement.style.setProperty('--app-height',height>0?height+'px':standalone?'100vh':'100dvh');
-    requestAnimationFrame(function(){keepModalInputVisible();resizeFixedCanvases();resizeSnowCanvas();resizeRunnerCanvas();resizeExtraCanvases();});
-    if(arcadeGames.brick)arcadeGames.brick.inputRect=null;
+    setViewportStyle('--app-height',height>0?Math.round(height)+'px':standalone?'100vh':'100dvh');
+    if(viewportFrame)cancelAnimationFrame(viewportFrame);
+    viewportFrame=requestAnimationFrame(function(){
+      viewportFrame=0;keepModalInputVisible();
+      if(viewportResizeGames){viewportResizeGames=false;resizeFixedCanvases();resizeSnowCanvas();resizeRunnerCanvas();resizeExtraCanvases();if(arcadeGames.brick)arcadeGames.brick.inputRect=null;}
+    });
   }
   function settleViewport(){
     updateViewport();
