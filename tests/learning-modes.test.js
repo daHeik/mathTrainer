@@ -99,7 +99,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'defaultProfile:defaultProfile, normalizeProfile:normalizeProfile, ensureFactPool:ensureFactPool,',
   'practiceSkill:practiceSkill, practiceSkillsInRange:practiceSkillsInRange, buildQueue:buildQueue,',
   'specialQuestion:specialQuestion, applyAnswerResult:applyAnswerResult,',
-  'precedenceQuestion:precedenceQuestion, precedenceTypes:PRECEDENCE_TYPES,',
+  'precedenceQuestion:precedenceQuestion, precedenceTypes:PRECEDENCE_PRACTICE_TYPES,',
   'renderMathText:renderMathText,',
   'writtenDivisionQuestion:writtenDivisionQuestion, renderWrittenDivision:renderWrittenDivision,',
   'remainderDivisionQuestion:remainderDivisionQuestion, renderRemainderDivision:renderRemainderDivision,',
@@ -148,6 +148,10 @@ source = source.replace(/\}\)\(\);\s*$/, [
 ].join('\n'));
 vm.runInContext(source, context);
 var api = context.testApi;
+assert(api.avatarOptions.eyes.some(function(option){return option[0]==='#708b9a'&&option[1]==='Blau-grau';}));
+assert.strictEqual(api.normalizeAvatar({eyes:'#708b9a'}).eyes,'#708b9a');
+var blueGreyProfile=api.defaultProfile();blueGreyProfile.config.avatar.eyes='#708b9a';
+assert.strictEqual(api.normalizeProfile(JSON.parse(JSON.stringify(blueGreyProfile))).config.avatar.eyes,'#708b9a');
 // First launch offers identity without opening a keyboard; name is required.
 assert(elements.playerOverlay.classList.contains('active'));
 assert.strictEqual(context.document.activeElement,elements.savePlayerBtn);
@@ -158,11 +162,12 @@ assert(!elements.playerOverlay.classList.contains('active'));
 assert.strictEqual(api.getState().config.childName,'Testkind');
 // Calculations wrap as one inline unit; surrounding words keep normal spaces.
 [
-  ['Wie heißt die Rechenart bei 40 ÷ 4?', ['40 ÷ 4?']],
+  ['Wie heißt die Rechenart bei 40 : 4?', ['40 : 4?']],
   ['Berechne jetzt 40 / 4 und erkläre es.', ['40 / 4']],
   ['Addition: 50 + 30 = 80. Dann 80 − 10 = 70.', ['50 + 30 = 80', '80 − 10 = 70']],
   ['Das Produkt aus 1 und 6 = ?', ['1 und 6 = ?']],
-  ['Löse 7 × ▢ = 56.', ['7 × ▢ = 56']],
+  ['Löse 7 · ▢ = 56.', ['7 · ▢ = 56']],
+  ['Alt: 7 × 8 = 56. Dann 40 ÷ 4 = 10', ['7 × 8 = 56','40 ÷ 4 = 10']],
   ['Die Hälfte von 100 mit 20.', []],
   ['<img src=x> 40 : 4 = 10', ['40 : 4 = 10']]
 ].forEach(function(spec){
@@ -241,7 +246,7 @@ assert.strictEqual(api.practiceSkill('h:invalid:3x7'), null);
 
 context.Math.random = function(){ return 0.75; };
 var hundredsExample = api.specialQuestion(api.practiceSkill('h:d:5x9'));
-assert.strictEqual(hundredsExample.prompt, '450 ÷ 50');
+assert.strictEqual(hundredsExample.prompt, '450 : 50');
 assert.strictEqual(hundredsExample.gen.correct, 9);
 assert(hundredsExample.gen.options.indexOf(90) !== -1);
 
@@ -751,7 +756,7 @@ semiExercise('semiRest',278,4);semiPart(240,60);semiPart(36,9);
 assert(semiForm.textContent.indexOf('Es bleiben 2')!==-1);
 semiFind('semiTotal').value='69';semiFind('semiRest').value='4';semiSubmit();
 assert(elements.feedbackText.textContent.indexOf('kleiner')!==-1);
-semiFind('semiRest').value='2';semiSubmit();assert(semiForm.textContent.indexOf('69 × 4 + 2')!==-1);
+semiFind('semiRest').value='2';semiSubmit();assert(semiForm.textContent.indexOf('69 · 4 + 2')!==-1);
 semiFind('semiProbe').value='278';semiSubmit();
 assert.strictEqual(api.correctAnswersForProfile(semiProfile),3);
 assert.strictEqual(semiProfile.reward.availablePlays,3);
@@ -1691,7 +1696,7 @@ console.log('Seasons: annual/midnight/backwards-clock boundaries, decorations an
 // Point-before-line: independently evaluate generated expressions, including brackets.
 var priorityProfile=api.normalizeProfile(api.defaultProfile());priorityProfile.config.sound=false;priorityProfile.config.rewardEvery=1;
 api.setState(priorityProfile);api.ensureFactPool();
-assert.strictEqual(api.practiceSkillsInRange(null,'precedence').length,14);
+assert.strictEqual(api.practiceSkillsInRange(null,'precedence').length,11);
 assert.strictEqual(api.practiceSkill('p:unknown'),null);
 var priorityRandom=context.Math.random;
 api.precedenceTypes.forEach(function(type){
@@ -1700,7 +1705,8 @@ api.precedenceTypes.forEach(function(type){
     else if(sample===1)context.Math.random=function(){return .999999;};
     else context.Math.random=priorityRandom;
     var task=api.specialQuestion(api.practiceSkill('p:'+type));
-    var independentlyCalculated=vm.runInNewContext(task.prompt.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-'));
+    assert.strictEqual((task.prompt.match(/[+−·:]/g)||[]).length,2,'Only two operations, including brackets: '+task.prompt);
+    var independentlyCalculated=vm.runInNewContext(task.prompt.replace(/·/g,'*').replace(/:/g,'/').replace(/−/g,'-'));
     assert.strictEqual(task.gen.correct,independentlyCalculated,task.prompt);
     assert(Number.isInteger(task.gen.correct)&&task.gen.correct>=0&&task.gen.correct<=100);
     assert.strictEqual(task.gen.options.length,4);assert.strictEqual(new Set(task.gen.options).size,4);
@@ -1721,7 +1727,7 @@ api.precedenceTypes.forEach(function(type){
 context.Math.random=priorityRandom;
 var prioritySequence=[.125,.25,.12];context.Math.random=function(){return prioritySequence.length?prioritySequence.shift():.5;};
 var priorityExample=api.precedenceQuestion('mulAdd');context.Math.random=priorityRandom;
-assert.strictEqual(priorityExample.prompt,'3 × 4 + 2');
+assert.strictEqual(priorityExample.prompt,'3 · 4 + 2');
 assert(priorityExample.gen.options.includes(14)&&priorityExample.gen.options.includes(18));
 for(var round=0;round<100;round++){
   var priorityQueue=api.buildQueue(5,null,'precedence');
@@ -1735,7 +1741,7 @@ assert(!elements.choicesWrap.hidden&&elements.remainderDivisionForm.hidden&&elem
 assert.strictEqual(elements.choicesWrap.children.length,4);
 assert(!elements.precedenceHint.hidden);
 var priorityKey=priorityProfile.today.queue[0],priorityType=api.practiceSkill(priorityKey).precedenceType;
-var priorityAnswer=vm.runInNewContext(elements.questionText.textContent.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-'));
+var priorityAnswer=vm.runInNewContext(elements.questionText.textContent.replace(/·/g,'*').replace(/:/g,'/').replace(/−/g,'-'));
 elements.choicesWrap.children.find(function(button){return Number(button.textContent)===priorityAnswer;}).click();
 assert.strictEqual(priorityProfile.precedenceSkills[priorityType].correctCount,1);
 assert.strictEqual(priorityProfile.reward.availablePlays,1);
@@ -1760,5 +1766,17 @@ assert.strictEqual(priorityBackup.today.queue[0],'p:bracketMul');
 delete priorityBackup.precedenceSkills;api.normalizeProfile(priorityBackup);
 assert.strictEqual(Object.keys(priorityBackup.precedenceSkills).length,14);
 assert.strictEqual(priorityBackup.precedenceSkills.mulAdd.correctCount,0,'Old backups get defaults');
-console.log('Punkt vor Strich: 14 expression types, independent evaluation, small factors/divisions, misconception choices, bracket mix, adaptive input, retry/rewards/backup OK');
+['bracketMixed','allMixed','bracketAll'].forEach(function(type){
+  var legacy=api.practiceSkill('p:'+type);assert(legacy,'Old queue keys remain readable');
+  for(var sample=0;sample<100;sample++){
+    var task=api.specialQuestion(legacy);
+    assert.strictEqual((task.prompt.match(/[+−·:]/g)||[]).length,2,'Old saved rounds also use two operations');
+  }
+  assert(!api.buildQueue(30,null,'precedence').includes('p:'+type),'Do not schedule retired long types');
+});
+priorityProfile.precedenceSkills.allMixed.correctCount=3;
+assert.strictEqual(api.correctAnswersForProfile(priorityProfile),4,'Preserve rewards from retired task types');
+var legacyPriority=api.normalizeProfile(JSON.parse(JSON.stringify(priorityProfile)));
+assert.strictEqual(legacyPriority.precedenceSkills.allMixed.correctCount,3);
+console.log('Punkt vor Strich: 11 two-operation types, simple saved legacy rounds, preserved progress, independent evaluation and normal learning lifecycle OK');
 console.log('Learning modes: generation, UI answers, retries, rewards, migration, replay and completion OK');

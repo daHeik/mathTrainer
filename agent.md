@@ -50,6 +50,11 @@ toolchain just for a small change unless the task specifically requires it.
   acceptable.
 - Keep all user-facing copy in German and use the existing friendly,
   child-oriented tone.
+- Arithmetic displays use `·` for multiplication and `:` for division, including
+  explanations/statistics. Keep storage keys with ASCII x unchanged; the 1×1
+  app name, game combo counters and close icon are not arithmetic exercises.
+  renderMathText accepts both current and legacy ×/÷ notation. Avatar eye
+  palette includes allowlisted blue-grey #708b9a (Blau-grau).
 - Prefer DOM APIs and `textContent` for dynamic user data. Only use
   `innerHTML` for content assembled entirely from trusted application values.
 - Maintain the responsive, touch-first layout, iOS safe-area handling, and
@@ -110,8 +115,11 @@ math feedback. Arithmetic expressions and operand pairs use local nowrap
 `.math-expression` spans; do not insert HTML or forbid wrapping whole sentences.
 
 `precedence` (Punkt vor Strich) uses `p:type` keys from PRECEDENCE_TYPES and
-independent profile.precedenceSkills/history precedence records. Fourteen bounded
-templates, no runtime eval: actual multiplication operands 1..9, exact divisions
+independent profile.precedenceSkills/history precedence records. Eleven active
+templates, exactly two operations including those inside parentheses. Retain
+all fourteen stored skill keys for progress/rewards/backups; old queued
+bracketMixed/allMixed/bracketAll keys generate simpler two-operation tasks too.
+No runtime eval: actual multiplication operands 1..9, exact divisions
 with divisor or quotient <= 5, nonnegative integer final results <= 100.
 Include both bracket and unbracketed skills in every round with >=2 questions.
 Prioritize misconception answers, including 18 for 3*4+2, keep four distinct

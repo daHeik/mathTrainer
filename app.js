@@ -13,7 +13,7 @@
   var AVATAR_OPTIONS={
     gender:[['neutral','Offen'],['female','Weiblich'],['male','Männlich']],
     skin:[['#f8d8bb','Hell'],['#eaba91','Pfirsich'],['#ce956b','Goldbraun'],['#a76c47','Braun'],['#75472f','Dunkelbraun'],['#493024','Sehr dunkel']],
-    eyes:[['#427bb3','Blau'],['#58916a','Grün'],['#805635','Braun'],['#44424b','Dunkel'],['#939aa4','Grau']],
+    eyes:[['#427bb3','Blau'],['#708b9a','Blau-grau'],['#58916a','Grün'],['#805635','Braun'],['#44424b','Dunkel'],['#939aa4','Grau']],
     hairColor:[['#513323','Braun'],['#211d25','Schwarz'],['#eac66b','Blond'],['#ae5235','Rot'],['#ece7e2','Weiß'],['#a266c4','Lila'],['#e775a6','Rosa'],['#4da6bd','Türkis']],
     hair:[['short','Kurz'],['bob','Bob'],['long','Lang bis zum Bauch'],['waves','Lange Wellen'],['shoulderCurls','Schulterlange Wellen'],['longCurls','Lange Locken'],['braids','Zwei Zöpfe'],['bun','Dutt'],['curls','Kurze Locken'],['ponytail','Pferdeschwanz'],['spiky','Stacheln'],['bald','Ohne Haare']],
     glasses:[['no','Ohne Brille'],['yes','Mit Brille']],
@@ -87,6 +87,10 @@
   var SESSION_MODES = ['mixed', 'table', 'hundreds', 'terms', 'riddles', 'written', 'semi', 'semiFree', 'semiRest', 'remainder', 'precedence'];
   var PRECEDENCE_TYPES = ['mulAdd','addMul','mulSub','subMul','divAdd','addDiv','divSub','subDiv',
     'bracketMul','bracketSub','bracketDiv','bracketMixed','allMixed','bracketAll'];
+  // Keep legacy records/queue keys, but never schedule their longer expressions again.
+  var PRECEDENCE_PRACTICE_TYPES = PRECEDENCE_TYPES.filter(function(type){
+    return ['bracketMixed','allMixed','bracketAll'].indexOf(type) === -1;
+  });
   var RIDDLE_TYPES = ['halfAdd', 'doubleAdd', 'halfSubtract', 'doubleSubtract',
     'sumDouble', 'differenceHalf', 'productAdd', 'quotientAdd'];
   var TERM_CONCEPTS = ['addition', 'subtraction', 'multiplication', 'division',
@@ -745,7 +749,7 @@
   }
 
   function practiceSkillsInRange(focusTable, mode){
-    if (mode === 'precedence') return PRECEDENCE_TYPES.map(function(type){return practiceSkill('p:' + type);});
+    if (mode === 'precedence') return PRECEDENCE_PRACTICE_TYPES.map(function(type){return practiceSkill('p:' + type);});
     if (mode === 'remainder') return factsInRange().filter(function(fact){ return fact.b > 1; })
       .map(function(fact){ return practiceSkill('rd:' + factKey(fact.a, fact.b)); });
     if (isSemiMode(mode)) return semiSkillKeys(mode).map(practiceSkill);
@@ -1154,7 +1158,7 @@
     return { correct: correct, options: options };
   }
 
-  // Choices for "shown × ▢ = product" tasks: the answer is the hidden factor.
+  // Choices for "shown · ▢ = product" tasks: the answer is the hidden factor.
   function genFactorChoices(shown, hidden){
     var correct = hidden;
     var factorMax = Math.max(4, state.config.max);
@@ -1232,10 +1236,10 @@
       a = swap ? skill.fact.b : skill.fact.a;
       b = swap ? skill.fact.a : skill.fact.b;
       if (skill.displayOperation === 'divide'){
-        prompt = (a * b * 10) + ' ÷ ' + (a * 10);
+        prompt = (a * b * 10) + ' : ' + (a * 10);
         correct = b;
       } else {
-        prompt = (a * 10) + ' × ' + b;
+        prompt = (a * 10) + ' · ' + b;
         correct = a * b * 10;
       }
       return { prompt:prompt, gen:hundredsChoices(correct, skill.displayOperation) };
@@ -1252,7 +1256,7 @@
         b = Math.floor(Math.random() * 10) + 1;
         if (operationIndex === 3) a *= b;
       }
-      prompt = 'Wie heißt die Rechenart bei ' + a + ' ' + ['+', '−', '×', '÷'][operationIndex] + ' ' + b + '?';
+      prompt = 'Wie heißt die Rechenart bei ' + a + ' ' + ['+', '−', '·', ':'][operationIndex] + ' ' + b + '?';
       correct = operationNames[operationIndex];
       explanation = correct + ': Das Ergebnis heißt ' + resultNames[operationIndex] + '.';
       return { prompt:prompt, gen:{ correct:correct, options:shuffle(operationNames.slice()) }, explanation:explanation };
@@ -1274,12 +1278,12 @@
       if (concept === 'product'){
         prompt = 'Das Produkt aus ' + a + ' und ' + b;
         correct = a * b;
-        explanation = 'Multiplikation: ' + a + ' × ' + b + ' = ' + correct + '. Das Ergebnis heißt Produkt.';
+        explanation = 'Multiplikation: ' + a + ' · ' + b + ' = ' + correct + '. Das Ergebnis heißt Produkt.';
       } else {
         var dividend = a * b;
         prompt = 'Der Quotient aus ' + dividend + ' und ' + a;
         correct = b;
-        explanation = 'Division: ' + dividend + ' ÷ ' + a + ' = ' + correct + '. Das Ergebnis heißt Quotient.';
+        explanation = 'Division: ' + dividend + ' : ' + a + ' = ' + correct + '. Das Ergebnis heißt Quotient.';
         b = a;
         a = dividend;
       }
@@ -1288,6 +1292,8 @@
   }
 
   function precedenceQuestion(type){
+    // An older saved round may still contain a retired key: simplify it too.
+    type = {bracketMixed:'bracketSub',allMixed:'addDiv',bracketAll:'bracketDiv'}[type] || type;
     function number(min,max){return min + Math.floor(Math.random() * (max - min + 1));}
     var a=number(2,9),b=number(2,9),c=number(1,9),d,dividend,quotient;
     var prompt,correct,mistakes=[],steps=[],products=[],divisions=[];
@@ -1300,54 +1306,37 @@
     }
     if(type==='mulAdd' || type==='addMul'){
       correct=product(a,b)+c;
-      prompt=type==='mulAdd'?a+' × '+b+' + '+c:c+' + '+a+' × '+b;
+      prompt=type==='mulAdd'?a+' · '+b+' + '+c:c+' + '+a+' · '+b;
       mistakes=[type==='mulAdd'?a*(b+c):(c+a)*b,a*b-c,a+b+c];
-      steps=[a+' × '+b+' = '+a*b,a*b+' + '+c+' = '+correct];
+      steps=[a+' · '+b+' = '+a*b,a*b+' + '+c+' = '+correct];
     }else if(type==='mulSub'){
-      c=number(1,b-1);correct=product(a,b)-c;prompt=a+' × '+b+' − '+c;
-      mistakes=[a*(b-c),a*b+c,a+b-c];steps=[a+' × '+b+' = '+a*b,a*b+' − '+c+' = '+correct];
+      c=number(1,b-1);correct=product(a,b)-c;prompt=a+' · '+b+' − '+c;
+      mistakes=[a*(b-c),a*b+c,a+b-c];steps=[a+' · '+b+' = '+a*b,a*b+' − '+c+' = '+correct];
     }else if(type==='subMul'){
-      c=a*b+number(1,9);correct=c-product(a,b);prompt=c+' − '+a+' × '+b;
-      mistakes=[(c-a)*b,c-a-b,c+a*b];steps=[a+' × '+b+' = '+a*b,c+' − '+a*b+' = '+correct];
+      c=a*b+number(1,9);correct=c-product(a,b);prompt=c+' − '+a+' · '+b;
+      mistakes=[(c-a)*b,c-a-b,c+a*b];steps=[a+' · '+b+' = '+a*b,c+' − '+a*b+' = '+correct];
     }else if(type==='divAdd' || type==='addDiv'){
       if(type==='addDiv')c=d*number(1,3);
-      correct=quotient+c;prompt=type==='divAdd'?dividend+' ÷ '+d+' + '+c:c+' + '+dividend+' ÷ '+d;
+      correct=quotient+c;prompt=type==='divAdd'?dividend+' : '+d+' + '+c:c+' + '+dividend+' : '+d;
       mistakes=[type==='divAdd'?dividend/(d+c):(c+dividend)/d,quotient*c,dividend-d+c];
-      steps=[dividend+' ÷ '+d+' = '+quotient,quotient+' + '+c+' = '+correct];
+      steps=[dividend+' : '+d+' = '+quotient,quotient+' + '+c+' = '+correct];
     }else if(type==='divSub'){
-      c=number(1,quotient-1);correct=quotient-c;prompt=dividend+' ÷ '+d+' − '+c;
+      c=number(1,quotient-1);correct=quotient-c;prompt=dividend+' : '+d+' − '+c;
       mistakes=[d===c?NaN:dividend/(d-c),quotient+c,dividend-d-c];
-      steps=[dividend+' ÷ '+d+' = '+quotient,quotient+' − '+c+' = '+correct];
+      steps=[dividend+' : '+d+' = '+quotient,quotient+' − '+c+' = '+correct];
     }else if(type==='subDiv'){
-      c=dividend+d*number(1,3);correct=c-quotient;prompt=c+' − '+dividend+' ÷ '+d;
-      mistakes=[(c-dividend)/d,c-dividend-d,c+quotient];steps=[dividend+' ÷ '+d+' = '+quotient,c+' − '+quotient+' = '+correct];
+      c=dividend+d*number(1,3);correct=c-quotient;prompt=c+' − '+dividend+' : '+d;
+      mistakes=[(c-dividend)/d,c-dividend-d,c+quotient];steps=[dividend+' : '+d+' = '+quotient,c+' − '+quotient+' = '+correct];
     }else if(type==='bracketMul'){
-      b=number(2,7);c=number(1,9-b);correct=product(a,b+c);prompt=a+' × ('+b+' + '+c+')';
-      mistakes=[a*b+c,a*b-c,a+b+c];steps=[b+' + '+c+' = '+(b+c),a+' × '+(b+c)+' = '+correct];
+      b=number(2,7);c=number(1,9-b);correct=product(a,b+c);prompt=a+' · ('+b+' + '+c+')';
+      mistakes=[a*b+c,a*b-c,a+b+c];steps=[b+' + '+c+' = '+(b+c),a+' · '+(b+c)+' = '+correct];
     }else if(type==='bracketSub'){
-      b=number(3,9);c=number(1,b-2);correct=product(a,b-c);prompt=a+' × ('+b+' − '+c+')';
-      mistakes=[a*b-c,a*b+c,a+b-c];steps=[b+' − '+c+' = '+(b-c),a+' × '+(b-c)+' = '+correct];
+      b=number(3,9);c=number(1,b-2);correct=product(a,b-c);prompt=a+' · ('+b+' − '+c+')';
+      mistakes=[a*b-c,a*b+c,a+b-c];steps=[b+' − '+c+' = '+(b-c),a+' · '+(b-c)+' = '+correct];
     }else if(type==='bracketDiv'){
       d=number(2,9);b=number(1,d-1);c=d-b;quotient=number(2,5);dividend=d*quotient;
-      correct=division(dividend,d);prompt=dividend+' ÷ ('+b+' + '+c+')';
-      mistakes=[dividend/b+c,dividend/b,quotient+d];steps=[b+' + '+c+' = '+d,dividend+' ÷ '+d+' = '+correct];
-    }else if(type==='bracketMixed'){
-      c=number(3,9);d=number(1,c-2);correct=a+product(b,c-d);prompt=a+' + '+b+' × ('+c+' − '+d+')';
-      mistakes=[a+b*c-d,(a+b)*(c-d),a+b+c-d];
-      steps=[c+' − '+d+' = '+(c-d),b+' × '+(c-d)+' = '+b*(c-d),a+' + '+b*(c-d)+' = '+correct];
-    }else if(type==='allMixed' || type==='bracketAll'){
-      d=number(2,9);quotient=number(2,5);dividend=d*quotient;division(dividend,d);
-      if(type==='allMixed'){
-        c=number(1,Math.min(9,a*b+quotient-1));correct=product(a,b)+quotient-c;
-        prompt=a+' × '+b+' + '+dividend+' ÷ '+d+' − '+c;
-        mistakes=[(a*b+dividend)/d-c,a*(b+quotient)-c,a*b+quotient+c];
-        steps=[a+' × '+b+' = '+a*b,dividend+' ÷ '+d+' = '+quotient,a*b+' + '+quotient+' − '+c+' = '+correct];
-      }else{
-        b=number(2,7);c=number(1,9-b);correct=product(a,b+c)-quotient;
-        prompt=a+' × ('+b+' + '+c+') − '+dividend+' ÷ '+d;
-        mistakes=[a*b+c-quotient,(a*(b+c)-dividend)/d,a*(b+c-quotient)];
-        steps=[b+' + '+c+' = '+(b+c),a+' × '+(b+c)+' = '+a*(b+c),dividend+' ÷ '+d+' = '+quotient,a*(b+c)+' − '+quotient+' = '+correct];
-      }
+      correct=division(dividend,d);prompt=dividend+' : ('+b+' + '+c+')';
+      mistakes=[dividend/b+c,dividend/b,quotient+d];steps=[b+' + '+c+' = '+d,dividend+' : '+d+' = '+correct];
     }
     // Prioritize grouping/left-to-right mistakes, never lose them to random fillers.
     var options=[correct];
@@ -1439,8 +1428,8 @@
         ? [a + factor + b, a * (factor + b), intermediate, intermediate - b]
         : [a * factor + b, (a * factor) / (a + b), intermediate, intermediate - b, intermediate * b];
       explanation = type === 'productAdd'
-        ? a + ' × ' + factor + ' = ' + intermediate + '.'
-        : (a * factor) + ' ÷ ' + a + ' = ' + intermediate + '.';
+        ? a + ' · ' + factor + ' = ' + intermediate + '.'
+        : (a * factor) + ' : ' + a + ' = ' + intermediate + '.';
       explanation += ' Dann: ' + intermediate + ' + ' + b + ' = ' + correct + '.';
     }
     return { prompt:prompt, gen:riddleChoices(correct, mistakes), explanation:explanation };
@@ -1864,7 +1853,7 @@
     // Keep calculations intact, while the surrounding sentence wraps normally.
     // Use DOM nodes rather than HTML so all text stays literal and safe.
     element.textContent = '';
-    var expression = /[0-9?▢]+(?:[ \t]*(?:[+−\-×*÷/:=]|und)[ \t]*[0-9?▢]+)+/g;
+    var expression = /[0-9?▢]+(?:[ \t]*(?:[+−\-·×*÷/:=]|und)[ \t]*[0-9?▢]+)+/g;
     var match, cursor = 0;
     while ((match = expression.exec(value)) !== null){
       if (match.index > cursor) element.appendChild(document.createTextNode(value.slice(cursor, match.index)));
@@ -1943,11 +1932,11 @@
       var quotient = divideByA ? f.b : f.a;
       var dividend = f.a * f.b;
       gen = genDivisionChoices(quotient);
-      fmt = function(val){ return dividend + " ÷ " + divisor + " = " + val; };
+      fmt = function(val){ return dividend + " : " + divisor + " = " + val; };
       placeholder = "?";
-      setQuestionText(dividend + " ÷ " + divisor);
+      setQuestionText(dividend + " : " + divisor);
     } else {
-      // Facts are stored with a <= b; show both orders so 3×8 and 8×3 get practiced.
+      // Facts are stored with a <= b; show both orders so 3·8 and 8·3 get practiced.
       var swapFactors = state.today.focusTable === f.b
         ? true
         : (state.today.focusTable === f.a ? false : Math.random() < 0.5);
@@ -1957,14 +1946,14 @@
       gapTask = state.config.gapTasks && Math.random() < 0.34;
       if (gapTask){
         gen = genFactorChoices(fx, fy);
-        fmt = function(val){ return fx + " × " + val + " = " + (fx * fy); };
+        fmt = function(val){ return fx + " · " + val + " = " + (fx * fy); };
         placeholder = "▢";
       } else {
         gen = genChoices(fx, fy);
-        fmt = function(val){ return fx + " × " + fy + " = " + val; };
+        fmt = function(val){ return fx + " · " + fy + " = " + val; };
         placeholder = "?";
       }
-      setQuestionText(gapTask ? fmt(placeholder) : (fx + " × " + fy));
+      setQuestionText(gapTask ? fmt(placeholder) : (fx + " · " + fy));
     }
     feedbackText.textContent = '';
     feedbackText.className = 'feedback';
@@ -2008,7 +1997,7 @@
     var form = el('remainderDivisionForm'), revision = sessionRevision;
     var skill = practiceSkill(key), mode = state.config.answerMode;
     if (mode === 'adaptive') mode = skill.record.seen && skill.record.box >= 2 ? 'input' : 'choice';
-    var prompt = exercise.dividend + ' ÷ ' + exercise.divisor;
+    var prompt = exercise.dividend + ' : ' + exercise.divisor;
     var correct = exercise.correct + ' R ' + exercise.rest;
     var activeInput, selectedButton = null, inputs = [], controls = [];
     form.innerHTML = '';
@@ -2166,13 +2155,13 @@
           onAnswer(key,chosen,correct,null,true,exercise.dividend+' : '+exercise.divisor+' = '+correct);return;
         }
         phase='proof';final.hidden=true;proof.hidden=false;check.textContent='Probe prüfen';tipText.textContent='';
-        proofEquation.textContent='Probe: '+exercise.correct+' × '+exercise.divisor+(exercise.rest?' + '+exercise.rest:'')+' = ?';
+        proofEquation.textContent='Probe: '+exercise.correct+' · '+exercise.divisor+(exercise.rest?' + '+exercise.rest:'')+' = ?';
         say('Das Ergebnis stimmt. Prüfe es jetzt mit der Umkehraufgabe.');focus(probe.input);return;
       }
       if(!/^[0-9]{1,4}$/.test(probe.input.value)||Number(probe.input.value)!==exercise.dividend){say('Prüfe die Multiplikation'+(exercise.rest?' und addiere den Rest':'')+' noch einmal.',true);focus(probe.input);return;}
       check.disabled=true;probe.input.disabled=true;
       var answer=String(exercise.correct)+(exercise.mode==='semiRest'?' Rest '+exercise.rest:'');
-      questionExplanation='Dein Rechenweg passt: '+quotients.join(' + ')+' = '+exercise.correct+'. Probe: '+exercise.correct+' × '+exercise.divisor+(exercise.rest?' + '+exercise.rest:'')+' = '+exercise.dividend+'.';
+      questionExplanation='Dein Rechenweg passt: '+quotients.join(' + ')+' = '+exercise.correct+'. Probe: '+exercise.correct+' · '+exercise.divisor+(exercise.rest?' + '+exercise.rest:'')+' = '+exercise.dividend+'.';
       onAnswer(key,answer,answer,null,true,exercise.dividend+' : '+exercise.divisor+' = '+answer);
     };
     update();
@@ -5381,10 +5370,10 @@
     var average = timedAttempts ? (record.totalResponseMs / timedAttempts / 1000).toFixed(1) + ' s' : '–';
     var label;
     if (skill.operation === 'divide'){
-      label = (f.a * f.b) + ' ÷ ' + f.a + ' = ' + f.b;
-      if (f.a !== f.b) label += ' / ' + (f.a * f.b) + ' ÷ ' + f.b + ' = ' + f.a;
+      label = (f.a * f.b) + ' : ' + f.a + ' = ' + f.b;
+      if (f.a !== f.b) label += ' / ' + (f.a * f.b) + ' : ' + f.b + ' = ' + f.a;
     } else {
-      label = f.a + ' × ' + f.b + ' = ' + (f.a * f.b);
+      label = f.a + ' · ' + f.b + ' = ' + (f.a * f.b);
     }
     var lockText = skill.operation === 'divide' && !record.unlocked ? ' · noch gesperrt' : '';
     factDetail.textContent = label + ' · Stufe ' + record.box + ' · ' + accuracy + ' % richtig · Ø ' + average +
@@ -5453,8 +5442,8 @@
         button.type = 'button';
         var f = skill.fact;
         button.textContent = (skill.operation === 'divide'
-          ? (f.a * f.b) + '÷' + f.a + '/' + f.b
-          : f.a + '×' + f.b) + ' · ' + skill.record.wrongCount + '× falsch';
+          ? (f.a * f.b) + ':' + f.a + '/' + f.b
+          : f.a + '·' + f.b) + ' · ' + skill.record.wrongCount + ' mal falsch';
         button.addEventListener('click', function(){ renderFactDetail(skill.key); });
         troubleList.appendChild(button);
       });
@@ -5498,8 +5487,8 @@
         html += '<td><button type="button" class="' + cellClass +
           '" data-key="' + skillKey + '" style="background:' + color + '" title="' +
           (dashboardOperation === 'divide'
-            ? (a*b2) + '÷' + a + ' = ' + b2
-            : a + '×' + b2 + ' = ' + (a*b2)) + ' | ' + info + '" aria-label="' +
+            ? (a*b2) + ':' + a + ' = ' + b2
+            : a + '·' + b2 + ' = ' + (a*b2)) + ' | ' + info + '" aria-label="' +
           (dashboardOperation === 'divide' ? 'Division ' : 'Multiplikation ') + a + ' und ' + b2 + ', ' + info + '">&nbsp;</button></td>';
       }
       html += '</tr>';

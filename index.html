@@ -50,7 +50,7 @@
         </div>
       </div><p class="reward-note" id="rewardNote"></p></div>
       </div>
-      <p class="app-version" id="appVersion">Version 48</p>
+      <p class="app-version" id="appVersion">Version 49</p>
     </div>
 
     <div class="screen semi-intro" id="screen-semi-intro">
@@ -62,10 +62,10 @@
           <li><strong>Zerlegen:</strong> 276 = 240 + 36. Beide Teile lassen sich gut durch 4 teilen. Die 4 bleibt unverändert!</li>
           <li><strong>Teilen:</strong> 240 : 4 = 60 und 36 : 4 = 9.</li>
           <li><strong>Zusammenzählen:</strong> 60 + 9 = 69. Also 276 : 4 = 69.</li>
-          <li><strong>Probe:</strong> 69 × 4 = 276. Das passt!</li>
+          <li><strong>Probe:</strong> 69 · 4 = 276. Das passt!</li>
         </ol>
         <p>Auch 200 + 76 ist ein richtiger Weg: 200 : 4 = 50 und 76 : 4 = 19. Du darfst deine eigenen passenden Teile finden.</p>
-        <p><strong>Mit Rest:</strong> Bei 278 : 4 bleiben nach 240 und 36 noch 2 übrig. Ergebnis: 69 Rest 2. Der Rest muss kleiner als 4 sein. Probe: 69 × 4 + 2 = 278.</p>
+        <p><strong>Mit Rest:</strong> Bei 278 : 4 bleiben nach 240 und 36 noch 2 übrig. Ergebnis: 69 Rest 2. Der Rest muss kleiner als 4 sein. Probe: 69 · 4 + 2 = 278.</p>
         <p>Hilfreich sind das kleine Einmaleins und Aufgaben wie 24 : 4 = 6 → 240 : 4 = 60. Sprich deinen Rechenweg ruhig laut mit!</p>
       </div>
       <div class="semi-levels">
@@ -88,7 +88,7 @@
     <div class="screen" id="screen-question">
       <div class="progress-dots" id="progressDots"></div>
       <p class="written-hint" id="precedenceHint" hidden>Klammer vor Punkt vor Strich. Bei gleichem Rang rechnest du von links nach rechts.</p>
-      <div class="question" id="questionText">7 × 8</div>
+      <div class="question" id="questionText">7 · 8</div>
       <form id="remainderDivisionForm" class="remainder-division" autocomplete="off" hidden aria-label="Ergebnis und Rest eintragen" novalidate></form>
       <div class="choices" id="choicesWrap"></div>
       <form id="writtenDivisionForm" class="written-division" autocomplete="off" hidden aria-label="Schriftlich dividieren mit Teilrechnungen"></form>
@@ -406,8 +406,8 @@
     <section class="admin-tab-panel active" id="adminPanelOverview" role="tabpanel"
              aria-labelledby="adminTabOverview" tabindex="0">
       <div class="operation-switch" id="operationSwitch" role="group" aria-label="Rechenart auswählen">
-        <button type="button" class="active" data-operation="multiply" aria-pressed="true">Multiplikation ×</button>
-        <button type="button" data-operation="divide" aria-pressed="false">Division ÷</button>
+        <button type="button" class="active" data-operation="multiply" aria-pressed="true">Multiplikation ·</button>
+        <button type="button" data-operation="divide" aria-pressed="false">Division :</button>
       </div>
       <div class="field">
         <label>Lernübersicht</label>
@@ -514,7 +514,7 @@
 
     <div class="field">
       <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-        <input type="checkbox" id="gapToggle"> Lückenaufgaben (7 × ▢ = 56)
+        <input type="checkbox" id="gapToggle"> Lückenaufgaben (7 · ▢ = 56)
       </label>
       <div class="hint">Mischt nur bei der Multiplikation Aufgaben mit einem fehlenden Faktor unter.</div>
     </div>

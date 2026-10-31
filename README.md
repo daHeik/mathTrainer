@@ -28,6 +28,10 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 
 ## Features
 
+Malaufgaben verwenden den Mittelpunkt `·`, Geteiltaufgaben den Doppelpunkt
+`:` – auch in Rechenwegen und Lernstatistiken. Für den Avatar steht zusätzlich
+die Augenfarbe „Blau-grau“ zur Auswahl.
+
 Die Startseite zeigt anspruchsvollere/neue Modi zuerst: Punkt vor Strich,
 halbschriftliche und schriftliche Division, Zahlenrätsel, Division mit Rest,
 Rechnen mit 100ern, Rechenbegriffe und Zahlenreihen. Die gemischte 1×1-Runde
@@ -36,16 +40,17 @@ steht auf schmalen Displays darunter, auf breiten rechts daneben.
 ### Punkt vor Strich
 
 Ein eigener Startbutton übt **Klammer vor Punkt vor Strich** mit einfachen
-Zahlen. Vierzehn Aufgabenmuster mischen Plus, Minus, Mal und Geteilt, mit und
-ohne Klammern – auch alle vier Rechenarten in einer Aufgabe. Ab zwei Fragen
+Zahlen. Elf Aufgabenmuster mischen Plus, Minus, Mal und Geteilt, mit und
+ohne Klammern. Jede Aufgabe enthält nur zwei Rechenoperationen insgesamt;
+Operationen innerhalb einer Klammer zählen mit. Ab zwei Fragen
 enthält jede Runde sowohl Klammeraufgaben als auch Aufgaben ohne Klammern.
 Die tatsächlich auszurechnenden Malaufgaben haben nur einstellige Faktoren,
 auch nach dem Auflösen einer Klammer. Divisionen gehen ohne Rest auf; Divisor
-oder Quotient ist höchstens 5 (z. B. 24 ÷ 6 oder 24 ÷ 4, nicht 56 ÷ 8).
+oder Quotient ist höchstens 5 (z. B. 24 : 6 oder 24 : 4, nicht 56 : 8).
 Ergebnisse bleiben nichtnegative ganze Zahlen bis 100.
 
 Die vier Auswahlantworten berücksichtigen typische Reihenfolgefehler:
-Bei `3 × 4 + 2` erscheinen sowohl **14** als auch **18**. Nahe falsche Antworten
+Bei `3 · 4 + 2` erscheinen sowohl **14** als auch **18**. Nahe falsche Antworten
 verhindern zusätzlich das Raten anhand der Größenordnung. Nach jeder Antwort
 wird der Rechenweg erklärt. Rundengröße, Zahleneingabe beziehungsweise adaptive
 Auswahl, Wiederholung, Statistik, Spielbelohnungen, Abbruch und Sicherungen
@@ -80,7 +85,7 @@ Bild zusammengefasst; bloßes Scrollen baut Spiel-Canvases nicht neu auf.
 Der eigene Startbutton übt Division mit den eingestellten Zahlenreihen und
 der üblichen Rundengröße. Pro Aufgabe beträgt die Wahrscheinlichkeit für
 einen Rest 95 %, für Rest 0 sind es 5 % (keine feste Quote pro kurzer Runde).
-Beispiel: `28 ÷ 5 = 5 R 3`. Divisor 1 wird ausgeschlossen.
+Beispiel: `28 : 5 = 5 R 3`. Divisor 1 wird ausgeschlossen.
 Das Ergebnis wird wie gewohnt aus vier Antworten gewählt oder per Zahleneingabe
 eingegeben; der adaptive Modus schaltet nach demselben Lernstand um wie bei
 normaler Division. Der Rest wird immer in ein eigenes R-Feld eingetragen,
@@ -95,12 +100,12 @@ Ein eigener Startseiten-Modus vermittelt schrittweises Dividieren: den
 Dividenden in gut teilbare Teile zerlegen, jeden Teil durch denselben Divisor
 teilen, Teilergebnisse addieren und mit der Umkehraufgabe prüfen.
 Beispiel: 276 : 4 → 240 : 4 = 60 und 36 : 4 = 9 → 69;
-Probe: 69 × 4 = 276. Auch andere passende Zerlegungen sind richtig.
+Probe: 69 · 4 = 276. Auch andere passende Zerlegungen sind richtig.
 
 - **Mit Hilfe:** dreistellige Aufgaben bis 999; passende Teile sind vorgegeben.
 - **Eigener Rechenweg:** dreistellige Aufgaben bis 999, Teile selbst wählen.
 - **Mit Rest:** ebenfalls bis 999, eigene Zerlegung, Rest kleiner als der Divisor und Probe
-  `Ergebnis × Divisor + Rest = Dividend`.
+  `Ergebnis · Divisor + Rest = Dividend`.
 
 Die Einführung erklärt den Weg und vergleicht zwei Zerlegungen. Tipps und
 gezielte Rückmeldungen unterstützen beim Üben. Alle Stufen teilen durch
@@ -158,10 +163,10 @@ Bilder oder Videos werden eingebunden.
   die nächste Runde führt weitere neue Aufgaben ein
 - Vier zusätzliche Lernmodi auf der Startseite:
   - „Rechnen mit 100ern“: alle Aufgabenfamilien des kleinen Einmaleins von
-    1 bis 10 mit Zehnerzahlen, z.B. `70 × 7 = 490` und `210 ÷ 30 = 7`.
+    1 bis 10 mit Zehnerzahlen, z.B. `70 · 7 = 490` und `210 : 30 = 7`.
     Multiplikation und Division sind in diesem Modus direkt verfügbar;
     Ergebnisse können bis 1000 reichen. Auswahlantworten enthalten auch typische
-    Zehnerfehler, z.B. `90` statt `9` bei `450 ÷ 50` oder eine fehlende Null
+    Zehnerfehler, z.B. `90` statt `9` bei `450 : 50` oder eine fehlende Null
     bei Multiplikationen.
   - „Rechenbegriffe lernen“: Rechenarten erkennen (Addition, Subtraktion,
     Multiplikation, Division) und Textaufgaben zu Summe, Differenz, Produkt
@@ -213,14 +218,14 @@ Bilder oder Videos werden eingebunden.
   Aufgabenfamilie und Rechenart, Zahlenrätsel je Rätseltyp. Die Umschaltung
   setzt Lernstufe 2 voraus, nicht nur eine bestimmte Gesamtzahl richtiger
   Antworten; sehr langsame Antworten erhöhen die Lernstufe nicht.
-- Bei Textaufgaben bleiben zusammengehörige Rechnungen wie `40 ÷ 4` und
+- Bei Textaufgaben bleiben zusammengehörige Rechnungen wie `40 : 4` und
   Gleichungen in einer Zeile. Reicht der Platz hinter dem Text nicht aus,
   beginnt die Rechnung als Ganzes in der nächsten Zeile. Das gilt auch für
   die erklärenden Rückmeldungen und die Eingabe bei Textaufgaben.
-- Optionale Lückenaufgaben (7 × ▢ = 56)
+- Optionale Lückenaufgaben (7 · ▢ = 56)
 - Optionales Divisionstraining: Eltern können Division pro Profil aktivieren;
   zu einer Malaufgabe werden ab Lernstufe 4 die beiden passenden exakten
-  Geteiltaufgaben freigeschaltet (z.B. 56 ÷ 7 und 56 ÷ 8). Multiplikation und
+  Geteiltaufgaben freigeschaltet (z.B. 56 : 7 und 56 : 8). Multiplikation und
   Division behalten getrennte Lernstufen und Auswertungen, teilen sich aber
   Rundenumfang, neue Aufgaben und Belohnungsfortschritt. Sobald mindestens eine
   Geteiltaufgabe freigeschaltet ist, enthält jede neu gestartete Runde eine
