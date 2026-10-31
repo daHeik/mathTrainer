@@ -1438,6 +1438,13 @@ api.avatarOptions.bottom.forEach(function(option){assert(api.avatarSvg({bottom:o
 elements.homeAvatarBtn.events.click();
 assert(!elements.avatarClothesHint.hidden,'Explain when a costume hides everyday garments');
 function garmentField(label){return elements.avatarFields.children.find(function(field){return field.children[0].textContent===label;}).children[1];}
+var eyePicker=garmentField('Augenfarbe');assert.strictEqual(eyePicker.type,'color');
+eyePicker.value='#7A4BA9';eyePicker.events.input();
+function previewHasEyeColor(node){return node.getAttribute('fill')==='#7a4ba9'||node.children.some(previewHasEyeColor);}
+assert(previewHasEyeColor(elements.avatarPreview),'Eye colour updates the SVG preview immediately');
+assert.strictEqual(api.normalizeAvatar({eyes:'url(bad)'}).eyes,'#427bb3');
+assert.strictEqual(api.normalizeAvatar({eyes:'#abc'}).eyes,'#427bb3');
+api.avatarOptions.eyes.forEach(function(option){assert.strictEqual(api.normalizeAvatar({eyes:option[0]}).eyes,option[0]);});
 var topRow=garmentField('Oberteil'),bottomRow=garmentField('Unterteil');
 assert.strictEqual(topRow.children[0].children.length,9);assert.strictEqual(bottomRow.children[0].children.length,12);
 assert.strictEqual(topRow.children[1].children[0].type,'color');
@@ -1449,10 +1456,12 @@ bottomRow.children[1].children[0].value='#be5678';bottomRow.children[1].children
 elements.playerName.value=api.getState().config.childName;elements.playerForm.events.submit({preventDefault:function(){}});
 var savedWardrobeRoot=JSON.parse(storage.km_1x1_trainer_v2);
 var savedWardrobe=api.normalizeProfile(savedWardrobeRoot.profiles[savedWardrobeRoot.activeProfileId]).config.avatar;
+assert.strictEqual(savedWardrobe.eyes,'#7a4ba9');
+elements.homeAvatarBtn.events.click();assert.strictEqual(garmentField('Augenfarbe').value,'#7a4ba9');elements.cancelPlayerBtn.events.click();
 assert.strictEqual(savedWardrobe.top,'tank');assert.strictEqual(savedWardrobe.topColor,'#12ab89');
 assert.strictEqual(savedWardrobe.bottom,'pleated');assert.strictEqual(savedWardrobe.bottomColor,'#be5678');
 var wardrobeBeforeCancel=JSON.stringify(api.getState().config.avatar);
-elements.homeAvatarBtn.events.click();var cancelColor=garmentField('Oberteil').children[1].children[0];cancelColor.value='#998877';cancelColor.events.input();elements.cancelPlayerBtn.events.click();
+elements.homeAvatarBtn.events.click();var cancelEyes=garmentField('Augenfarbe');cancelEyes.value='#123456';cancelEyes.events.change();var cancelColor=garmentField('Oberteil').children[1].children[0];cancelColor.value='#998877';cancelColor.events.input();elements.cancelPlayerBtn.events.click();
 assert.strictEqual(JSON.stringify(api.getState().config.avatar),wardrobeBeforeCancel);
 console.log('Avatar wardrobe: nine tops/twelve bottoms, independent colours, hairstyle options, migration, backup and cancel OK');
 // Shoulder waves use continuous inward-falling locks, with the saved key unchanged.

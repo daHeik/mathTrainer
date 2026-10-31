@@ -29,6 +29,7 @@
     var oldTops={blue:['tshirt','#508fe3'],coral:['tshirt','#ed7b79'],green:['sweater','#599d83'],purple:['hoodie','#9170c8']},oldTop=oldTops[input.top];
     if(Array.isArray(oldTop)){input.top=oldTop[0];if(!input.topColor)input.topColor=oldTop[1];}
     Object.keys(AVATAR_OPTIONS).forEach(function(key){if(key==='accessory')return;var values=AVATAR_OPTIONS[key].map(function(o){return o[0];});a[key]=values.indexOf(input[key])!==-1?input[key]:values[0];});
+    a.eyes=typeof input.eyes==='string'&&/^#[0-9a-f]{6}$/i.test(input.eyes)?input.eyes.toLowerCase():AVATAR_OPTIONS.eyes[0][0];
     var defaultTop={stripes:'#f6e5c3',rainbow:'#e77c9c'}[a.top]||'#508fe3';
     var defaultBottom={shorts:'#5573a8',skirt:'#b96eaa',pleated:'#b96eaa',longskirt:'#b96eaa',leggings:'#514f78',rainbow:'#9a75c3'}[a.bottom]||'#4e6eaa';
     a.topColor=typeof input.topColor==='string'&&/^#[0-9a-f]{6}$/i.test(input.topColor)?input.topColor.toLowerCase():defaultTop;
@@ -5208,7 +5209,8 @@
     function preview(){el('avatarClothesHint').hidden=avatarDraft.outfit==='everyday';el('avatarPreview').textContent='';el('avatarPreview').appendChild(avatarSvg(avatarDraft));}
     Object.keys(AVATAR_OPTIONS).forEach(function(key){
       var field=document.createElement(key==='accessory'?'fieldset':'div');field.className='field';var label=document.createElement(key==='accessory'?'legend':'label');label.textContent=labels[key];label.setAttribute('for','avatar-'+key);field.appendChild(label);
-      if(key==='accessory'){AVATAR_OPTIONS[key].forEach(function(o){var l=document.createElement('label'),c=document.createElement('input');c.type='checkbox';c.checked=avatarDraft.accessory.indexOf(o[0])!==-1;c.addEventListener('change',function(){avatarDraft.accessory=avatarDraft.accessory.filter(function(v){return v!==o[0];});if(c.checked)avatarDraft.accessory.push(o[0]);preview();});l.appendChild(c);l.appendChild(document.createTextNode(' '+o[1]));field.appendChild(l);});}
+      if(key==='eyes'){var eyePicker=document.createElement('input');eyePicker.type='color';eyePicker.id='avatar-eyes';eyePicker.className='avatar-eye-picker';eyePicker.value=avatarDraft.eyes;eyePicker.setAttribute('aria-label',labels.eyes);avatarInputs.eyes=eyePicker;function updateEyes(){if(/^#[0-9a-f]{6}$/i.test(eyePicker.value)){avatarDraft.eyes=eyePicker.value.toLowerCase();preview();}}eyePicker.addEventListener('input',updateEyes);eyePicker.addEventListener('change',updateEyes);field.appendChild(eyePicker);}
+      else if(key==='accessory'){AVATAR_OPTIONS[key].forEach(function(o){var l=document.createElement('label'),c=document.createElement('input');c.type='checkbox';c.checked=avatarDraft.accessory.indexOf(o[0])!==-1;c.addEventListener('change',function(){avatarDraft.accessory=avatarDraft.accessory.filter(function(v){return v!==o[0];});if(c.checked)avatarDraft.accessory.push(o[0]);preview();});l.appendChild(c);l.appendChild(document.createTextNode(' '+o[1]));field.appendChild(l);});}
       else {var select=document.createElement('select');select.id='avatar-'+key;AVATAR_OPTIONS[key].forEach(function(o){var option=document.createElement('option');option.value=o[0];option.textContent=o[1];select.appendChild(option);});select.value=avatarDraft[key];avatarInputs[key]=select;select.addEventListener('change',function(){avatarDraft[key]=select.value;preview();});
         if(key==='top'||key==='bottom'){
           var row=document.createElement('div');row.className='garment-row';row.appendChild(select);

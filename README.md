@@ -29,8 +29,8 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 ## Features
 
 Malaufgaben verwenden den Mittelpunkt `·`, Geteiltaufgaben den Doppelpunkt
-`:` – auch in Rechenwegen und Lernstatistiken. Für den Avatar steht zusätzlich
-die Augenfarbe „Blau-grau“ zur Auswahl.
+`:` – auch in Rechenwegen und Lernstatistiken. Die Augenfarbe des Avatars lässt sich
+über einen Farbpicker frei wählen; bisherige Augenfarben bleiben erhalten.
 
 Die Startseite zeigt anspruchsvollere/neue Modi zuerst: Punkt vor Strich,
 halbschriftliche und schriftliche Division, Zahlenrätsel, Division mit Rest,

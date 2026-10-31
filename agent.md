@@ -53,8 +53,10 @@ toolchain just for a small change unless the task specifically requires it.
 - Arithmetic displays use `·` for multiplication and `:` for division, including
   explanations/statistics. Keep storage keys with ASCII x unchanged; the 1×1
   app name, game combo counters and close icon are not arithmetic exercises.
-  renderMathText accepts both current and legacy ×/÷ notation. Avatar eye
-  palette includes allowlisted blue-grey #708b9a (Blau-grau).
+  renderMathText accepts both current and legacy ×/÷ notation. Avatar eyes
+  accept validated six-digit hex colours, normalized to lowercase, including
+  existing blue-grey #708b9a. The editor uses the native colour picker ported
+  from Vocabulator `135a6c5` (UI 57).
 - Prefer DOM APIs and `textContent` for dynamic user data. Only use
   `innerHTML` for content assembled entirely from trusted application values.
 - Maintain the responsive, touch-first layout, iOS safe-area handling, and
