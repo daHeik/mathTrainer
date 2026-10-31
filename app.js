@@ -84,7 +84,9 @@
     '🍓','🍒','🍉','🍍','🍎','🍌','🥝','🍇','🍪','🍿',
     '🏀','🎾','🏓','🎯','🪁','🎈','🎁','👑','💎','🏰'
   ];
-  var SESSION_MODES = ['mixed', 'table', 'hundreds', 'terms', 'riddles', 'written', 'semi', 'semiFree', 'semiRest', 'remainder'];
+  var SESSION_MODES = ['mixed', 'table', 'hundreds', 'terms', 'riddles', 'written', 'semi', 'semiFree', 'semiRest', 'remainder', 'precedence'];
+  var PRECEDENCE_TYPES = ['mulAdd','addMul','mulSub','subMul','divAdd','addDiv','divSub','subDiv',
+    'bracketMul','bracketSub','bracketDiv','bracketMixed','allMixed','bracketAll'];
   var RIDDLE_TYPES = ['halfAdd', 'doubleAdd', 'halfSubtract', 'doubleSubtract',
     'sumDouble', 'differenceHalf', 'productAdd', 'quotientAdd'];
   var TERM_CONCEPTS = ['addition', 'subtraction', 'multiplication', 'division',
@@ -212,6 +214,7 @@
       },
       termSkills: {},
       riddleSkills: {},
+      precedenceSkills: {},
       writtenSkills: {},
       semiSkills: {},
       curriculum: { unlockedTables: [] },
@@ -261,6 +264,9 @@
       if (termSkills[concept]) total += Number(termSkills[concept].correctCount) || 0;
     });
     var riddleSkills = profile.riddleSkills || {};
+    PRECEDENCE_TYPES.forEach(function(type){
+      if (profile.precedenceSkills && profile.precedenceSkills[type]) total += Number(profile.precedenceSkills[type].correctCount) || 0;
+    });
     RIDDLE_TYPES.forEach(function(type){
       if (riddleSkills[type]) total += Number(riddleSkills[type].correctCount) || 0;
     });
@@ -341,6 +347,11 @@
       normalizeLearningRecord(p.termSkills[concept], normalizationDate);
     });
     if (!p.riddleSkills || typeof p.riddleSkills !== 'object') p.riddleSkills = {};
+    if (!p.precedenceSkills || typeof p.precedenceSkills !== 'object') p.precedenceSkills = {};
+    PRECEDENCE_TYPES.forEach(function(type){
+      if (!p.precedenceSkills[type]) p.precedenceSkills[type] = learningDefaults(normalizationDate);
+      normalizeLearningRecord(p.precedenceSkills[type], normalizationDate);
+    });
     RIDDLE_TYPES.forEach(function(type){
       if (!p.riddleSkills[type]) p.riddleSkills[type] = learningDefaults(normalizationDate);
       normalizeLearningRecord(p.riddleSkills[type], normalizationDate);
@@ -388,7 +399,7 @@
           divide:{ attempts:0, correct:0, wrong:0, totalResponseMs:0 }
         };
       }
-      ['multiply','divide','hundredsMultiply','hundredsDivide','terms','riddles','writtenDivide','semiDivide','remainderDivide'].forEach(function(operation){
+      ['multiply','divide','hundredsMultiply','hundredsDivide','terms','riddles','writtenDivide','semiDivide','remainderDivide','precedence'].forEach(function(operation){
         var operationDay = historyDay.byOperation[operation] || {};
         operationDay.attempts = Math.max(0, Number(operationDay.attempts) || 0);
         operationDay.correct = Math.max(0, Number(operationDay.correct) || 0);
@@ -541,6 +552,10 @@
       if (!state.termSkills[concept]) state.termSkills[concept] = learningDefaults(today);
     });
     if (!state.riddleSkills) state.riddleSkills = {};
+    if (!state.precedenceSkills) state.precedenceSkills = {};
+    PRECEDENCE_TYPES.forEach(function(type){
+      if (!state.precedenceSkills[type]) state.precedenceSkills[type] = learningDefaults(today);
+    });
     RIDDLE_TYPES.forEach(function(type){
       if (!state.riddleSkills[type]) state.riddleSkills[type] = learningDefaults(today);
     });
@@ -642,6 +657,12 @@
 
   function practiceSkill(key){
     if (typeof key !== 'string') return null;
+    if (key.indexOf('p:') === 0){
+      var precedenceType = key.slice(2);
+      if (PRECEDENCE_TYPES.indexOf(precedenceType) === -1 || !state.precedenceSkills[precedenceType]) return null;
+      return {key:key,kind:'precedence',operation:'precedence',precedenceType:precedenceType,
+        fact:null,record:state.precedenceSkills[precedenceType]};
+    }
     if (key.indexOf('rd:') === 0){
       var remainderFact = state.facts[key.slice(3)];
       if (!remainderFact || remainderFact.b <= 1 || !remainderFact.remainder) return null;
@@ -724,6 +745,7 @@
   }
 
   function practiceSkillsInRange(focusTable, mode){
+    if (mode === 'precedence') return PRECEDENCE_TYPES.map(function(type){return practiceSkill('p:' + type);});
     if (mode === 'remainder') return factsInRange().filter(function(fact){ return fact.b > 1; })
       .map(function(fact){ return practiceSkill('rd:' + factKey(fact.a, fact.b)); });
     if (isSemiMode(mode)) return semiSkillKeys(mode).map(practiceSkill);
@@ -777,7 +799,7 @@
     // A focused table round should cover as many different members of the
     // selected row as its configured size permits. Mixed rounds keep the
     // normal limit for newly introduced facts.
-    var broadMode = !!focusTable || mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || isSemiMode(mode);
+    var broadMode = !!focusTable || mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || mode === 'precedence' || isSemiMode(mode);
     var newLimit = Math.min(size, broadMode ? size : state.config.newFactsPerRound);
     var dueReviews = pool.filter(function(skill){ return skill.record.seen && skill.record.dueDate <= today; });
     var newCandidates = pool.filter(function(skill){ return !skill.record.seen; });
@@ -865,6 +887,15 @@
       occurrenceCounts[filler.key] = (occurrenceCounts[filler.key] || 0) + 1;
     }
     var queueKeys = chosen.map(function(skill){ return skill.key; });
+    if (mode === 'precedence' && size >= 2){
+      // Every regular-sized round practices both bracket priority and point-before-line.
+      [true,false].forEach(function(bracket){
+        if (!queueKeys.some(function(key){return (key.indexOf('p:bracket') === 0) === bracket;})){
+          var candidates = pool.filter(function(skill){return (skill.key.indexOf('p:bracket') === 0) === bracket;});
+          queueKeys[bracket ? 0 : 1] = candidates[0].key;
+        }
+      });
+    }
     return spreadQueueKeys(queueKeys);
   }
 
@@ -1194,6 +1225,7 @@
 
   function specialQuestion(skill){
     var a, b, correct, prompt, explanation;
+    if (skill.kind === 'precedence') return precedenceQuestion(skill.precedenceType);
     if (skill.kind === 'riddle') return riddleQuestion(skill.riddleType);
     if (skill.kind === 'hundreds'){
       var swap = Math.random() < 0.5;
@@ -1253,6 +1285,87 @@
       }
     }
     return { prompt:prompt, gen:operationChoices(a, b, correct), explanation:explanation };
+  }
+
+  function precedenceQuestion(type){
+    function number(min,max){return min + Math.floor(Math.random() * (max - min + 1));}
+    var a=number(2,9),b=number(2,9),c=number(1,9),d,dividend,quotient;
+    var prompt,correct,mistakes=[],steps=[],products=[],divisions=[];
+    function product(x,y){products.push([x,y]);return x*y;}
+    function division(n,d){divisions.push([n,d]);return n/d;}
+    if(type.indexOf('div')===0 || type==='addDiv' || type==='subDiv'){
+      d=number(2,9);quotient=number(2,5);
+      if(Math.random()<.5){var swap=d;d=quotient;quotient=swap;}
+      dividend=d*quotient;division(dividend,d);
+    }
+    if(type==='mulAdd' || type==='addMul'){
+      correct=product(a,b)+c;
+      prompt=type==='mulAdd'?a+' × '+b+' + '+c:c+' + '+a+' × '+b;
+      mistakes=[type==='mulAdd'?a*(b+c):(c+a)*b,a*b-c,a+b+c];
+      steps=[a+' × '+b+' = '+a*b,a*b+' + '+c+' = '+correct];
+    }else if(type==='mulSub'){
+      c=number(1,b-1);correct=product(a,b)-c;prompt=a+' × '+b+' − '+c;
+      mistakes=[a*(b-c),a*b+c,a+b-c];steps=[a+' × '+b+' = '+a*b,a*b+' − '+c+' = '+correct];
+    }else if(type==='subMul'){
+      c=a*b+number(1,9);correct=c-product(a,b);prompt=c+' − '+a+' × '+b;
+      mistakes=[(c-a)*b,c-a-b,c+a*b];steps=[a+' × '+b+' = '+a*b,c+' − '+a*b+' = '+correct];
+    }else if(type==='divAdd' || type==='addDiv'){
+      if(type==='addDiv')c=d*number(1,3);
+      correct=quotient+c;prompt=type==='divAdd'?dividend+' ÷ '+d+' + '+c:c+' + '+dividend+' ÷ '+d;
+      mistakes=[type==='divAdd'?dividend/(d+c):(c+dividend)/d,quotient*c,dividend-d+c];
+      steps=[dividend+' ÷ '+d+' = '+quotient,quotient+' + '+c+' = '+correct];
+    }else if(type==='divSub'){
+      c=number(1,quotient-1);correct=quotient-c;prompt=dividend+' ÷ '+d+' − '+c;
+      mistakes=[d===c?NaN:dividend/(d-c),quotient+c,dividend-d-c];
+      steps=[dividend+' ÷ '+d+' = '+quotient,quotient+' − '+c+' = '+correct];
+    }else if(type==='subDiv'){
+      c=dividend+d*number(1,3);correct=c-quotient;prompt=c+' − '+dividend+' ÷ '+d;
+      mistakes=[(c-dividend)/d,c-dividend-d,c+quotient];steps=[dividend+' ÷ '+d+' = '+quotient,c+' − '+quotient+' = '+correct];
+    }else if(type==='bracketMul'){
+      b=number(2,7);c=number(1,9-b);correct=product(a,b+c);prompt=a+' × ('+b+' + '+c+')';
+      mistakes=[a*b+c,a*b-c,a+b+c];steps=[b+' + '+c+' = '+(b+c),a+' × '+(b+c)+' = '+correct];
+    }else if(type==='bracketSub'){
+      b=number(3,9);c=number(1,b-2);correct=product(a,b-c);prompt=a+' × ('+b+' − '+c+')';
+      mistakes=[a*b-c,a*b+c,a+b-c];steps=[b+' − '+c+' = '+(b-c),a+' × '+(b-c)+' = '+correct];
+    }else if(type==='bracketDiv'){
+      d=number(2,9);b=number(1,d-1);c=d-b;quotient=number(2,5);dividend=d*quotient;
+      correct=division(dividend,d);prompt=dividend+' ÷ ('+b+' + '+c+')';
+      mistakes=[dividend/b+c,dividend/b,quotient+d];steps=[b+' + '+c+' = '+d,dividend+' ÷ '+d+' = '+correct];
+    }else if(type==='bracketMixed'){
+      c=number(3,9);d=number(1,c-2);correct=a+product(b,c-d);prompt=a+' + '+b+' × ('+c+' − '+d+')';
+      mistakes=[a+b*c-d,(a+b)*(c-d),a+b+c-d];
+      steps=[c+' − '+d+' = '+(c-d),b+' × '+(c-d)+' = '+b*(c-d),a+' + '+b*(c-d)+' = '+correct];
+    }else if(type==='allMixed' || type==='bracketAll'){
+      d=number(2,9);quotient=number(2,5);dividend=d*quotient;division(dividend,d);
+      if(type==='allMixed'){
+        c=number(1,Math.min(9,a*b+quotient-1));correct=product(a,b)+quotient-c;
+        prompt=a+' × '+b+' + '+dividend+' ÷ '+d+' − '+c;
+        mistakes=[(a*b+dividend)/d-c,a*(b+quotient)-c,a*b+quotient+c];
+        steps=[a+' × '+b+' = '+a*b,dividend+' ÷ '+d+' = '+quotient,a*b+' + '+quotient+' − '+c+' = '+correct];
+      }else{
+        b=number(2,7);c=number(1,9-b);correct=product(a,b+c)-quotient;
+        prompt=a+' × ('+b+' + '+c+') − '+dividend+' ÷ '+d;
+        mistakes=[a*b+c-quotient,(a*(b+c)-dividend)/d,a*(b+c-quotient)];
+        steps=[b+' + '+c+' = '+(b+c),a+' × '+(b+c)+' = '+a*(b+c),dividend+' ÷ '+d+' = '+quotient,a*(b+c)+' − '+quotient+' = '+correct];
+      }
+    }
+    // Prioritize grouping/left-to-right mistakes, never lose them to random fillers.
+    var options=[correct];
+    mistakes.forEach(function(value){
+      if(options.length<4 && Number.isFinite(value) && value>=0 && value%1===0 && options.indexOf(value)===-1)options.push(value);
+    });
+    var anchor=options[options.length-1];
+    for(var distance=1;options.length<4;distance++){
+      [anchor-distance,anchor+distance].forEach(function(value){
+        if(options.length<4 && value>=0 && options.indexOf(value)===-1)options.push(value);
+      });
+    }
+    if(!options.some(function(value){return value!==correct && Math.abs(value-correct)<=2;})){
+      options[3]=correct>0 && Math.random()<.5?correct-1:correct+1;
+    }
+    return {prompt:prompt,gen:{correct:correct,options:shuffle(options)},
+      explanation:'Klammern zuerst, dann Mal und Geteilt, danach Plus und Minus. '+steps.join('; ')+'.',
+      products:products,divisions:divisions,mistakes:mistakes};
   }
 
   function riddleChoices(correct, mistakes){
@@ -1630,6 +1743,7 @@
 
   function repeatRoundLabel(recoveryPending){
     if (recoveryPending) return 'Serie retten: zweite Runde 🔥';
+    if (state.today.mode === 'precedence') return 'Noch einmal: Punkt vor Strich 🔁';
     if (state.today.mode === 'remainder') return 'Noch einmal: Division mit Rest 🔁';
     if (isSemiMode(state.today.mode)) return 'Noch einmal: ' + semiModeLabel(state.today.mode) + ' 🔁';
     if (state.today.mode === 'hundreds') return 'Noch einmal: Rechnen mit 100ern 🔁';
@@ -1692,7 +1806,7 @@
     }
     el('remainderBtn').disabled = practiceSkillsInRange(null, 'remainder').length === 0;
     el('remainderBtn').title = el('remainderBtn').disabled ? 'Wähle in den Einstellungen auch Zahlen größer als 1 aus.' : '';
-    [[startBtn,'play'],[bonusBtn,'play'],[tablePracticeBtn,'cards'],[hundredsBtn,'cards'],[termsBtn,'chat'],[riddlesBtn,'cards'],[writtenBtn,'cards'],[el('semiBtn'),'cards'],[el('remainderBtn'),'cards']].forEach(function(item){
+    [[startBtn,'play'],[bonusBtn,'play'],[tablePracticeBtn,'cards'],[hundredsBtn,'cards'],[termsBtn,'chat'],[riddlesBtn,'cards'],[writtenBtn,'cards'],[el('semiBtn'),'cards'],[el('remainderBtn'),'cards'],[el('precedenceBtn'),'cards']].forEach(function(item){
       iconLabel(item[0],item[0].textContent.replace(/ (🚀|🔥|🔢|💬|🧩)/g,''),item[1]);
     });
     showScreen(screenHome);
@@ -1703,7 +1817,7 @@
     sessionRewardUnlocks = 0;
     var selectedTable = parseInt(focusTable, 10);
     var focused = configuredTables().indexOf(selectedTable) !== -1;
-    var specialMode = mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || isSemiMode(mode);
+    var specialMode = mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || mode === 'precedence' || isSemiMode(mode);
     if (bonus || focused || specialMode){
       state.today.focusTable = focused ? selectedTable : null;
       state.today.mode = specialMode ? mode : (focused ? 'table' : 'mixed');
@@ -1787,6 +1901,7 @@
     var gapTask = false;
     var gen, fmt, placeholder;
     questionExplanation = '';
+    el('precedenceHint').hidden = skill.kind !== 'precedence';
     writtenForm.hidden = skill.kind !== 'written';
     el('semiDivisionForm').hidden = skill.kind !== 'semi';
     el('remainderDivisionForm').hidden = skill.kind !== 'remainder';
@@ -1813,7 +1928,7 @@
     }
     questionText.classList.toggle('word-question', skill.kind === 'term' || skill.kind === 'riddle');
     choicesWrap.classList.toggle('word-choices', skill.kind === 'term');
-    if (skill.kind === 'hundreds' || skill.kind === 'term' || skill.kind === 'riddle'){
+    if (skill.kind === 'hundreds' || skill.kind === 'term' || skill.kind === 'riddle' || skill.kind === 'precedence'){
       var special = specialQuestion(skill);
       gen = special.gen;
       questionExplanation = special.explanation || '';
@@ -2411,8 +2526,8 @@
           : (wasBonus ? "Noch eine Runde geschafft! Extra-Übung hilft immer. 🌈"
             : "Du hast alle Aufgaben für heute geschafft.")));
     doneStreakVal.textContent = state.streak;
-    if (!recoveryPending && !streakRecovered && ['hundreds', 'terms', 'riddles', 'written','semi','semiFree','semiRest','remainder'].indexOf(state.today.mode) !== -1){
-      doneSubtitle.textContent = { remainder:'Division mit Rest geübt! 🌟', hundreds:'Rechnen mit 100ern geschafft! 🌟',
+    if (!recoveryPending && !streakRecovered && ['hundreds', 'terms', 'riddles', 'written','semi','semiFree','semiRest','remainder','precedence'].indexOf(state.today.mode) !== -1){
+      doneSubtitle.textContent = { precedence:'Punkt vor Strich geübt! 🌟', remainder:'Division mit Rest geübt! 🌟', hundreds:'Rechnen mit 100ern geschafft! 🌟',
         terms:'Rechenbegriffe geübt! 🌟', riddles:'Zahlenrätsel gelöst! 🌟', written:'Schriftlich dividiert! 🌟',semi:'Halbschriftlich dividiert! 🌟',semiFree:'Deinen eigenen Rechenweg gefunden! 🌟',semiRest:'Mit Rest dividiert! 🌟' }[state.today.mode];
     }
     doneCorrectVal.textContent = state.today.correct + "/" + state.today.queue.length;
@@ -2482,6 +2597,7 @@
   riddlesBtn.addEventListener('click', function(){ startSession(state.today.completed, null, 'riddles'); });
   writtenBtn.addEventListener('click', function(){ startSession(state.today.completed, null, 'written'); });
   el('remainderBtn').addEventListener('click', function(){ startSession(state.today.completed, null, 'remainder'); });
+  el('precedenceBtn').addEventListener('click', function(){ startSession(state.today.completed, null, 'precedence'); });
   el('semiBtn').addEventListener('click',function(){showScreen(el('screen-semi-intro'));});
   ['semi','semiFree','semiRest'].forEach(function(mode){
     el(mode+'StartBtn').addEventListener('click',function(){startSession(state.today.completed,null,mode);});

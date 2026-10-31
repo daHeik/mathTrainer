@@ -99,6 +99,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'defaultProfile:defaultProfile, normalizeProfile:normalizeProfile, ensureFactPool:ensureFactPool,',
   'practiceSkill:practiceSkill, practiceSkillsInRange:practiceSkillsInRange, buildQueue:buildQueue,',
   'specialQuestion:specialQuestion, applyAnswerResult:applyAnswerResult,',
+  'precedenceQuestion:precedenceQuestion, precedenceTypes:PRECEDENCE_TYPES,',
   'renderMathText:renderMathText,',
   'writtenDivisionQuestion:writtenDivisionQuestion, renderWrittenDivision:renderWrittenDivision,',
   'remainderDivisionQuestion:remainderDivisionQuestion, renderRemainderDivision:renderRemainderDivision,',
@@ -1687,4 +1688,77 @@ seasonalPaint=[];seasonDate(12,1);api.streetDraw({ctx:seasonalCtx,elapsed:30,dis
 assert(seasonalPaint.some(function(op){return op[0]==='fillStyle'&&op[1]==='#fff4df';}),'Metro Christmas snowman');
 context.Date=realDate;
 console.log('Seasons: annual/midnight/backwards-clock boundaries, decorations and costumes in all twelve games, reduced motion, unchanged worlds/avatars/random OK');
+// Point-before-line: independently evaluate generated expressions, including brackets.
+var priorityProfile=api.normalizeProfile(api.defaultProfile());priorityProfile.config.sound=false;priorityProfile.config.rewardEvery=1;
+api.setState(priorityProfile);api.ensureFactPool();
+assert.strictEqual(api.practiceSkillsInRange(null,'precedence').length,14);
+assert.strictEqual(api.practiceSkill('p:unknown'),null);
+var priorityRandom=context.Math.random;
+api.precedenceTypes.forEach(function(type){
+  for(var sample=0;sample<300;sample++){
+    if(sample===0)context.Math.random=function(){return 0;};
+    else if(sample===1)context.Math.random=function(){return .999999;};
+    else context.Math.random=priorityRandom;
+    var task=api.specialQuestion(api.practiceSkill('p:'+type));
+    var independentlyCalculated=vm.runInNewContext(task.prompt.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-'));
+    assert.strictEqual(task.gen.correct,independentlyCalculated,task.prompt);
+    assert(Number.isInteger(task.gen.correct)&&task.gen.correct>=0&&task.gen.correct<=100);
+    assert.strictEqual(task.gen.options.length,4);assert.strictEqual(new Set(task.gen.options).size,4);
+    assert(task.gen.options.includes(task.gen.correct));
+    assert(task.gen.options.every(function(value){return Number.isInteger(value)&&value>=0;}));
+    assert(task.gen.options.some(function(value){return value!==task.gen.correct&&Math.abs(value-task.gen.correct)<=2;}),'Nearby distractor prevents magnitude-only guessing');
+    task.products.forEach(function(pair){assert(pair[0]>=1&&pair[0]<=9&&pair[1]>=1&&pair[1]<=9,task.prompt);});
+    task.divisions.forEach(function(pair){
+      assert.strictEqual(pair[0]%pair[1],0);var quotient=pair[0]/pair[1];
+      assert(pair[1]>=2&&pair[1]<=9&&quotient>=1&&quotient<=9);
+      assert(pair[1]<=5||quotient<=5,task.prompt+' respects lower five division families');
+    });
+    assert(task.explanation.includes('Klammern zuerst'));
+    var firstMistake=task.mistakes.find(function(value){return Number.isInteger(value)&&value>=0&&value!==task.gen.correct;});
+    assert(task.gen.options.includes(firstMistake),'Keep the first meaningful misconception: '+task.prompt);
+  }
+});
+context.Math.random=priorityRandom;
+var prioritySequence=[.125,.25,.12];context.Math.random=function(){return prioritySequence.length?prioritySequence.shift():.5;};
+var priorityExample=api.precedenceQuestion('mulAdd');context.Math.random=priorityRandom;
+assert.strictEqual(priorityExample.prompt,'3 × 4 + 2');
+assert(priorityExample.gen.options.includes(14)&&priorityExample.gen.options.includes(18));
+for(var round=0;round<100;round++){
+  var priorityQueue=api.buildQueue(5,null,'precedence');
+  assert.strictEqual(priorityQueue.length,5);assert.strictEqual(new Set(priorityQueue).size,5);
+  assert(priorityQueue.some(function(key){return key.startsWith('p:bracket');}));
+  assert(priorityQueue.some(function(key){return !key.startsWith('p:bracket');}));
+}
+priorityProfile.config.answerMode='choice';elements.precedenceBtn.click();
+assert.strictEqual(priorityProfile.today.mode,'precedence');
+assert(!elements.choicesWrap.hidden&&elements.remainderDivisionForm.hidden&&elements.writtenDivisionForm.hidden&&elements.semiDivisionForm.hidden);
+assert.strictEqual(elements.choicesWrap.children.length,4);
+assert(!elements.precedenceHint.hidden);
+var priorityKey=priorityProfile.today.queue[0],priorityType=api.practiceSkill(priorityKey).precedenceType;
+var priorityAnswer=vm.runInNewContext(elements.questionText.textContent.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-'));
+elements.choicesWrap.children.find(function(button){return Number(button.textContent)===priorityAnswer;}).click();
+assert.strictEqual(priorityProfile.precedenceSkills[priorityType].correctCount,1);
+assert.strictEqual(priorityProfile.reward.availablePlays,1);
+assert.strictEqual(priorityProfile.history[priorityProfile.today.date].byOperation.precedence.correct,1);
+assert(elements.feedbackText.textContent.includes('Klammern zuerst'));
+api.finishSession();assert(api.repeatRoundLabel(false).includes('Punkt vor Strich'));
+elements.doneBonusBtn.click();assert.strictEqual(priorityProfile.today.mode,'precedence');
+priorityProfile.today.queue=['p:mulAdd'];priorityProfile.today.index=0;
+priorityProfile.precedenceSkills.mulAdd.seen=true;priorityProfile.precedenceSkills.mulAdd.box=2;
+priorityProfile.config.answerMode='adaptive';api.renderQuestion();assert.strictEqual(elements.choicesWrap.children.length,12);
+priorityProfile.precedenceSkills.mulAdd.box=1;api.renderQuestion();assert.strictEqual(elements.choicesWrap.children.length,4);
+api.onAnswer('p:mulAdd',-1,999,null,false,'test');
+assert.strictEqual(priorityProfile.today.queue.length,2);assert.strictEqual(priorityProfile.today.requeueCounts['p:mulAdd'],1);
+elements.abortSessionBtn.click();assert.strictEqual(priorityProfile.today.mode,'mixed');
+assert.strictEqual(priorityProfile.reward.availablePlays,1,'Abort preserves priority-mode rewards');
+var priorityBackup=api.normalizeProfile(JSON.parse(JSON.stringify(priorityProfile)));
+assert.strictEqual(api.correctAnswersForProfile(priorityBackup),1);
+assert.strictEqual(priorityBackup.history[priorityBackup.today.date].byOperation.precedence.correct,1);
+priorityBackup.today.mode='precedence';priorityBackup.today.queue=['p:bracketMul'];priorityBackup.today.focusTable=null;
+api.normalizeProfile(priorityBackup);assert.strictEqual(priorityBackup.today.mode,'precedence');
+assert.strictEqual(priorityBackup.today.queue[0],'p:bracketMul');
+delete priorityBackup.precedenceSkills;api.normalizeProfile(priorityBackup);
+assert.strictEqual(Object.keys(priorityBackup.precedenceSkills).length,14);
+assert.strictEqual(priorityBackup.precedenceSkills.mulAdd.correctCount,0,'Old backups get defaults');
+console.log('Punkt vor Strich: 14 expression types, independent evaluation, small factors/divisions, misconception choices, bracket mix, adaptive input, retry/rewards/backup OK');
 console.log('Learning modes: generation, UI answers, retries, rewards, migration, replay and completion OK');

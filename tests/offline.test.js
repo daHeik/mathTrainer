@@ -16,6 +16,12 @@ assets.forEach(function(asset){ assert(fs.existsSync(path.join(root, asset)), 'M
 });
 ['index.html','app.js','arcade-extra.js','styles.css','icons.svg','manifest.json'].forEach(function(file){ assert(assets.indexOf('./' + file) !== -1); });
 var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+var home = html.slice(html.indexOf('id="screen-home"'), html.indexOf('id="screen-semi-intro"'));
+var modeOrder = ['precedenceBtn','semiBtn','writtenBtn','riddlesBtn','remainderBtn','hundredsBtn','termsBtn','tablePracticeBtn','startBtn','bonusBtn'];
+modeOrder.forEach(function(id,index){
+  assert(home.indexOf('id="'+id+'"')!==-1,'Home mode exists: '+id);
+  if(index)assert(home.indexOf('id="'+modeOrder[index-1]+'"')<home.indexOf('id="'+id+'"'),'Home modes run from advanced/new to basic');
+});
 var css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
 // Avatar imports must not replace the app shell, learning forms or game layout.
 [

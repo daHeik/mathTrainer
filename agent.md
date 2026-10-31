@@ -109,6 +109,16 @@ Use `setQuestionText()` for question updates and `renderMathText()` for textual
 math feedback. Arithmetic expressions and operand pairs use local nowrap
 `.math-expression` spans; do not insert HTML or forbid wrapping whole sentences.
 
+`precedence` (Punkt vor Strich) uses `p:type` keys from PRECEDENCE_TYPES and
+independent profile.precedenceSkills/history precedence records. Fourteen bounded
+templates, no runtime eval: actual multiplication operands 1..9, exact divisions
+with divisor or quotient <= 5, nonnegative integer final results <= 100.
+Include both bracket and unbracketed skills in every round with >=2 questions.
+Prioritize misconception answers, including 18 for 3*4+2, keep four distinct
+nonnegative integer choices with a nearby distractor. Show rule and post-answer
+steps; honor choice/input/adaptive, standard retries, rewards, repeat/abort,
+normalization and backup. Independent of normal mixed-round number filters.
+
 Ordinary remainder division is mode `remainder`, keys such as `rd:3x7`,
 with independent `fact.remainder` learning records and
 history operation `remainderDivide`. Use configured/active fact families;
@@ -254,6 +264,9 @@ only enough to keep the focused modal input visible. Unlike the source, keep
 pinch zoom enabled per this project's accessibility convention.
 Run `node tests/offline.test.js` for the cached asset graph and open
 `tests/layout-preview.html` for narrow portrait/landscape visual checks.
+Home learning modes run advanced/new to basic: precedence, semi, written,
+riddles, remainder, hundreds, terms, table; mixed 1x1 follows below on mobile
+and in the right column on desktop. Preserve DOM/keyboard order, not CSS order.
 The offline suite also guards essential shell, responsive, learning-form and
 game CSS rules. When syncing avatar styles, retain the complete app-shell
 section and the written/semi-written division and game-control rules.

@@ -28,6 +28,30 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 
 ## Features
 
+Die Startseite zeigt anspruchsvollere/neue Modi zuerst: Punkt vor Strich,
+halbschriftliche und schriftliche Division, Zahlenrätsel, Division mit Rest,
+Rechnen mit 100ern, Rechenbegriffe und Zahlenreihen. Die gemischte 1×1-Runde
+steht auf schmalen Displays darunter, auf breiten rechts daneben.
+
+### Punkt vor Strich
+
+Ein eigener Startbutton übt **Klammer vor Punkt vor Strich** mit einfachen
+Zahlen. Vierzehn Aufgabenmuster mischen Plus, Minus, Mal und Geteilt, mit und
+ohne Klammern – auch alle vier Rechenarten in einer Aufgabe. Ab zwei Fragen
+enthält jede Runde sowohl Klammeraufgaben als auch Aufgaben ohne Klammern.
+Die tatsächlich auszurechnenden Malaufgaben haben nur einstellige Faktoren,
+auch nach dem Auflösen einer Klammer. Divisionen gehen ohne Rest auf; Divisor
+oder Quotient ist höchstens 5 (z. B. 24 ÷ 6 oder 24 ÷ 4, nicht 56 ÷ 8).
+Ergebnisse bleiben nichtnegative ganze Zahlen bis 100.
+
+Die vier Auswahlantworten berücksichtigen typische Reihenfolgefehler:
+Bei `3 × 4 + 2` erscheinen sowohl **14** als auch **18**. Nahe falsche Antworten
+verhindern zusätzlich das Raten anhand der Größenordnung. Nach jeder Antwort
+wird der Rechenweg erklärt. Rundengröße, Zahleneingabe beziehungsweise adaptive
+Auswahl, Wiederholung, Statistik, Spielbelohnungen, Abbruch und Sicherungen
+funktionieren wie in den anderen Modi. Der Lernstand wird separat gespeichert;
+die Zahlenwahl der normalen Einmaleins-Runden begrenzt diesen Modus nicht.
+
 ### Automatische Spielsaisons und ruhige Tastatureingabe
 
 Alle zwölf Spiele richten ihre Dekoration nach dem lokalen Gerätedatum aus,

@@ -30,7 +30,18 @@
       <p class="subtitle" id="homeSubtitle">Übe dein kleines Einmaleins!</p>
       </div></div>
 
-      <div class="home-columns"><div><div class="learn-hero">
+      <div class="home-columns">
+      <div><h2 class="section-label">Gezielt üben</h2><div class="home-actions">
+        <button class="primary-btn extra-round-btn" id="precedenceBtn">Punkt vor Strich</button>
+        <button class="primary-btn extra-round-btn" id="semiBtn">Halbschriftlich dividieren</button>
+        <button class="primary-btn extra-round-btn" id="writtenBtn">Schriftlich dividieren</button>
+        <button class="primary-btn extra-round-btn" id="riddlesBtn">Zahlenrätsel lösen</button>
+        <button class="primary-btn extra-round-btn" id="remainderBtn">Division mit Rest</button>
+        <button class="primary-btn extra-round-btn" id="hundredsBtn">Rechnen mit 100ern</button>
+        <button class="primary-btn extra-round-btn" id="termsBtn">Rechenbegriffe lernen</button>
+        <button class="secondary-btn" id="tablePracticeBtn">Zahlenreihe auswählen</button>
+      </div></div>
+      <div><h2 class="section-label">Gemischtes 1×1</h2><div class="learn-hero">
         <button class="primary-btn" id="startBtn">Los geht's!</button>
         <button class="primary-btn" id="bonusBtn" style="display:none;">Gemischte Runde spielen</button>
         <div class="stats-row">
@@ -38,16 +49,8 @@
           <div class="stat-pill"><div class="val" id="todayVal">0/5</div><div class="lbl">Heute</div></div>
         </div>
       </div><p class="reward-note" id="rewardNote"></p></div>
-      <div><h2 class="section-label">Gezielt üben</h2><div class="home-actions">
-        <button class="secondary-btn" id="tablePracticeBtn">Zahlenreihe auswählen</button>
-        <button class="primary-btn extra-round-btn" id="remainderBtn">Division mit Rest</button>
-        <button class="primary-btn extra-round-btn" id="hundredsBtn">Rechnen mit 100ern</button>
-        <button class="primary-btn extra-round-btn" id="termsBtn">Rechenbegriffe lernen</button>
-        <button class="primary-btn extra-round-btn" id="riddlesBtn">Zahlenrätsel lösen</button>
-        <button class="primary-btn extra-round-btn" id="writtenBtn">Schriftlich dividieren</button>
-        <button class="primary-btn extra-round-btn" id="semiBtn">Halbschriftlich dividieren</button>
-      </div></div></div>
-      <p class="app-version" id="appVersion">Version 47</p>
+      </div>
+      <p class="app-version" id="appVersion">Version 48</p>
     </div>
 
     <div class="screen semi-intro" id="screen-semi-intro">
@@ -84,6 +87,7 @@
     <!-- QUESTION SCREEN -->
     <div class="screen" id="screen-question">
       <div class="progress-dots" id="progressDots"></div>
+      <p class="written-hint" id="precedenceHint" hidden>Klammer vor Punkt vor Strich. Bei gleichem Rang rechnest du von links nach rechts.</p>
       <div class="question" id="questionText">7 × 8</div>
       <form id="remainderDivisionForm" class="remainder-division" autocomplete="off" hidden aria-label="Ergebnis und Rest eintragen" novalidate></form>
       <div class="choices" id="choicesWrap"></div>
