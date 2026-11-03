@@ -94,6 +94,8 @@ var context = {
 vm.createContext(context);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'..','arcade-extra.js'),'utf8'),context);
 context.VocabArcade=context.window.VocabArcade;
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..','frog-punch.js'),'utf8'),context);
+context.FrogPunch=context.window.FrogPunch;
 source = source.replace(/\}\)\(\);\s*$/, [
   'globalThis.testApi = {',
   'defaultProfile:defaultProfile, normalizeProfile:normalizeProfile, ensureFactPool:ensureFactPool,',
@@ -119,6 +121,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'prepareGameCanvas:prepareGameCanvas, logicalCanvasHeight:logicalCanvasHeight,',
   'games:function(){return {dino:rewardGame,flappy:flappyGame,tower:towerGame,gravity:gravityGame,brick:arcadeGames.brick,snake:arcadeGames.snake,snow:arcadeGames.snow,runner:arcadeGames.runner,doodle:arcadeGames.doodle,tiles:arcadeGames.tiles,maze:arcadeGames.maze,asteroid:arcadeGames.asteroid};},',
   'extras:extraArcade, resizeExtraCanvases:resizeExtraCanvases,',
+  'frogGame:function(){return frogGame;}, startFrogGame:startFrogGame, frogStep:frogStep, tapFrog:tapFrog, stopFrogGame:stopFrogGame,',
   'runnerAction:runnerAction, runnerUpdate:updateRunnerGame, runnerResize:resizeRunnerCanvas,',
   'runnerProject:runnerProject, runnerDraw:drawRunnerGame, runnerSpawn:spawnRunnerRows,',
   'drawHalloweenSky:drawHalloweenSky, drawPumpkin:drawPumpkin,',
@@ -1789,3 +1792,44 @@ var legacyPriority=api.normalizeProfile(JSON.parse(JSON.stringify(priorityProfil
 assert.strictEqual(legacyPriority.precedenceSkills.allMixed.correctCount,3);
 console.log('Punkt vor Strich: 11 two-operation types, simple saved legacy rounds, preserved progress, independent evaluation and normal learning lifecycle OK');
 console.log('Learning modes: generation, UI answers, retries, rewards, migration, replay and completion OK');
+
+// Frog Punch uses one reward for all three rounds, not three collision attempts.
+var frogProfile=api.normalizeProfile(api.defaultProfile());frogProfile.config.childName='Froschtest';frogProfile.reward.availablePlays=1;api.setState(frogProfile);
+var beforeFrog=JSON.stringify([frogProfile.facts,frogProfile.history,frogProfile.semiSkills]);
+api.startFrogGame(false);var frog=api.frogGame();assert(frog);assert.strictEqual(elements.frogField.children.length,15);
+assert.strictEqual(frogProfile.reward.availablePlays,1,'Choosing the game is free');
+assert.strictEqual(frogProfile.reward.gamesPlayed,0);elements.frogStartBtn.click();
+assert.strictEqual(frogProfile.reward.availablePlays,0);assert.strictEqual(frogProfile.reward.gamesPlayed,1);
+var originalNow=context.performance.now,frogNow=1;context.performance.now=function(){return frogNow;};
+function frogTick(dt){frogNow+=dt*1000;api.frogStep(frogNow);}
+frogTick(.5);var firstFrog=frog.holes.findIndex(function(h){return h.born!==null;});
+api.pauseGame(elements['screen-frog']);frogTick(8);api.tapFrog(firstFrog);assert.strictEqual(frog.score,0);assert.strictEqual(frog.elapsed,.5);
+api.resumeGame(elements['screen-frog']);
+for(var round=0;round<3;round++){
+  while(frog.running){
+    frog.holes.forEach(function(h,i){if(h.born!==null&&h.hitAt===null)api.tapFrog(i);});frogTick(.05);
+  }
+  assert.strictEqual(frog.missed,0);assert.strictEqual(frog.elapsed,40);assert(api.getConfetti(),'A perfect round celebrates with confetti');
+  assert.strictEqual(frogProfile.reward.availablePlays,0);assert.strictEqual(frogProfile.reward.gamesPlayed,1);
+  if(round<2){
+    assert.strictEqual(elements.frogOverlayTitle.textContent,'Noch '+(2-round)+(round===0?' Runden':' Runde'));
+    assert.strictEqual(frogProfile.reward.frogLeaderboard.length,0,'Only completed three-round games enter the leaderboard');
+    elements.frogStartBtn.click();assert.strictEqual(api.getConfetti(),null,'Starting a round clears confetti');
+  }
+}
+assert.strictEqual(elements.frogOverlayTitle.textContent,'Spiel beendet');assert(!frog.active);assert(elements.frogStartBtn.hidden);
+assert.strictEqual(frogProfile.reward.frogLeaderboard.length,1);assert.strictEqual(frogProfile.reward.frogLeaderboard[0].score,frog.score);
+assert(elements.frogLeaders.children[0].classList.contains('frog-current'));
+assert.strictEqual(elements.frogLeaders.children[0].getAttribute('aria-current'),'true');
+assert(/\d{2}\.\d{2}/.test(elements.frogLeaders.children[0].textContent));
+var frogBackup=api.normalizeProfile(JSON.parse(storage.km_1x1_trainer_v2).profiles[api.getRoot().activeProfileId]);
+assert.strictEqual(JSON.stringify(frogBackup.reward.frogLeaderboard),JSON.stringify(frogProfile.reward.frogLeaderboard));
+assert.strictEqual(JSON.stringify([frogProfile.facts,frogProfile.history,frogProfile.semiSkills]),beforeFrog);
+var savedFrogScores=JSON.stringify(frogProfile.reward);api.stopFrogGame();assert.strictEqual(api.getConfetti(),null);
+api.startFrogGame(false);assert.strictEqual(api.frogGame(),null,'No reward prevents a new normal game');
+api.startFrogGame(true);elements.frogStartBtn.click();frog=api.frogGame();frogNow=frog.lastFrame;
+for(var r=0;r<3;r++){frogTick(40);if(r<2)elements.frogStartBtn.click();}
+assert.strictEqual(JSON.stringify(frogProfile.reward),savedFrogScores,'Demos change neither rewards nor real leaderboard/records');
+api.stopFrogGame();api.startFrogGame(true);elements.frogStartBtn.click();frogTick(.5);api.renderHome();assert.strictEqual(api.frogGame(),null,'Leaving the game stops its clock and releases it');
+context.performance.now=originalNow;
+console.log('Frog Punch integration: one credit/three rounds, pause, demo isolation, confetti, persisted leaderboard/current marker and unchanged learning data OK');

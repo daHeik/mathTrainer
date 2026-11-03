@@ -50,7 +50,7 @@
         </div>
       </div><p class="reward-note" id="rewardNote"></p></div>
       </div>
-      <p class="app-version" id="appVersion">Version 51</p>
+      <p class="app-version" id="appVersion">Version 52</p>
     </div>
 
     <div class="screen semi-intro" id="screen-semi-intro">
@@ -167,8 +167,21 @@
 <button class="game-choice" id="chooseTilesBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#tiles"/></svg></span>2048<small>Zahlen clever kombinieren</small></button>
 <button class="game-choice" id="chooseMazeBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#maze"/></svg></span>Pac-Man<small>Punkte sammeln, Geister jagen</small></button>
 <button class="game-choice" id="chooseAsteroidBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#rocket"/></svg></span>Asteroids<small>Durchs All fliegen</small></button>
+<button class="game-choice" id="chooseFrogBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 100 100" aria-hidden="true"><use href="icons.svg#frog"/></svg></span>Frog Punch<small>Flinke Frösche antippen</small></button>
       </div>
       <button class="secondary-btn" id="gameChoiceBackBtn">Zurück <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#home"/></svg></button>
+    </div>
+
+    <div class="screen" id="screen-frog">
+      <div class="game-toolbar"><button class="secondary-btn" id="frogHomeBtn">Spiel beenden</button><h1>Frog Punch</h1><button class="game-pause-btn" id="frogPauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="frogFullscreenBtn">Vollbild</button></div>
+      <div class="game-hud"><span id="frogTime">0:40</span><span id="frogRounds">Runde 1/3</span><span id="frogScore">Punkte: 0</span><span id="frogBest">Rekord: 0</span></div>
+      <div class="frog-scene" id="frogWrap">
+        <div class="frog-scenery" aria-hidden="true"><div class="frog-pond"></div><span class="frog-waterlily">✿</span><span class="frog-reeds">❧</span><span class="frog-reeds frog-reeds-right">❧</span><span class="frog-pebble"></span></div>
+        <div class="frog-field" id="frogField" role="group" aria-label="15 Froschlöcher. Tippe die auftauchenden Frösche an."></div>
+        <div class="frog-panel" id="frogOverlay"><div class="frog-panel-card"><span class="frog-panel-eyebrow">TEICHPARTIE</span><h2 id="frogOverlayTitle">Bereit für Frog Punch?</h2><p id="frogOverlayText">Einzelne Frösche bleiben 750 ms, Paare 1 Sekunde. Drei Runden à 40 Sekunden pro Spiel.</p><button class="primary-btn" id="frogStartBtn">Runde starten</button><button class="secondary-btn" id="frogAgainBtn" hidden>Zur Spielübersicht</button></div></div>
+      </div>
+      <section class="frog-leaderboard" aria-labelledby="frogLeaderboardTitle"><h2 id="frogLeaderboardTitle">Bestenliste · Top 5 · Punkte pro Spiel</h2><ol id="frogLeaders"></ol></section>
+      <p class="frog-hint" id="frogHint" role="status" aria-live="polite">Einzelne: 750 ms · Paare: 1 s · ein Punkt pro Frosch</p>
     </div>
 
     <!-- REWARD GAME SCREEN -->
@@ -557,6 +570,7 @@
 </div>
 
 <script src="arcade-extra.js"></script>
+<script src="frog-punch.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

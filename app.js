@@ -246,6 +246,8 @@
         bestTilesScore: 0,
         bestMazeScore: 0,
         bestAsteroidScore: 0,
+        bestFrogScore: 0,
+        frogLeaderboard: [],
         gamesPlayed: 0,
         gamesTrackedSince: today
       }
@@ -449,9 +451,10 @@
     if (typeof p.reward.bestFlappyScore !== 'number' || p.reward.bestFlappyScore < 0){
       p.reward.bestFlappyScore = 0;
     }
-    ['bestGravityScore','bestBrickScore','bestSnakeScore','bestSnowScore','bestRunnerScore','bestDoodleScore','bestTilesScore','bestMazeScore','bestAsteroidScore','gamesPlayed'].forEach(function(key){
+    ['bestGravityScore','bestBrickScore','bestSnakeScore','bestSnowScore','bestRunnerScore','bestDoodleScore','bestTilesScore','bestMazeScore','bestAsteroidScore','bestFrogScore','gamesPlayed'].forEach(function(key){
       if (!Number.isFinite(p.reward[key]) || p.reward[key] < 0) p.reward[key] = 0;
     });
+    p.reward.frogLeaderboard=FrogPunch.topFive(p.reward.frogLeaderboard);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(p.reward.gamesTrackedSince || '')) p.reward.gamesTrackedSince = todayStr();
     if (typeof p.reward.bestTowerScore !== 'number' || p.reward.bestTowerScore < 0){
       p.reward.bestTowerScore = 0;
@@ -1443,7 +1446,7 @@
     if (confettiLayer) confettiLayer.remove();
     confettiLayer = null;
   }
-  function launchConfetti(){
+  function launchConfetti(target){
     clearConfetti();
     var layer = document.createElement('div');
     confettiLayer = layer;
@@ -1461,7 +1464,7 @@
       if (Math.random() < 0.4) p.style.borderRadius = '50%';
       layer.appendChild(p);
     }
-    document.body.appendChild(layer);
+    (target||document.body).appendChild(layer);
     setTimeout(function(){ if (confettiLayer === layer) clearConfetti(); }, 5000);
   }
 
@@ -1658,11 +1661,12 @@
   var rewardGameChoiceOrigin = null;
 
   function showScreen(screen){
+    if(frogGame&&screen!==el('screen-frog'))stopFrogGame();
     el('screen-semi-intro').classList.toggle('active',screen===el('screen-semi-intro'));
     if (screen !== screenDone) clearConfetti();
     if(fullscreenScreen && fullscreenScreen!==screen)exitGameFullscreen();
-    ['screen-home','screen-question','screen-table-practice','screen-done','screen-stickers','screen-statistics','screen-achievements','screen-game-choice','screen-game','screen-flappy','screen-tower','screen-gravity','screen-brick','screen-snake','screen-snow','screen-runner','screen-doodle','screen-tiles','screen-maze','screen-asteroid'].map(el).forEach(function(s){s.classList.toggle('active',s===screen);});
-    var game=[screenGame,screenFlappy,screenTower,el('screen-gravity'),el('screen-brick'),el('screen-snake'),el('screen-snow'),el('screen-runner'),el('screen-doodle'),el('screen-tiles'),el('screen-maze'),el('screen-asteroid')].indexOf(screen)!==-1;
+    ['screen-home','screen-question','screen-table-practice','screen-done','screen-stickers','screen-statistics','screen-achievements','screen-game-choice','screen-game','screen-flappy','screen-tower','screen-gravity','screen-brick','screen-snake','screen-snow','screen-runner','screen-doodle','screen-tiles','screen-maze','screen-asteroid','screen-frog'].map(el).forEach(function(s){s.classList.toggle('active',s===screen);});
+    var game=[screenGame,screenFlappy,screenTower,el('screen-gravity'),el('screen-brick'),el('screen-snake'),el('screen-snow'),el('screen-runner'),el('screen-doodle'),el('screen-tiles'),el('screen-maze'),el('screen-asteroid'),el('screen-frog')].indexOf(screen)!==-1;
     gearBtn.style.display=game || screen===screenQuestion?'none':'';
     profileBtn.style.display=game || screen===screenQuestion?'none':'';
     abortSessionBtn.style.display=!game && screen!==screenHome?'':'none';
@@ -1692,7 +1696,7 @@
   }
   function renderGameAvailability(){
     var plays=state.reward.availablePlays; text('gameAvailability',plays?plays+(plays===1?' Spiel freigeschaltet':' Spiele freigeschaltet'):'Verdiene dein nächstes Spiel mit einer Lernrunde.');
-    ['Dino','Flappy','Tower','Gravity','Brick','Snake','Snow','Runner','Doodle','Tiles','Maze','Asteroid'].forEach(function(name){el('choose'+name+'Btn').disabled=plays<1;});
+    ['Dino','Flappy','Tower','Gravity','Brick','Snake','Snow','Runner','Doodle','Tiles','Maze','Asteroid','Frog'].forEach(function(name){el('choose'+name+'Btn').disabled=plays<1;});
   }
   el('navLearn').addEventListener('click',renderHome);
   el('navGames').addEventListener('click',function(){rewardGameChoiceOrigin=screenHome;showScreen(screenGameChoice);});
@@ -5056,10 +5060,117 @@
   document.addEventListener('keydown',function(e){if(gameControlKey(e))return;if(arcadeGames.snow&&arcadeGames.snow.active&&(e.key===' '||e.key==='ArrowUp')){e.preventDefault();if(!e.repeat)snowPress();}});
   document.addEventListener('keyup',function(e){if(e.key===' '||e.key==='ArrowUp')snowRelease();});
 
+  // Frog Punch has three timed rounds per reward instead of collision attempts.
+  var frogGame=null,frogEntrySerial=0;
+  function frogLeaderboard(){
+    var list=el('frogLeaders');list.textContent='';
+    var entries=state.reward.frogLeaderboard;
+    for(var i=0;i<5;i++){
+      var item=document.createElement('li'),rank=document.createElement('span'),score=document.createElement('strong');
+      rank.className='frog-rank';rank.textContent=String(i+1);item.appendChild(rank);
+      var entry=entries[i];
+      if(entry){
+        var date=new Date(entry.at),label=String(date.getDate()).padStart(2,'0')+'.'+String(date.getMonth()+1).padStart(2,'0');
+        item.appendChild(document.createTextNode(label));score.textContent=String(entry.score);
+        var current=!!(frogGame&&frogGame.leaderboardId===entry.id);item.classList.toggle('frog-current',current);
+        item.setAttribute('aria-label','Platz '+(i+1)+': '+label+', '+entry.score+' Punkte'+(current?' – dein aktuelles Spiel':''));
+        if(current)item.setAttribute('aria-current','true');
+      }else{item.appendChild(document.createTextNode('–'));score.textContent='–';item.setAttribute('aria-label','Platz '+(i+1)+': noch kein Spiel');}
+      item.appendChild(score);list.appendChild(item);
+    }
+  }
+  function frogSaveResult(){
+    var g=frogGame;if(!g||g.isDemo||g.completedRounds!==3||g.leaderboardId)return;
+    var now=Date.now();g.leaderboardId='frog-'+now+'-'+(++frogEntrySerial);
+    state.reward.frogLeaderboard=FrogPunch.topFive([{id:g.leaderboardId,at:now,score:g.score}].concat(state.reward.frogLeaderboard));saveState();
+  }
+  function frogRecord(){
+    if(frogGame&&!frogGame.isDemo&&frogGame.score>state.reward.bestFrogScore){state.reward.bestFrogScore=frogGame.score;saveState();}
+  }
+  function frogHud(){
+    if(!frogGame)return;
+    var g=frogGame,values={frogTime:formatGameTime((FrogPunch.duration-(g.elapsed||0))*1000),frogRounds:'Runde '+Math.max(1,g.round)+'/3',frogScore:'Punkte: '+g.score,frogBest:'Rekord: '+state.reward.bestFrogScore};
+    Object.keys(values).forEach(function(id){if(el(id).textContent!==values[id])text(id,values[id]);});
+  }
+  function frogDraw(){
+    var g=frogGame;if(!g)return;
+    var reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    g.nodes.forEach(function(n,i){
+      var h=g.holes[i],up=h&&h.born!==null&&h.hitAt===null;
+      var pose=h?FrogPunch.pose(g,h,reduced):0;
+      n.pop.setAttribute('transform','translate(0 '+(82*(1-pose)).toFixed(2)+')');
+      n.button.classList.toggle('frog-is-up',!!up);
+      n.button.classList.toggle('frog-is-hit',!!(h&&h.hitAt!==null));
+      var label='Froschloch '+(i+1)+(up?' – jetzt antippen':'');
+      if(n.button.getAttribute('aria-label')!==label)n.button.setAttribute('aria-label',label);
+    });
+    frogHud();
+  }
+  function frogRoundEnded(){
+    var g=frogGame,remaining=3-g.completedRounds,perfect=g.spawned>0&&g.missed===0&&g.roundScore===g.spawned;
+    frogRecord();frogSaveResult();frogLeaderboard();frogDraw();
+    text('frogOverlayTitle',remaining?'Noch '+remaining+(remaining===1?' Runde':' Runden'):'Spiel beendet');
+    text('frogOverlayText',(perfect?'Alle Frösche erwischt! ':'')+g.roundScore+' von '+g.spawned+' Fröschen · Insgesamt '+g.score+' Punkte'+(remaining?'':' in drei Runden.'));
+    el('frogStartBtn').hidden=!remaining;text('frogStartBtn','Nächste Runde starten');
+    el('frogAgainBtn').hidden=false;el('frogOverlay').hidden=false;
+    text('frogHint',perfect?'Perfekte Runde! Kein Frosch verpasst.':'Jeder Frosch zählt. Bereit für die nächste Teichpartie?');
+    if(perfect)launchConfetti(el('screen-frog'));
+    if(!remaining){g.active=false;text('frogHint','Drei Runden gespielt · '+g.score+' Punkte');}
+    (remaining?el('frogStartBtn'):el('frogAgainBtn')).focus();
+  }
+  function frogStep(now){
+    var g=frogGame;if(!g)return;
+    var dt=Math.max(0,(now-g.lastFrame)/1000);g.lastFrame=now;
+    if(FrogPunch.advance(g,dt))frogRoundEnded();
+  }
+  function runFrogGame(now){
+    if(!frogGame||!frogGame.active)return;
+    frogStep(now);frogDraw();
+    if(frogGame&&frogGame.active)frogGame.frame=requestAnimationFrame(runFrogGame);
+  }
+  function tapFrog(index){
+    if(!frogGame||!frogGame.running||frogGame.pausedAt!==null)return;
+    frogStep(performance.now());
+    if(FrogPunch.hit(frogGame,index)){frogDraw();}
+  }
+  function buildFrogField(){
+    var field=el('frogField');field.textContent='';frogGame.nodes=[];
+    for(var i=0;i<FrogPunch.count;i++)(function(index){
+      var button=document.createElement('button');button.type='button';button.className='frog-hole';
+      button.setAttribute('aria-label','Froschloch '+(index+1));
+      // Static local SVG only. Clip the rising frog inside its hole's front rim.
+      button.innerHTML='<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><ellipse cx="50" cy="81" rx="45" ry="16" fill="#456746" opacity=".2"/><ellipse cx="50" cy="75" rx="43" ry="18" fill="#b59c63"/><ellipse cx="50" cy="73" rx="38" ry="14" fill="#263e32"/><ellipse cx="50" cy="70" rx="31" ry="8" fill="#192e29"/><svg x="5" y="0" width="90" height="79" viewBox="0 0 100 88" overflow="hidden"><g class="frog-pop" transform="translate(0 82)"><use href="icons.svg#frog" width="100" height="100"/></g></svg><path d="M7 75Q10 92 50 93Q90 92 93 75Q88 85 50 85Q12 85 7 75" fill="#c5ae72"/><path d="M12 83Q50 99 88 83" fill="none" stroke="#80a45c" stroke-width="4" stroke-linecap="round"/></svg><span class="frog-point" aria-hidden="true">+1</span>';
+      button.addEventListener('pointerdown',function(e){e.preventDefault();tapFrog(index);});
+      button.addEventListener('click',function(){tapFrog(index);});
+      field.appendChild(button);frogGame.nodes.push({button:button,pop:button.querySelector('.frog-pop')});
+    })(i);
+  }
+  function stopFrogGame(){
+    if(!frogGame)return;frogRecord();frogGame.active=false;frogGame.running=false;
+    if(frogGame.frame)cancelAnimationFrame(frogGame.frame);frogGame=null;clearConfetti();
+  }
+  function startFrogGame(demo){
+    if(demo!==true&&state.reward.availablePlays<1)return;
+    stopFrogGame();frogGame=FrogPunch.create();frogGame.isDemo=demo===true;frogGame.lastFrame=performance.now();buildFrogField();
+    el('frogOverlay').hidden=false;el('frogStartBtn').hidden=false;el('frogAgainBtn').hidden=true;
+    text('frogOverlayTitle','Bereit für Frog Punch?');text('frogOverlayText','Einzelne Frösche bleiben 750 ms, zwei gleichzeitig bleiben je 1 Sekunde. Tippe sie rechtzeitig an! Ein Spiel gibt dir drei Runden à 40 Sekunden.');text('frogStartBtn','Erste Runde starten');
+    text('frogHint','Einzelne: 750 ms · Paare: 1 s · ein Punkt pro Frosch');showScreen(el('screen-frog'));frogLeaderboard();frogDraw();el('frogStartBtn').focus();
+    frogGame.frame=requestAnimationFrame(runFrogGame);
+  }
+  el('chooseFrogBtn').addEventListener('click',function(){startFrogGame(false);});
+  el('frogStartBtn').addEventListener('click',function(){
+    var g=frogGame;if(!g||!g.active||g.running||g.pausedAt!==null)return;
+    if(!g.isDemo&&!consumeRewardPlay(g))return;
+    clearConfetti();FrogPunch.beginRound(g);g.lastFrame=performance.now();el('frogOverlay').hidden=true;
+    text('frogHint','Tippe die Frösche an, sobald sie auftauchen!');frogDraw();g.nodes[0].button.focus();
+  });
+  el('frogHomeBtn').addEventListener('click',function(){exitGameFullscreen();stopFrogGame();renderHome();});
+  el('frogAgainBtn').addEventListener('click',function(){var demo=frogGame&&frogGame.isDemo;exitGameFullscreen();stopFrogGame();if(demo)startFrogGame(true);else openRewardGameChoice();});
+
   // Layout immersion works without native fullscreen on iPhone/iPad.
   var fullscreenScreen=null;
   function gameControlKey(e){return e.target&&e.target.closest&&e.target.closest('.game-immersive button');}
-  function gameForScreen(screen){var kind=screen.id.replace('screen-','');return kind==='game'?rewardGame:kind==='flappy'?flappyGame:kind==='tower'?towerGame:kind==='gravity'?gravityGame:arcadeGames[kind];}
+  function gameForScreen(screen){var kind=screen.id.replace('screen-','');return kind==='frog'?frogGame:kind==='game'?rewardGame:kind==='flappy'?flappyGame:kind==='tower'?towerGame:kind==='gravity'?gravityGame:arcadeGames[kind];}
   function enterGameFullscreen(screen){
     fullscreenScreen=screen;screen.classList.add('game-immersive');document.body.classList.add('game-immersive-open');
     if(arcadeGames.brick)arcadeGames.brick.inputRect=null;
@@ -5081,7 +5192,7 @@
     if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(function(){});
     if(arcadeGames.brick)arcadeGames.brick.inputRect=null;
   }
-  ['game','flappy','tower','gravity','brick','snake','snow','runner','doodle','tiles','maze','asteroid'].forEach(function(kind){
+  ['game','flappy','tower','gravity','brick','snake','snow','runner','doodle','tiles','maze','asteroid','frog'].forEach(function(kind){
     var screen=el('screen-'+kind),button=el(kind+'FullscreenBtn');
     button.setAttribute('aria-label','Browser-Vollbild umschalten');
     el(kind+'PauseBtn').addEventListener('click',function(){pauseGame(screen);});
@@ -5806,8 +5917,8 @@
   renderHome();
   settleViewport();
 
-  var demoMatch=location.search.match(/[?&]demo=(flappy|tower|gravity|brick|snake|snow|runner|doodle|tiles|maze|asteroid)(?:&|$)/);
-  if(demoMatch){if(demoMatch[1]==='flappy')startFlappyGame(true);else if(demoMatch[1]==='gravity')startGravityGame(true);else if(demoMatch[1]==='brick'||demoMatch[1]==='snake'||demoMatch[1]==='snow'||demoMatch[1]==='runner'||extraArcade.definitions[demoMatch[1]])startArcadeGame(demoMatch[1],true);else startTowerGame(true);}
+  var demoMatch=location.search.match(/[?&]demo=(flappy|tower|gravity|brick|snake|snow|runner|doodle|tiles|maze|asteroid|frog)(?:&|$)/);
+  if(demoMatch){if(demoMatch[1]==='frog')startFrogGame(true);else if(demoMatch[1]==='flappy')startFlappyGame(true);else if(demoMatch[1]==='gravity')startGravityGame(true);else if(demoMatch[1]==='brick'||demoMatch[1]==='snake'||demoMatch[1]==='snow'||demoMatch[1]==='runner'||extraArcade.definitions[demoMatch[1]])startArcadeGame(demoMatch[1],true);else startTowerGame(true);}
 
   if(!demoMatch&&!state.config.childName.trim())openPlayerEditor();
 

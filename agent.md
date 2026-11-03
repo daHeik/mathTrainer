@@ -219,7 +219,8 @@ a three-minute cap (Bricks and 2048: five minutes) and pause/hidden-view suspens
 Use `gameDurationMs(game)` in shared arcade loops, attempt checks and HUDs.
 Bricks' base speed is `351 * 1.25^(level-1)`; extras multiply this base.
 Higher levels cycle six layouts with breakable armor and moving rows.
-Confetti belongs only to math-round completion and is cleared on leaving it.
+Confetti belongs to math-round completion and perfect Frog Punch rounds; clear it
+on leaving the view and before starting the next Frog Punch round.
 Tower blocks keep immutable world Y positions (27 units per floor). Use
 `towerGame.cameraY` only for rendering the whole world, including ground.
 `towerSceneSpec()` defines altitude encounters: birds at 10+, aircraft at 20+,
@@ -338,3 +339,23 @@ state is needed. Do not erase a user's real browser data during testing.
 - Keep commits focused and use concise imperative commit subjects, matching the
   existing history.
 - Do not commit exported progress backups, local server logs, or editor files.
+
+## Frog Punch (2026-11-03)
+
+Thirteenth reward, `frog-punch.js` loaded before app.js (normalization dependency),
+`frog.html` launcher and `screen-frog` DOM/SVG view. Three 40-second rounds per
+credit; no collision attempts. Consume only at first round start, not selection.
+750ms single-frog windows, 1s per frog in a simultaneous pair (including
+rise/fall); pairs about every 15 seconds, 15 holes
+(3×5 portrait, 5×3 wide/landscape). Keep targets >=44px and preserve pinch zoom.
+Freeze simulation/input on shared pause/visibility handling; CSS rotation changes
+no hole indices. Use `FrogPunch.advance` before hits to reject expired targets.
+Perfect means every appearance hit, not just every unique hole. Confetti is
+inside the game screen for fullscreen support. Demo changes no persistent data.
+`reward.bestFrogScore` tracks cumulative points; `frogLeaderboard` stores five
+completed three-round games as `{id,at,score}`, score descending then timestamp
+descending (newest insertion first for exact ties). Show local dd.mm and points,
+highlight current ID only if retained. Normalize/import through topFive, defaults
+0/[], preserve learning data. Partial games are not ranked or resumable on reload.
+Run `node tests/frog-punch.test.js` and existing integration/offline/arcade suites.
+Documentation: README is the source; regenerate/check mathTrainer HTML per AGENTS.md.

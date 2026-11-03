@@ -56,3 +56,7 @@ erhalten. Die Viewport-Flackervermeidung stammt aus `90f1ef5` (UI 52).
 Am 31. Oktober 2026 wurde der Augen-Farbpicker aus Vocabulator `135a6c5`
 (UI 57, MIT, gleicher Urheber) übernommen, einschließlich freier sechsstelliger
 Hexfarben, direkter Avatar-Vorschau und Erhalt vorhandener Augenfarben.
+
+Am 3. November 2026 wurde Frog Punch als eigene DOM-/SVG-Implementierung ergänzt.
+Froschsymbol, Lochgrafik und CSS-Teichwiese sind eigene lokale Geometrien ohne
+externe Bild-, Schrift- oder Sounddateien. Keine zusätzlichen Fremdassets.

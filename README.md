@@ -1,10 +1,16 @@
-# mathServer – 1×1 Trainer
+# mathTrainer – 1×1 Trainer (mathServer)
 
-[![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-blue.svg)](LICENSE)
+| Projektinformationen | Stand |
+| --- | --- |
+| Projektablage | `/Users/heik/Dev/repos/mathServer` |
+| Version | Basis `3ef3b99` mit lokalen Änderungen für Frog Punch; PWA-Cache `1x1-trainer-v52`, keine separate semantische App-Version |
+| Letzte Quellcodeänderung | 2026-11-03 |
+| Letzte Projekt-/README-Änderung | 2026-11-03 |
+| HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
 
-<p align="center">
-  <img src="icon-192.png" width="128" height="128" alt="App-Icon des 1×1 Trainers">
-</p>
+## TL;DR – so funktioniert mathTrainer
+
+mathTrainer übt Multiplikation, Division und weitere Grundschul-Rechenwege. Aufgaben werden nach bisheriger Sicherheit wiederholt; richtige Antworten verdienen Spiele. Mehrere Profile haben eigene Lernstände, Avatare, Statistiken und Rekorde. Die App läuft vollständig im Browser als statische PWA: HTML, CSS und JavaScript ohne Backend, Datenbankdienst oder JavaScript-Buildsystem.
 
 Eine kleine Web-App zum Üben von Multiplikation und optional Division mit Spaced Repetition:
 Aufgaben, bei denen dein Kind schnell und richtig antwortet, kommen seltener
@@ -20,11 +26,130 @@ Die App kommt ohne Werbung, Benutzerkonto, Tracker oder Telemetrie aus. Sie
 überträgt selbst keine Lernstände oder Profildaten an einen Server.
 
 Die Oberfläche liegt in `index.html`, das Styling in `styles.css` und die
-Anwendungs- und Spiellogik in `app.js` und `arcade-extra.js`. `flappy.html`, `tower.html`,
+Anwendungs- und Spiellogik in `app.js`, `arcade-extra.js` und `frog-punch.js`. `flappy.html`, `tower.html`,
 `gravity.html`, `brick.html`, `snake.html`, `snow.html`, `runner.html`,
-`doodle.html`, `tiles.html`, `maze.html` und `asteroid.html` sind
+`doodle.html`, `tiles.html`, `maze.html`, `asteroid.html` und `frog.html` sind
 kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 öffnen. Dadurch gibt es keine doppelte Spiellogik.
+
+## Anleitung – erste Runde, Elternbereich und Sicherung
+
+1. Im Projektordner `python3 -m http.server 8080` starten und `http://localhost:8080/index.html` öffnen. Die App braucht für normalen Betrieb einen Webserver; `file://` prüft die PWA nicht vollständig.
+2. Namen und Avatar wählen, danach auf der Startseite Lernmodus oder gemischte 1×1-Runde starten. Die zusätzlichen Modi erklären ihre Rechenwege; die Lernantworten verwenden Auswahl, Eingabe oder den eingestellten adaptiven Modus.
+3. Nach Rückmeldung die nächste Aufgabe bearbeiten. Beantwortete Aufgaben und Belohnungen werden lokal gespeichert. Abbrechen verwirft nicht den bereits verdienten Fortschritt.
+4. Im Zahnrad den Elternbereich öffnen. Der initiale Code `6969` lässt sich dort ändern. Zahlenbereich, aktive Reihen, Rundengröße, neue Aufgaben, Divisionsfreigabe und Belohnungsintervall anpassen. Name und Avatar bleiben über das öffentliche Profil erreichbar.
+5. Im Statistikbereich Tages-/Wochenwerte und Lernstände prüfen. Vor Browserwechsel oder Löschen lokaler Daten im Elternbereich eine JSON-Sicherung exportieren. Import ersetzt den geprüften lokalen Bestand; vorherige Sicherung behalten.
+6. Verdiente Spiele in „Spiele“ auswählen. Erst die erste Spielaktion verbraucht ein Kontingent. Pause und ausgeblendete Ansichten verbrauchen keine aktive Spielzeit.
+
+Normale Spiele laufen bis zu drei aktive Minuten pro Kontingent; **Bricks und 2048 bis zu fünf Minuten**. Diese Ausnahme ist in `gameDurationMs()` implementiert. Beim Zeitende endet der Durchlauf; mit weiterem Kontingent kann ein neues Belohnungsspiel gestartet werden. Drei verbrauchte Versuche beenden früher. **Frog Punch hat stattdessen drei vollständige Runden à 40 Sekunden pro Kontingent**; verpasste Frösche kosten keine Versuche. Demo-Starter wie `snow.html` öffnen dieselbe Spielimplementierung ohne Lernbelohnung.
+
+## Technischer Deep-Dive – Sprache, Aufbau und Kommunikation
+
+Die App besteht aus `index.html` (Ansichten/Formulare), `styles.css` (Layout), `icons.svg` (lokale Symbole), `app.js` (Lern-, Profil- und ursprüngliche Spiellogik) sowie `arcade-extra.js` (vier zusätzliche Spiele) und `frog-punch.js` (Frog-Punch-Zustand, Zeitsteuerung und Bestenlisten-Normalisierung). `manifest.json` enthält Installationsmetadaten, `sw.js` den Service Worker. Direkte Spiel-HTMLs starten den gemeinsamen Code im Demo-Modus, statt Spiellogik zu duplizieren.
+
+```text
+Statischer Webserver → HTML/CSS/JavaScript → Browser-DOM und Canvas
+                                           ↕ localStorage (Profile/Fortschritt)
+                                           ↕ Service Worker / Cache Storage (Appdateien)
+```
+
+Es gibt keine Anwendungs-REST-API, keine WebSockets und keine Gerätesynchronisierung. Der Browser lädt Dateien über HTTP(S), kann auf die System-Sprachfunktionen zugreifen und erzeugt Backupdateien lokal. iPhone, iPad und Desktop haben getrennte Stände, selbst wenn dasselbe Profil benannt wird. Ein Geräteabgleich wie beim Vocabulator ist hier nicht implementiert. Node dient nur den Tests, Python nur einem möglichen lokalen statischen Server.
+
+Die JavaScript-Struktur verwendet überwiegend `var` und Funktionen, ergänzt um moderne Browser-APIs. DOM-Daten werden möglichst über `textContent` gesetzt. Neue Funktionen sollen ohne Paketmanager lauffähig bleiben. Ein großer Teil des Codes liegt bewusst in `app.js`; für einen Einstieg nach Funktionsnamen wie `normalizeProfile`, `buildQueue`, `onAnswer`, `gameDurationMs` oder nach den unten genannten Speicherpräfixen suchen.
+
+## Technischer Deep-Dive – Aufgabenfamilien und Wiederholungsplanung
+
+Multiplikationsfamilien werden kanonisch mit `a <= b` gespeichert, beispielsweise `3x8`; die Anzeige darf die Faktoren tauschen. Division referenziert dieselbe Familie mit `d:3x8`, hat aber einen eigenen Lernstand unter `fact.division`. Sie wird dauerhaft ab Multiplikationsstufe 4 freigegeben. Bei eingeschalteter Division und geeigneten Familien wird pro neu geplanter gemischter Runde mindestens ein Divisionsplatz reserviert.
+
+Acht Stufen verwenden 1, 1, 2, 4, 7, 12, 20 und 32 Tage Wiederholungsabstand. Zwei richtige Abrufe in Folge sind für Aufstieg erforderlich. Schnelle richtige Antworten können zwei Stufen gewinnen, normale eine, langsame keine; Fehler setzen die richtige Folge zurück und senken um zwei Stufen. Reaktionszeit hat hier also eine andere Bedeutung als im Vokabeltrainer. Anzeigen von Rechenwegen verwenden `·` und `:`, gespeicherte IDs behalten ASCII-`x`.
+
+Neue-Aufgaben-Limit gilt pro Runde. `newFactsPerDay` bleibt nur als Kompatibilitätsspiegel von `newFactsPerRound` erhalten. Fokussierte Reihenrunden speichern `today.focusTable`; die gewählte Reihe kommt aus `enabledTables`, der zweite Faktor aber aus dem ganzen konfigurierten Zahlenbereich. Fällige Wiederholungen haben Vorrang, die übrigen Plätze werden mit verschiedenen Reihenmitgliedern gefüllt.
+
+## Technischer Deep-Dive – zusätzliche Lernmodi und stabile IDs
+
+| Modus | Datenbereich / Identität | Besondere Regel |
+| --- | --- | --- |
+| Hunderter | `h:m:`, `h:d:`, `fact.hundreds` | Eigene Stände; Division unabhängig vom normalen Divisionsschalter |
+| Rechenbegriffe | `t:`, `profile.termSkills` | Textantworten verwenden Auswahl |
+| Zahlenrätsel | `r:`, `profile.riddleSkills` | Eigene Generatoren und Historie |
+| Punkt vor Strich | `p:type`, `profile.precedenceSkills` | Elf aktive Muster, alte 14 Speicherkeys bleiben erhalten |
+| Division mit Rest | `rd:3x7`, `fact.remainder` | Rest explizit eingeben, auch wenn er null ist |
+| Schriftliche Division | `w:divisor:digits`, `profile.writtenSkills` | 16 Stände für Divisoren 2–9 und zwei-/dreistellige Ergebnisse |
+| Halbschriftliche Division | `sd:mode:divisor`, `profile.semiSkills` | Drei Stufen × acht Divisoren, insgesamt 24 Stände |
+
+`today.mode` erhält den Modus beim Wiederholen; der normale Startknopf beginnt eine neue gemischte Runde. Zusätzliche Lernstände müssen in Normalisierung, Belohnungssumme, Statistik und Backup enthalten bleiben. Historische Schlüssel dürfen nicht bloß wegen geänderter Generatoren gelöscht werden.
+
+Punkt-vor-Strich-Aufgaben bestehen aus genau zwei Operationen, auch in Klammern, mit nichtnegativen ganzzahligen Ergebnissen bis 100. Die Auswertung verwendet kein `eval`. Vier eindeutige Auswahlantworten enthalten typische Fehlvorstellungen; ab zwei Fragen werden Klammer- und Nichtklammermuster gemischt. Alte Warteschlangenschlüssel erzeugen kompatible einfachere Aufgaben.
+
+## Technischer Deep-Dive – schriftliche und halbschriftliche Division
+
+Schriftliche Stellenwertdivision zerlegt den Quotienten nach Stellen und lässt Nullbeiträge aus. Bei `848 : 8 = 106` sind die Arbeitsschritte `800 : 8 = 100` und `48 : 8 = 6`; keine künstliche Zwischenzeile `0 : 8 = 0`. Drei H/T/U-Zellen pro Zahl erhalten ihre Stellenposition, Leerstellen gelten als null und werden nicht nachträglich rechtsbündig verschoben. Zeilen werden der Reihe nach geprüft, erst danach die Summe oben. Die komplette Aufgabe zählt einmal.
+
+Halbschriftliche Modi `semi`, `semiFree` und `semiRest` erzeugen dreistellige Dividenden 100–999 und Divisoren 2–9. Eigene Rechenwege akzeptieren jeden positiven, durch den Divisor teilbaren Teil, solange er den Restdividenden nicht überschreitet. Der Divisor bleibt unverändert; keine feste Zeilenanzahl oder Reihenfolge wird erzwungen. Am Ende folgen Summe, gegebenenfalls Rest kleiner als der Divisor und die Multiplikationsprobe.
+
+Zwischenfehler und Hinweise erlauben Korrektur; erst die vollständige Aufgabe einschließlich Probe löst eine gezählte Antwort aus. Gesamtergebnisfehler verwenden die üblichen Wiederholungen. Formularcallbacks werden mit Sitzungsrevision und Antwortsperre geschützt, damit alte Ereignisse nach Abbruch/Neustart keinen fremden Fortschritt buchen.
+
+## Technischer Deep-Dive – Profile, Migration und Backup
+
+Aktueller Wurzelschlüssel ist `km_1x1_trainer_v2`; `km_1x1_trainer_v1` dient als ältere Einzelprofil-Migrationsquelle. `normalizeProfile()` ergänzt sichere Vorgaben und erhält Fortschritt, Profile, Einstellungen, Serien, Sticker und Rekorde. Eine inkompatible Struktur braucht eine ausdrückliche Migration, keine stille Rücksetzung. Einstellungen können die aktive Aufgabenwarteschlange neu aufbauen.
+
+Backups sind lokal erzeugte JSON-Dateien und werden vor Übernahme geprüft. Neue Lern- oder Rekordfelder brauchen Normalisierung und Import-/Exportunterstützung. `gamesPlayed` beginnt bei Migration mit null und `gamesTrackedSince`; historische Spielzahlen dürfen nicht aus Belohnungen geschätzt werden. Der Eltern-PIN ist eine lokale Bedienungssperre und keine Zugriffskontrolle gegen Personen mit Browser-/Dateizugriff.
+
+## Technischer Deep-Dive – Belohnungen, Canvas und Spielphysik
+
+Die zwölf Canvas-Spiele teilen Lebenszyklus, Pause, erste-Spielaktion-Buchung, Profilrekorde und Touchabbildung. Das dreizehnte Spiel, Frog Punch, verwendet SVG-/DOM-Ziele und drei Zeitrunden; es ist in dieselbe Auswahl, Pause und Kontingentbuchung integriert. Die ursprünglichen Spiele liegen in `app.js`, Doodle/2048/Pac-Man/Asteroids in `arcade-extra.js` mit `VocabArcade.create()` als Schnittstelle. Ein Spiel auf der Auswahlseite zu öffnen bucht noch nichts ab. Aktive Spielzeit und Versuchszahl werden unabhängig vom Öffnen der Spielauswahl geführt. Eine Verlängerung derselben Welt wie in Vocabulator ist hier nicht implementiert.
+
+Canvas-Zeichenauflösung folgt Anzeige und Pixeldichte, logische Weltkoordinaten und Kollisionen bleiben davon getrennt. Physik darf nicht von Retina-Pixelmaßen abhängen. Pause und versteckte Ansichten stoppen aktive Zeit. `gameDurationMs()` liefert die Sonderdauer für Bricks/2048 und muss in HUD, Zeitende und Versuchswiederaufnahme konsistent verwendet werden.
+
+Bricks nutzt `351 * 1.25^(level-1)` als Grundtempo; Extras multiplizieren dieses zusätzlich. Tower speichert unveränderliche Welt-Y-Positionen und verschiebt nur die Kamera einschließlich Boden und Kulisse. Cleo kollidiert rasterbasiert, zeichnet interpoliert und puffert höchstens einen nächsten Richtungswechsel. Schneefahrt startet mit 286 px/s, verwendet 100–200 % mit +20 Prozentpunkten pro gelandetem Flip und aktivem Abbau von einem Punkt pro Sekunde. Der Verfolger hält sein beim Start festgelegtes Tempo. Asteroids behält Geschwindigkeit als Vektor; Fingerkontakt richtet und beschleunigt, setzt die Geschwindigkeit aber nicht direkt.
+
+Automatische Saisons stammen aus einer gemeinsamen lokalen Kalendersteuerung. Dekoration und reduzierte Bewegung ändern keine Trefferflächen oder Level-Zufallswerte. Konfetti erscheint beim Lernabschluss und bei einer perfekten Frog-Punch-Runde; beim Ansichtswechsel und vor der nächsten Frog-Punch-Runde wird es entfernt. Herkunft und bewusst abweichende Regeln gegenüber Vocabulator sind in `agent.md` dokumentiert.
+
+## Frog Punch – Bedienung und Bestenliste
+
+Unter **Spiele → Frog Punch** öffnet sich eine Teichwiese mit 15 Froschlöchern. Im schmalen Hochformat stehen sie in drei Spalten und fünf Reihen, im breiten/Querformat in fünf Spalten und drei Reihen. Die Löcher haben große, voneinander getrennte Touchflächen; Frösche und ovale Lochränder sind lokale SVG-Grafiken in leicht schräger Vogelperspektive. **Erste Runde starten** beginnt die Zeit und verbraucht genau ein freigeschaltetes Spiel. Die bloße Auswahl verbraucht nichts.
+
+- Ein Spielkontingent umfasst **drei Runden à 40 aktive Sekunden**, insgesamt zwei aktive Minuten.
+- Ein zufälliger Frosch taucht animiert auf und ist nach insgesamt **750 Millisekunden** wieder verschwunden. Rechtzeitiges Antippen gibt genau **einen Punkt**; wiederholtes Tippen desselben Auftauchens gibt keine weiteren Punkte. Leere Löcher kosten nichts. Maus und Tastatur (Tab, Enter/Leertaste auf dem Loch) funktionieren ebenfalls.
+- Etwa alle 15 Sekunden tauchen zwei verschiedene Frösche gleichzeitig auf; beide haben dann jeweils **eine volle Sekunde** Zeit. Sonst ist ein Frosch aktiv; die Pausen zwischen Auftauchvorgängen schwanken leicht. Es gibt keine steigende Schwierigkeit.
+- Nach Runde eins erscheint **Noch 2 Runden**, danach **Noch 1 Runde**, schließlich **Spiel beendet**. Die nächste Runde startet erst per Taste und kostet kein weiteres Kontingent. Rundenpunkte und Gesamtpunkte werden angezeigt.
+- Wurde in einer Runde **jeder aufgetauchte Frosch** getroffen, erscheint Konfetti. Dafür zählt jedes Auftauchen der Runde, nicht nur das einmalige Treffen aller 15 Positionen. Bei reduzierter Bewegung werden Auf-/Abtauchen sofort dargestellt und Konfetti unterdrückt.
+- Pause und ein ausgeblendeter Browser-Tab frieren Uhr und Frösche ein. Nach dem Zurückkehren per Fortsetzen weiterspielen. Wartezeit zwischen den Runden zählt nicht.
+
+Die stets sichtbare **Top-5-Bestenliste** gehört zum aktiven Profil auf diesem Browser. Gewertet werden die **Gesamtpunkte eines vollständig abgeschlossenen Spiels aus drei Runden**. Jede Platzierung zeigt das lokale Spieldatum als `dd.mm` und die Punkte; Rangnummern erläutern die Reihenfolge. Höhere Punkte stehen oben. Bei Gleichstand gewinnt das neuere Datum, innerhalb desselben Tages der spätere Zeitpunkt; bei exakt gleichem Zeitstempel der neu eingefügte Eintrag. Das aktuelle abgeschlossene Spiel wird, falls es unter die besten fünf kommt, goldfarben hervorgehoben und für assistive Technik als aktuell markiert. Beim erneuten Öffnen werden die gespeicherten Werte ohne aktuelle Markierung angezeigt.
+
+**Spiel beenden**, der Wechsel zur Übersicht oder Neuladen beendet das laufende Spiel; ungespielte Runden dieses bereits angebuchten Kontingents werden nicht später wiederhergestellt. Ein abgebrochenes Spiel wird nicht in die Top 5 eingetragen. Der persönliche Rekord kann bereits einen erreichten Zwischenstand enthalten. Der Direktstarter `frog.html` beziehungsweise `index.html?demo=frog` bietet dieselben drei Runden kostenlos; Demos ändern weder Spielstatistik noch Rekord oder Bestenliste.
+
+## Technischer Deep-Dive – Frog-Punch-Runden, Eingabe und Rangliste
+
+`frog-punch.js` veröffentlicht `window.FrogPunch` und wird vor `app.js` geladen, weil auch die Profilnormalisierung `topFive()` verwendet. Das reine Zustandsmodell bietet `create(random)`, `beginRound(game)`, `advance(game, seconds)`, `hit(game, index)`, `pose(game, hole, reducedMotion)` und `topFive(entries)`. Es besitzt keine Netzwerk- oder Speicherzugriffe. Ein injizierbarer Zufallsgenerator macht Zeit- und Doppelereignisse reproduzierbar testbar.
+
+`app.js` verbindet das Modell über `startFrogGame()`, `frogStep()`, `tapFrog()` und `frogRoundEnded()` mit Auswahl, gemeinsamer Vollbild-/Pausefunktion, RAF-Schleife, Kontingent und Profil. `consumeRewardPlay()` wird erst beim ersten Rundenstart aufgerufen; `rewardConsumed` verhindert weitere Buchungen für die zweite und dritte Runde. `gamesPlayed` zählt das eine gestartete Kontingent, nicht jede Teilrunde. SVG-Zeichenknoten werden einmal erzeugt und per Transform versetzt; die Trefferfläche bleibt das jeweilige Loch, unabhängig von Pixeldichte und Animationshöhe. Pointerdown reagiert sofort; ein zusätzlicher Click kann dank `hitAt` nicht doppelt punkten. Native Button-Clicks erlauben Tastaturbedienung.
+
+Der flüchtige Zustand hält unter anderem `round`, `completedRounds`, `elapsed`, `roundScore`, kumulatives `score`, `spawned`, `missed`, `nextWave`, `nextDouble` und 15 Lochzustände `{born, hitAt, duration}`. `born`/`hitAt` sind Sekunden aktiver Rundenzeit oder `null`. Aufsteigen dauert 0,16 Sekunden, Absteigen die letzten 0,18 Sekunden des jeweiligen Reaktionsfensters (0,75 Sekunden einzeln, 1 Sekunde bei Paaren); ein Treffer lässt den Frosch binnen 0,16 Sekunden abtauchen. Das nächste Auftauchen beginnt nach 1,25–1,55 Sekunden, eine Doppelwelle wird jeweils nach weiteren zufälligen 13–17 Sekunden fällig. Die Startwelle kommt nach 0,35 Sekunden; in der letzten Sekunde werden keine neuen Frösche mehr erzeugt, sodass jede Erscheinung ihr volles Reaktionsfenster hat. Große Frame-Abstände werden chronologisch verarbeitet: abgelaufene Frösche zählen als verpasst, eine Runde endet genau einmal bei Sekunde 40. Vor jedem Treffer wird die Zeit bis zum Pointerereignis fortgeschrieben; ein veraltetes sichtbares Bild gewährt keinen Treffer nach Ablauf.
+
+Persistiert werden im bestehenden Profil unter `reward` der nichtnegative `bestFrogScore` und `frogLeaderboard` mit höchstens fünf `{id, at, score}`-Einträgen. `at` ist ein vollständiger Epoch-Zeitstempel in Millisekunden; nur die Darstellung kürzt auf Tag/Monat. Nach dem dritten Rundenabschluss wird ein Eintrag erzeugt und sofort gespeichert. `topFive()` kopiert, validiert, dedupliziert IDs, sortiert Punkte absteigend und Zeitstempel absteigend und begrenzt auf fünf. Fehlende Felder alter Profile werden zu `0`/`[]`; ungültige Einträge werden verworfen. Backup-Export/-Import erhält die Liste über dieselbe Normalisierung, ohne Mathe-Lernstände oder bestehende Rekorde zu ändern. Eine Veröffentlichung, geräteübergreifende Rangliste oder Übertragung an einen Server findet nicht statt.
+
+Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben und Zeitfortschritt. Verlassen der Ansicht stoppt RAF und löscht den flüchtigen Spielzustand sowie Konfetti. Im nativen Browser-Vollbild sitzt Frog-Punch-Konfetti innerhalb des Spielbildschirms, damit es dort sichtbar bleibt. Das SVG-/DOM-Spiel braucht keinen Canvas-Resizepfad; CSS passt das Raster bei Rotation an und die Lochindizes bleiben gleich. Die Teichszene ist ganzjährig und verändert die zwölf saisonalen Canvas-Spiele nicht.
+
+## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
+
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v52`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+
+Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
+
+## Tests und Fehlersuche
+
+```sh
+node tests/learning-modes.test.js
+node tests/arcade-extra.test.js
+node tests/frog-punch.test.js
+node tests/offline.test.js
+```
+
+Die Lernmodustests prüfen Generatoren, Antworten, Wiederholungen, Belohnungen, Migration und Rundenabschluss mit einem DOM-Ersatz. Die Arcadetests prüfen echte Mechanikinvarianten wie 2048-Verschmelzen, erreichbare Plattformen und Labyrinthverbindungen. Frog-Punch-Tests prüfen 750-ms-Einzelfenster und Einsekunden-Paare, Doppelwellen, drei Zeitrunden, Punktzählung, Pause und sichere Top-5-Sortierung; die App-Integration prüft Kontingent, Demo-Isolation, Konfetti, Backup und Hervorhebung. Offlineprüfungen kontrollieren Appdateien/Cacheintegration. Diese Prüfungen ersetzen keine Sichtprüfung auf einem physischen iPhone/iPad.
+
+Bei scheinbar verlorenem Fortschritt zuerst Origin, Browser und aktives Profil prüfen. Vor Cache-/Browserbereinigung eine Sicherung exportieren. Bei alter Oberfläche Netzwerk und Service Worker unterscheiden; bei fehlender Division Freigabestufe und Einstellung kontrollieren. Die Aussage in der älteren `agent.md`, es gebe keine Tests, ist durch die genannten vorhandenen Tests überholt.
 
 ## Features
 
@@ -59,7 +184,7 @@ die Zahlenwahl der normalen Einmaleins-Runden begrenzt diesen Modus nicht.
 
 ### Automatische Spielsaisons und ruhige Tastatureingabe
 
-Alle zwölf Spiele richten ihre Dekoration nach dem lokalen Gerätedatum aus,
+Die zwölf Canvas-Spiele richten ihre Dekoration nach dem lokalen Gerätedatum aus,
 jährlich wiederkehrend und auch offline:
 
 - **Halloween, 20.–31. Oktober:** dunkle Paletten, Mond, Kürbisse, Spinnweben,
@@ -138,7 +263,7 @@ Bilder oder Videos werden eingebunden.
   Bisherige Kleidungsfarben und Kostüme bleiben bei der Umstellung erhalten.
   Beim Bearbeiten bleibt die Avatar-Vorschau sichtbar; nur die Auswahl scrollt.
   Ein Hinweis erklärt, wenn ein Kostüm die Alltagskleidung überdeckt.
-- Alle zwölf Spiele zeichnen mit einem Retina-Backing-Store für schärfere
+- Die zwölf Canvas-Spiele zeichnen mit einem Retina-Backing-Store für schärfere
   Darstellung auf hochauflösenden Bildschirmen. Spielkoordinaten und
   Touch-Steuerung bleiben davon unabhängig. Dialoge berücksichtigen die
   Bildschirmtastatur, ohne die darunterliegende App zu verkleinern.
@@ -233,7 +358,7 @@ Bilder oder Videos werden eingebunden.
 - Belohnungen: Sticker pro geübtem Tag (zuerst noch nicht gesammelte, danach
   möglichst gleichmäßig verteilt und ohne direkte Wiederholung), Abzeichen für Serien-Meilensteine,
   Konfetti zum Abschluss einer Rechenrunde und Soundeffekte (abschaltbar).
-  Beim Spielende oder erneuten Spielen erscheint kein Konfetti.
+  Bei den Canvas-Spielen erscheint beim Spielende oder erneuten Spielen kein Konfetti; Frog Punch feiert jede perfekte Runde.
 - Bereits gesammelte doppelte Sticker werden beim Laden oder Sicherungsimport
   durch noch fehlende Motive ersetzt; Anzahl und Sammeltage bleiben erhalten.
   Es gibt 80 verschiedene Motive; erst bei mehr als 80 Stickern sind
@@ -242,15 +367,15 @@ Bilder oder Videos werden eingebunden.
   bleiben in Lernstand und Statistik, freigeschaltete Belohnungsspiele bleiben
   verfügbar. Ein Abbruch zählt nicht als Rundenabschluss für Sticker und Serie;
   die nächste Runde beginnt neu.
-- Zwölf Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel, Turmbauer,
+- Dreizehn Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel, Turmbauer,
   Gravity Run, Bricks, Cleo, Schneefahrt, Metro Run, Doodle Jump, 2048,
-  Pac-Man und Asteroids. Die benötigte
+  Pac-Man, Asteroids und Frog Punch. Die benötigte
   Anzahl richtiger Antworten pro Spiel ist im Eltern-Bereich konfigurierbar
   (Standard: 10); die Startseite zeigt, wie viele richtige Antworten bis zum
   nächsten Spiel fehlen. Bricks und 2048 enden nach höchstens fünf aktiven Minuten,
-  die anderen Spiele nach drei;
+  die anderen Canvas-Spiele nach drei. Frog Punch bietet stattdessen drei Runden à 40 Sekunden;
   Pausen, Wartezeit vor Versuchen und ausgeblendete Ansichten zählen nicht mit.
-  Drei Fehlversuche beenden das Spiel (Dino kann einen Bonusversuch sammeln).
+  Bei den Canvas-Spielen beenden drei Fehlversuche das Spiel (Dino kann einen Bonusversuch sammeln).
   Beim Dino sorgen riskant platzierte Sterne, Combo-Multiplikatoren, fünf Sekunden
   Super-Dino nach jeweils drei Sternen, seltene Bonus-Versuch-Eier und ein
   persönlicher Punkterekord sorgen für Abwechslung; das Spiel wird in sechs
@@ -305,7 +430,7 @@ Bilder oder Videos werden eingebunden.
   maximal 8 Sekunden bis zum ersten Treffer, Magnet sammelt 10 Sekunden lang.
   Drei aktive Minuten und drei Versuche, Fortsetzung erhält Strecke und Punkte;
   eigener Profilrekord und offline spielbarer Demo-Einstieg über `runner.html`.
-- Während der Halloween-Saison (20.–31. Oktober) Dekoration aus dem Vocabulator in allen Spielen:
+- Während der Halloween-Saison (20.–31. Oktober) Dekoration aus dem Vocabulator in allen zwölf Canvas-Spielen:
   Kürbisse, Spinnweben, Fledermäuse und Hexen; bei Metro Run zusätzlich lustige
   Straßenschilder, tanzende Skelette und Geisterballons. Rein gezeichnete Deko
   ohne zusätzliche Hindernisse oder Änderungen der Trefferflächen.
@@ -401,7 +526,7 @@ sudo systemctl enable --now mathserver
 
 ```bash
 sudo apt install nginx
-sudo cp index.html styles.css app.js arcade-extra.js icons.svg flappy.html tower.html gravity.html brick.html snake.html snow.html runner.html doodle.html tiles.html maze.html asteroid.html manifest.json sw.js icon-192.png icon-512.png /var/www/html/
+sudo cp index.html styles.css app.js arcade-extra.js frog-punch.js frog.html icons.svg flappy.html tower.html gravity.html brick.html snake.html snow.html runner.html doodle.html tiles.html maze.html asteroid.html manifest.json sw.js icon-192.png icon-512.png /var/www/html/
 ```
 
 Danach ist die Seite über `http://<pi-ip>/` erreichbar.
@@ -455,3 +580,21 @@ dokumentiert.
 
 Beiträge und Verbesserungsvorschläge sind über Issues und Pull Requests
 willkommen.
+
+
+## Dokumentation pflegen
+
+`README.md` ist die zentrale Inhaltsquelle; [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) ist die daraus erzeugte, lokal im Browser lesbare Ausgabe mit Inhaltsverzeichnis, Kapitelsuche und Druckansicht. Die HTML-Datei nicht von Hand bearbeiten. Alle HTML-Dokumentationen werden zentral unter `/Users/heik/Dev/repos/manuals/` abgelegt, je Projekt als `<Projektname>-Dokumentation.html`. Der Produktname steht in `scripts/documentation.json`. Referenzierte lokale Medien werden in den eigenen Ordner `<Projektname>-assets/` kopiert; Dateinamen enthalten einen Inhalts-Hash. Damit überschneiden sich die Medienbestände der Dokumentationen nicht. Fehlende oder veränderte Medien lassen den Check fehlschlagen. Externe Bilder müssen vorab lokal bereitgestellt werden. Links zu README und Detaildateien werden beim Erzeugen auf den neuen Ablageort umgerechnet.
+
+Bei jeder Projektänderung betroffene Bedienungs-, Architektur-, Schnittstellen- und Betriebsabschnitte anhand des Codes prüfen und im selben Arbeitsschritt aktualisieren. Im Header Projektstand und Änderungsdatum nachführen; keine Anwendungsrelease-Version erfinden. Unveränderte Kapitel müssen nicht neu geschrieben werden.
+
+```sh
+python3 -m venv /private/tmp/project-docs-venv
+/private/tmp/project-docs-venv/bin/python -m pip install -r scripts/requirements-docs.txt
+/private/tmp/project-docs-venv/bin/python scripts/build_docs.py
+/private/tmp/project-docs-venv/bin/python scripts/build_docs.py --check
+```
+
+Die Markdown-Abhängigkeit ist nur für die Dokumentation nötig. Die fertige HTML-Datei funktioniert ohne Installation und ohne externe Ressourcen. `--check` schreibt nichts und vergleicht die gesamte Ausgabe einschließlich eines SHA-256-Fingerabdrucks der relevanten Quell- und Dokumentationsdateien. Ausgenommen sind unter anderem private `data/`, Laufzeitdaten, Build-Ausgaben und virtuelle Umgebungen. Die Prüfung erkennt einen geänderten Quellstand, ersetzt aber keine inhaltliche Prüfung der README. Änderungen durch beliebige Editoren lösen keinen Hintergrundjob aus; Codex erhält die Pflegepflicht über `AGENTS.md` und den Skill `project-documentation`.
+
+Die Dokumentation wird hier lokal gepflegt. Eine Bereitstellung auf dem Pi oder einer öffentlichen Website ist ein eigener Deployment-Schritt; bestehende App-Builds und deren Dateifreigaben werden dadurch nicht erweitert. Der CI-Job erzeugt die zentrale Ausgabe in einer isolierten Testablage und prüft ihre Reproduzierbarkeit; die persönliche zentrale HTML-Datei wird dort nicht vorausgesetzt.
