@@ -14,6 +14,11 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+# A re-run keeps artifacts from previous attempts of the same workflow run.
+# Upload and deploy must agree on a name unique to this attempt.
+env:
+  PAGES_ARTIFACT_NAME: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+
 jobs:
   deploy:
     environment:
@@ -28,7 +33,10 @@ jobs:
       - name: Statische Dateien paketieren
         uses: actions/upload-pages-artifact@v5
         with:
+          name: ${{ env.PAGES_ARTIFACT_NAME }}
           path: .
       - name: Auf GitHub Pages veröffentlichen
         id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: ${{ env.PAGES_ARTIFACT_NAME }}

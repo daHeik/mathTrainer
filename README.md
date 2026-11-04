@@ -3,7 +3,7 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `dc545ff` mit lokalen Änderungen für Lernpläne und römische Zahlen; PWA-Cache `1x1-trainer-v53`, keine separate semantische App-Version |
+| Version | Basis `2e0e16b` mit lokaler Korrektur der Pages-Artefaktnamen; PWA-Cache `1x1-trainer-v53`, keine separate semantische App-Version |
 | Letzte Quellcodeänderung | 2026-11-04 |
 | Letzte Projekt-/README-Änderung | 2026-11-04 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
@@ -603,6 +603,33 @@ deployment** die Quelle **GitHub Actions** gewählt werden. Ohne diese einmalige
 Aktivierung meldet `configure-pages` den Fehler `Get Pages site failed: Not
 Found`. Danach veröffentlicht jeder Push auf `main` automatisch die aktuelle
 statische App.
+
+Upload und Deployment verwenden denselben Namen
+`github-pages-${{ github.run_id }}-${{ github.run_attempt }}`. Die Lauf-ID trennt
+Workflow-Läufe; die Versuchsnummer trennt Wiederholungen desselben Laufs.
+So wird ausschließlich das Artefakt des aktuellen Versuchs veröffentlicht,
+auch wenn ältere Versuche bereits ein Pages-Artefakt hochgeladen hatten.
+Beide Schritte bleiben im selben Job, sodass ein erneuter Job-Lauf das passende
+Artefakt neu hochlädt, bevor er es bereitstellt.
+
+Bei `Multiple artifacts named "github-pages" ... Artifact count is 2` hat die
+Deploy-Action mehrere gleichnamige Artefakte gefunden. Die zusätzliche Meldung
+über `githubstatus.com` ist ihre allgemeine Fehlermeldung und belegt hier keine
+GitHub-Störung. Frühere Artefakte müssen für die Namenskorrektur nicht gelöscht
+werden. Nach Übernahme der Korrektur einen **neuen** Lauf über **Actions → GitHub
+Pages → Run workflow** auf dem aktualisierten Branch starten oder den nächsten
+Push auf `main` verwenden. Ein alter Lauf verwendet bei „Re-run jobs“ weiterhin
+seine alte Workflow-Fassung und profitiert nicht nachträglich von der Änderung.
+
+Die Meldung zur Umstellung von `ubuntu-latest` auf Ubuntu 26 ist ein Hinweis zur
+Runner-Umgebung und unabhängig von der mehrdeutigen Artefaktauswahl. Der Workflow
+verwendet weiterhin `ubuntu-latest`; diese Korrektur ändert keine Action-Version,
+App-Datei, Lernstände oder PWA-Cachekennung. Die Inputs sind in den offiziellen
+Definitionen von [upload-pages-artifact](https://github.com/actions/upload-pages-artifact/blob/v5/action.yml)
+(`name`) und [deploy-pages](https://github.com/actions/deploy-pages/blob/v5/action.yml)
+(`artifact_name`) beschrieben. Lokal können Namensgleichheit und YAML-Struktur
+geprüft werden; ein erfolgreicher GitHub-Deployment-Lauf ist erst nach Übernahme
+und Ausführung auf GitHub belegt. Lokale Doku-Erzeugung startet kein Deployment.
 
 ## Hinweis zum Fortschritt
 
