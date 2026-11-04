@@ -359,3 +359,24 @@ highlight current ID only if retained. Normalize/import through topFive, default
 0/[], preserve learning data. Partial games are not ranked or resumable on reload.
 Run `node tests/frog-punch.test.js` and existing integration/offline/arcade suites.
 Documentation: README is the source; regenerate/check mathTrainer HTML per AGENTS.md.
+
+
+## Learning plans and Roman numerals (2026-11-04)
+
+`config.allowedModes` is the per-profile allowlist of SESSION_MODES. Missing legacy
+field defaults to all; explicit empty/invalid list normalizes to roman only.
+Keep UI filtering, practiceSkillsInRange/startSession/onAnswer guards and daily
+queue repair consistent; reset queues on saving plans without deleting progress.
+Class 4/5 buttons are editable topic presets, not complete curricula or automatic
+upgrades to arithmetic ranges. Extra parent controls live in native details.
+Public switching to another profile requires the existing parent PIN via a pending
+callback; cancel clears it. Active identity/avatar edits remain public.
+Roman mode uses roman:toRoman/roman:toArabic and profile.romanSkills, operation roman.
+Include in normalization, totals, history and backups. config.romanMin/romanMax are
+clamped to 1..3999. toRoman uses canonical IV/IX/XL/XC/CD/CM. Both directions in
+rounds of >=2; only source number and = ? in prompts (no direction wording).
+Always use the compact character input: IVXLCDM or 0..9, backspace and submit;
+ignore normal choice/adaptive for this mode. Explain each nonzero decimal place
+in both directions (2026: 2000=MM,20=XX,6=VI); preserve retries/rewards, revision
+guards, repeat and abort. No zero/overline numeral representation.
+Run existing learning-modes/offline/arcade-extra/frog-punch suites and docs checks.

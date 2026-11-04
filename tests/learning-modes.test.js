@@ -101,6 +101,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'defaultProfile:defaultProfile, normalizeProfile:normalizeProfile, ensureFactPool:ensureFactPool,',
   'practiceSkill:practiceSkill, practiceSkillsInRange:practiceSkillsInRange, buildQueue:buildQueue,',
   'specialQuestion:specialQuestion, applyAnswerResult:applyAnswerResult,',
+  'toRoman:toRoman, romanQuestion:romanQuestion, renderRomanQuestion:renderRomanQuestion, modeAllowed:modeAllowed, openAdmin:openAdmin,',
   'precedenceQuestion:precedenceQuestion, precedenceTypes:PRECEDENCE_PRACTICE_TYPES,',
   'renderMathText:renderMathText,',
   'writtenDivisionQuestion:writtenDivisionQuestion, renderWrittenDivision:renderWrittenDivision,',
@@ -1395,8 +1396,14 @@ var identityRoot=api.getRoot(),identityId=identityRoot.activeProfileId;
 var secondIdentity=api.normalizeProfile(api.defaultProfile());secondIdentity.config.childName='Lina-Test';secondIdentity.config.avatar.hair='waves';
 identityRoot.profiles.avatarTest=secondIdentity;
 elements.profileBtn.events.click();elements.profileList.children.find(function(button){return button.textContent==='Lina-Test';}).events.click();
+assert.strictEqual(identityRoot.activeProfileId,identityId,'Other profile requires parent PIN');
+elements.pinInput.value='0000';elements.pinSubmit.events.click();assert.strictEqual(identityRoot.activeProfileId,identityId);
+elements.pinInput.value=identityRoot.pin;elements.pinSubmit.events.click();
 assert.strictEqual(api.getState().config.avatar.hair,'waves');assert(elements.homeGreeting.textContent.indexOf('Lina-Test')!==-1);
 elements.profileBtn.events.click();elements.profileList.children.find(function(button){return button.textContent==='Mia';}).events.click();
+elements.pinClose.events.click();assert.strictEqual(identityRoot.activeProfileId,'avatarTest','Cancel leaves profile unchanged');
+elements.profileBtn.events.click();elements.profileList.children.find(function(button){return button.textContent==='Mia';}).events.click();
+elements.pinInput.value=identityRoot.pin;elements.pinSubmit.events.click();
 assert.strictEqual(identityRoot.activeProfileId,identityId);assert.strictEqual(api.getState().config.avatar.outfit,'halloween');
 delete identityRoot.profiles.avatarTest;
 var safeAvatar=api.normalizeAvatar({skin:'url(javascript:bad)',hair:'<script>',accessory:['star','<script>','star'],outfit:'unknown'});
@@ -1833,3 +1840,85 @@ assert.strictEqual(JSON.stringify(frogProfile.reward),savedFrogScores,'Demos cha
 api.stopFrogGame();api.startFrogGame(true);elements.frogStartBtn.click();frogTick(.5);api.renderHome();assert.strictEqual(api.frogGame(),null,'Leaving the game stops its clock and releases it');
 context.performance.now=originalNow;
 console.log('Frog Punch integration: one credit/three rounds, pause, demo isolation, confetti, persisted leaderboard/current marker and unchanged learning data OK');
+
+// Roman conversions and the parent's per-child learning plan use the real lifecycle.
+var romanProfile=api.normalizeProfile(api.defaultProfile());
+romanProfile.config.sound=false;romanProfile.config.rewardEvery=1;romanProfile.config.tasksPerDay=4;
+api.setState(romanProfile);api.ensureFactPool();
+var romanSeen=new Set(),romanValues={I:1,V:5,X:10,L:50,C:100,D:500,M:1000};
+for(var n=1;n<=3999;n++){
+  var numeral=api.toRoman(n),parsedRoman=0;
+  assert(/^[IVXLCDM]+$/.test(numeral));assert(!romanSeen.has(numeral));romanSeen.add(numeral);
+  for(var j=0;j<numeral.length;j++){
+    var value=romanValues[numeral[j]],next=romanValues[numeral[j+1]]||0;
+    parsedRoman+=value<next?-value:value;
+  }
+  assert.strictEqual(parsedRoman,n);
+}
+[0,-1,4000,1.5,NaN,'20'].forEach(function(value){assert.strictEqual(api.toRoman(value),'');});
+assert.strictEqual(api.romanQuestion('toArabic',2026).prompt,'MMXXVI = ?');
+assert.strictEqual(api.romanQuestion('toRoman',2026).prompt,'2026 = ?');
+assert.strictEqual(api.toRoman(444),'CDXLIV');assert.strictEqual(api.toRoman(1994),'MCMXCIV');assert.strictEqual(api.toRoman(3999),'MMMCMXCIX');
+assert(api.romanQuestion('toRoman',2026).explanation.includes('2000 = MM; 20 = XX; 6 = VI'));
+assert(api.romanQuestion('toArabic',2026).explanation.includes('MM = 2000; XX = 20; VI = 6'));
+assert(api.romanQuestion('toRoman',2006).explanation.includes('2000 = MM; 6 = VI'));
+romanProfile.config.romanMin=2026;romanProfile.config.romanMax=2026;
+assert.strictEqual(api.romanQuestion('toArabic').correct,'2026');
+for(var round=0;round<10;round++){
+  var romanQueue=api.buildQueue(4,null,'roman');assert.strictEqual(romanQueue.length,4);
+  assert(romanQueue.includes('roman:toRoman'));assert(romanQueue.includes('roman:toArabic'));
+}
+api.startSession(false,null,'roman');romanProfile.today.queue=['roman:toRoman','roman:toArabic'];api.renderQuestion();
+var romanForm=elements.choicesWrap.children[0],romanInput=romanForm.children[0],romanKeys=romanForm.children[1];
+assert.strictEqual(romanKeys.children.map(function(b){return b.textContent;}).join(','),'I,V,X,L,C,D,M,⌫');
+'MMXXVI'.split('').forEach(function(symbol){romanKeys.children.find(function(b){return b.textContent===symbol;}).click();});
+assert.strictEqual(romanProfile.reward.availablePlays,0,'Only final answer grants reward');
+romanForm.events.submit({preventDefault:function(){}});
+assert.strictEqual(romanProfile.romanSkills.toRoman.correctCount,1);assert.strictEqual(romanProfile.reward.availablePlays,1);
+romanForm.events.submit({preventDefault:function(){}});assert.strictEqual(romanProfile.reward.availablePlays,1);
+api.renderQuestion();romanForm=elements.choicesWrap.children[0];romanInput=romanForm.children[0];romanKeys=romanForm.children[1];
+assert.strictEqual(romanKeys.children.map(function(b){return b.textContent;}).join(','),'0,1,2,3,4,5,6,7,8,9,⌫');
+romanInput.value='2025';romanForm.events.submit({preventDefault:function(){}});
+assert(elements.feedbackText.textContent.includes('MM = 2000; XX = 20; VI = 6'));
+assert.strictEqual(romanProfile.today.requeueCounts['roman:toArabic'],1);
+assert.strictEqual(romanProfile.romanSkills.toArabic.wrongCount,1);
+assert.strictEqual(api.correctAnswersForProfile(romanProfile),1);
+assert.strictEqual(romanProfile.history[romanProfile.today.date].byOperation.roman.wrong,1);
+var romanBackup=api.normalizeProfile(JSON.parse(storage.km_1x1_trainer_v2).profiles[api.getRoot().activeProfileId]);
+assert.strictEqual(romanBackup.romanSkills.toRoman.correctCount,1);
+assert.strictEqual(romanBackup.history[romanProfile.today.date].byOperation.roman.wrong,1);
+api.startSession(true,null,'roman');var staleRoman=elements.choicesWrap.children[0];elements.abortSessionBtn.click();
+staleRoman.children[0].value='MMXXVI';staleRoman.events.submit({preventDefault:function(){}});
+assert.strictEqual(romanProfile.romanSkills.toRoman.correctCount,1,'Aborted form cannot award answers');
+
+// Presets are drafts until save; disabled topics are hidden and blocked, including retries/rollover.
+api.openAdmin();elements.plan5Btn.click();assert(api.modeAllowed('mixed'),'Draft does not alter saved plan');
+var planInputs=elements.learningPlanChoices.children.map(function(label){return label.children[0];});
+assert.strictEqual(planInputs.filter(function(input){return input.checked;}).length,6);
+elements.saveAdmin.click();assert(!api.modeAllowed('mixed'));assert(!api.modeAllowed('table'));assert(!api.modeAllowed('semi'));
+assert(api.modeAllowed('semiFree'));assert(api.modeAllowed('roman'));
+assert.strictEqual(elements.mixedLearning.hidden,true);assert.strictEqual(elements.tablePracticeBtn.hidden,true);
+assert.strictEqual(elements.semiBtn.hidden,false);assert.strictEqual(elements.semiStartBtn.hidden,true);
+assert.strictEqual(api.buildQueue(5,null,'mixed').length,0);
+var savedPlan=JSON.stringify(romanProfile.today);api.startSession(true,null,'terms');assert.strictEqual(JSON.stringify(romanProfile.today),savedPlan);
+romanProfile.today.mode='mixed';romanProfile.today.queue=['1x1'];romanProfile.today.index=0;
+api.refreshDailySessionIfNeeded();assert.notStrictEqual(romanProfile.today.mode,'mixed');assert(!romanProfile.today.queue.includes('1x1'));
+romanProfile.today.date='2000-01-01';api.refreshDailySessionIfNeeded();assert(api.modeAllowed(romanProfile.today.mode));assert(romanProfile.today.queue.length>0);
+api.openAdmin();elements.learningPlanChoices.children.forEach(function(label){label.children[0].checked=false;});
+var previousModes=JSON.stringify(romanProfile.config.allowedModes);elements.saveAdmin.click();
+assert(elements.learningPlanError.textContent.includes('mindestens'));assert.strictEqual(JSON.stringify(romanProfile.config.allowedModes),previousModes);
+// A single-topic plan remains playable; all numeric bounds are clamped on save/import.
+elements.learningPlanChoices.children.find(function(label){return label.children[0].value==='roman';}).children[0].checked=true;
+elements.romanMin.value='5000';elements.romanMax.value='10';elements.saveAdmin.click();
+assert.strictEqual(romanProfile.config.romanMin,3999);assert.strictEqual(romanProfile.config.romanMax,3999);
+assert.strictEqual(romanProfile.today.mode,'roman');assert.strictEqual(romanProfile.today.queue.length,4);
+api.startSession(false,null,'roman');assert(/3999|MMMCMXCIX/.test(elements.questionText.textContent));
+var planBackup=api.normalizeProfile(JSON.parse(storage.km_1x1_trainer_v2).profiles[api.getRoot().activeProfileId]);
+assert.strictEqual(JSON.stringify(planBackup.config.allowedModes),'["roman"]');assert.strictEqual(planBackup.romanSkills.toRoman.correctCount,1);
+var oldPlan=api.defaultProfile();delete oldPlan.config.allowedModes;delete oldPlan.romanSkills;
+api.normalizeProfile(oldPlan);assert.strictEqual(oldPlan.config.allowedModes.length,12);assert.strictEqual(oldPlan.romanSkills.toRoman.correctCount,0);
+oldPlan.config.allowedModes=['bad',null];oldPlan.config.romanMin=-50;oldPlan.config.romanMax=10000;api.normalizeProfile(oldPlan);
+assert.strictEqual(JSON.stringify(oldPlan.config.allowedModes),'["roman"]');assert.strictEqual(oldPlan.config.romanMin,1);assert.strictEqual(oldPlan.config.romanMax,3999);
+console.log('Roman: 1..3999 conversion, both keypads, place-value feedback, retries, rewards and backup OK; learning plans: presets, save validation, hidden/blocked modes, rollover and profile PIN OK');
+
+oldPlan.romanSkills={toRoman:42,toArabic:[]};api.normalizeProfile(oldPlan);assert.strictEqual(oldPlan.romanSkills.toRoman.correctCount,0);assert.strictEqual(oldPlan.romanSkills.toArabic.correctCount,0);

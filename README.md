@@ -3,14 +3,14 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `3ef3b99` mit lokalen Änderungen für Frog Punch; PWA-Cache `1x1-trainer-v52`, keine separate semantische App-Version |
-| Letzte Quellcodeänderung | 2026-11-03 |
-| Letzte Projekt-/README-Änderung | 2026-11-03 |
+| Version | Basis `dc545ff` mit lokalen Änderungen für Lernpläne und römische Zahlen; PWA-Cache `1x1-trainer-v53`, keine separate semantische App-Version |
+| Letzte Quellcodeänderung | 2026-11-04 |
+| Letzte Projekt-/README-Änderung | 2026-11-04 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
 
 ## TL;DR – so funktioniert mathTrainer
 
-mathTrainer übt Multiplikation, Division und weitere Grundschul-Rechenwege. Aufgaben werden nach bisheriger Sicherheit wiederholt; richtige Antworten verdienen Spiele. Mehrere Profile haben eigene Lernstände, Avatare, Statistiken und Rekorde. Die App läuft vollständig im Browser als statische PWA: HTML, CSS und JavaScript ohne Backend, Datenbankdienst oder JavaScript-Buildsystem.
+mathTrainer übt Multiplikation, Division, römische Zahlen und weitere Rechenwege. Ein Lernplan pro Kind legt fest, welche Themen angeboten werden; anpassbare Vorschläge für Klasse 4 und 5 erleichtern die Auswahl. Aufgaben werden nach bisheriger Sicherheit wiederholt; richtige Antworten verdienen Spiele. Mehrere Profile haben eigene Lernstände, Avatare, Statistiken und Rekorde. Die App läuft vollständig im Browser als statische PWA: HTML, CSS und JavaScript ohne Backend, Datenbankdienst oder JavaScript-Buildsystem.
 
 Eine kleine Web-App zum Üben von Multiplikation und optional Division mit Spaced Repetition:
 Aufgaben, bei denen dein Kind schnell und richtig antwortet, kommen seltener
@@ -37,11 +37,67 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 1. Im Projektordner `python3 -m http.server 8080` starten und `http://localhost:8080/index.html` öffnen. Die App braucht für normalen Betrieb einen Webserver; `file://` prüft die PWA nicht vollständig.
 2. Namen und Avatar wählen, danach auf der Startseite Lernmodus oder gemischte 1×1-Runde starten. Die zusätzlichen Modi erklären ihre Rechenwege; die Lernantworten verwenden Auswahl, Eingabe oder den eingestellten adaptiven Modus.
 3. Nach Rückmeldung die nächste Aufgabe bearbeiten. Beantwortete Aufgaben und Belohnungen werden lokal gespeichert. Abbrechen verwirft nicht den bereits verdienten Fortschritt.
-4. Im Zahnrad den Elternbereich öffnen. Der initiale Code `6969` lässt sich dort ändern. Zahlenbereich, aktive Reihen, Rundengröße, neue Aufgaben, Divisionsfreigabe und Belohnungsintervall anpassen. Name und Avatar bleiben über das öffentliche Profil erreichbar.
+4. Über „Admin“ den Elternbereich öffnen. Der initiale Code `6969` lässt sich dort ändern. Unter „Lernen“ zuerst den Lernplan für das aktive Kind wählen: Vorschlag Klasse 4/5 oder einzelne Themen-Häkchen. Rundengröße, römischen Zahlenbereich und Belohnungsintervall anpassen und speichern. Weitere Zahlenreihen-/Eingabeoptionen sind eingeklappt. Name und Avatar bleiben frei bearbeitbar; der Wechsel zu einem anderen Kind braucht die Eltern-PIN.
 5. Im Statistikbereich Tages-/Wochenwerte und Lernstände prüfen. Vor Browserwechsel oder Löschen lokaler Daten im Elternbereich eine JSON-Sicherung exportieren. Import ersetzt den geprüften lokalen Bestand; vorherige Sicherung behalten.
 6. Verdiente Spiele in „Spiele“ auswählen. Erst die erste Spielaktion verbraucht ein Kontingent. Pause und ausgeblendete Ansichten verbrauchen keine aktive Spielzeit.
 
 Normale Spiele laufen bis zu drei aktive Minuten pro Kontingent; **Bricks und 2048 bis zu fünf Minuten**. Diese Ausnahme ist in `gameDurationMs()` implementiert. Beim Zeitende endet der Durchlauf; mit weiterem Kontingent kann ein neues Belohnungsspiel gestartet werden. Drei verbrauchte Versuche beenden früher. **Frog Punch hat stattdessen drei vollständige Runden à 40 Sekunden pro Kontingent**; verpasste Frösche kosten keine Versuche. Demo-Starter wie `snow.html` öffnen dieselbe Spielimplementierung ohne Lernbelohnung.
+
+## Lernplan pro Kind – einfache Auswahl statt Ausweichen auf leichte Aufgaben
+
+Der Elternbereich öffnet direkt den Reiter **Lernen**. Jedes Profil hat seinen eigenen Lernplan. Für die beiden Kinder jeweils ein Profil anlegen, das gewünschte Kind aktivieren und seinen Plan speichern. Namen und Avatar weiterhin über das Profil-Symbol gestalten. Zum Wechsel auf ein anderes Profil die Eltern-PIN eingeben; falsche PIN oder Abbruch ändern das aktive Kind nicht. Damit ist auch der Wechsel in das leichtere Geschwisterprofil über die normale Oberfläche geschützt.
+
+1. Unter **Admin → Lernen** einen Ausgangspunkt antippen: **Vorschlag Klasse 4**, **Vorschlag Klasse 5** oder **Alle Themen**.
+2. Bei Bedarf einzelne Themen an-/abwählen. Die drei halbschriftlichen Stufen haben eigene Häkchen. Mindestens ein Thema muss ausgewählt bleiben.
+3. Für römische Zahlen einen Bereich zwischen 1 und 3999 festlegen, etwa 1–100, 1–1000 oder 100–3999. Beide Richtungen bleiben aktiv.
+4. Aufgaben pro Runde und richtige Antworten pro Spiel einstellen. „Aufgaben pro Runde“ bestimmt die Rundengröße; weitere Runden sind möglich. Der interne Speichername `tasksPerDay` bleibt für alte Sicherungen erhalten.
+5. **Änderungen speichern**. Erst jetzt wird der Plan aktiv; die laufende Aufgabenliste wird neu aufgebaut. Lernstände, Statistik und bereits verdiente Spiele bleiben erhalten.
+
+| Vorschlag | Freigegebene Themen |
+| --- | --- |
+| Klasse 4 | Alle Themen außer halbschriftlicher Division mit eigenem Weg und mit Rest; römischer Zahlenbereich 1–1000 |
+| Klasse 5 | Punkt vor Strich, schriftliche Division, halbschriftliche Division mit eigenem Weg/mit Rest, Division mit Rest, römische Zahlen; römischer Zahlenbereich 100–3999 |
+| Alle Themen | Alle zwölf Themen; römischer Zahlenbereich 1–3999 |
+
+Diese Vorschläge sind **keine vollständigen Klassenlehrpläne**. Sie wählen aus den vorhandenen Aufgabenfamilien aus. Insbesondere bleiben schriftliche und halbschriftliche Aufgaben dreistellig; Bruchrechnung, Dezimalzahlen und weitere Klasse-5-Themen werden dadurch nicht ergänzt. Die Vorschläge ändern außer Themen und römischem Zahlenbereich keine bisherigen Detaileinstellungen. Passe die Auswahl an den tatsächlichen Unterricht an.
+
+Nur aktive Themen erscheinen auf der Startseite. Ist gemischtes 1×1 ausgeschaltet, verschwindet auch dessen Startbereich. Ausgeschaltete Themen lassen sich nicht über verbliebene Schaltflächen oder Wiederholungen starten. Der Zahlenreihen-Dialog und jede halbschriftliche Stufe beachten denselben Plan. Die weiterhin freigegebenen Aufgaben verdienen wie bisher Spiele; es gibt keine zweite Belohnungswährung und keine nachträgliche Aberkennung.
+
+**Weitere Einstellungen** enthalten Zahlenbereich/aktive Reihen, neue Aufgaben, schrittweises Freischalten, Antwortmodus, normale Division, Lückenaufgaben, Sound und Akzentfarbe. Die alten Zahlenfilter betreffen weiterhin nur ihre jeweiligen Rechenfamilien; ein Klasse-5-Vorschlag macht aus einer bestehenden Aufgabe keine größere Aufgabe. Alte Profile ohne Plan behalten alle bisherigen Themen und erhalten zusätzlich römische Zahlen. Ein Import mit ausdrücklich leerer/ungültiger Themenliste fällt auf römische Zahlen zurück, damit eine spielbare Aufgabe bleibt und nicht ungewollt einfache Reihen geöffnet werden.
+
+Die PIN ist eine lokale Bedienungssperre. Browserdaten lassen sich technisch verändern; ein gemeinsames Gerät erkennt nicht selbst, welches Kind davor sitzt. Eltern sollten das passende Profil aktivieren. Demo-Spielstarter funktionieren weiterhin ohne Lernkontingent; der Lernplan schränkt die reguläre Lern- und Belohnungsoberfläche ein und ist keine Gerätesperre.
+
+## Römische Zahlen – beide Richtungen und Lösung nach Stellenwerten
+
+Unter **Gezielt üben → Römische Zahlen** werden Zahlen aus dem eingestellten Bereich 1–3999 zufällig gewählt. Jede Runde ab zwei Aufgaben enthält beide Richtungen. Bei Rundengröße eins wird eine der Richtungen gewählt. Die Aufgabenstellung zeigt nur die umzuwandelnde Zahl mit `= ?`, beispielsweise `2026 = ?` oder `MMXXVI = ?`. Keine zusätzliche Richtungsangabe ist nötig: Die angebotenen Zeichen zeigen, welche Darstellung gefragt ist.
+
+- Gesucht ist eine römische Zahl: kompakte Tasten **I, V, X, L, C, D, M**, Löschen und „Antwort prüfen“.
+- Gesucht ist eine Zahl in Dezimalschreibweise: kompakte Tasten **0–9**, Löschen und „Antwort prüfen“.
+- Alternativ im Eingabefeld mit der Tastatur schreiben. Kleinbuchstaben werden großgeschrieben, fremde Zeichen entfernt. Die Eingabe wird erst beim Prüfen gezählt; eine leere Eingabe zählt nicht. Führende Nullen bei Dezimalzahlen sind erlaubt.
+
+Die Umrechnung verwendet die übliche Schreibweise mit Subtraktionspaaren **IV, IX, XL, XC, CD, CM**. Beispielsweise ist für 4 `IV` richtig; `IIII` wird als falsche Antwort behandelt. Der Bereich endet bei 3999, damit keine Überstriche oder zusätzlichen Zeichen nötig sind. Für null gibt es hier keine römische Darstellung.
+
+Die Rückmeldung zeigt den vollständigen Zusammenhang und die einzelnen **Stellenwerte**. Für 2026 beispielsweise:
+
+| Stellenwert | Römisch |
+| --- | --- |
+| 2000 | MM |
+| 20 | XX |
+| 6 | VI |
+
+In Gegenrichtung erscheint dieselbe Zerlegung als `MM = 2000; XX = 20; VI = 6`, anschließend `MMXXVI = 2026`. Nullstellen werden ausgelassen, etwa bei 2006 nur `2000 = MM; 6 = VI`. Die Lösung wird insbesondere nach Fehlern angezeigt; dann bleibt sie bis zum üblichen Weitertippen sichtbar. Richtige Antworten zeigen die Zerlegung ebenfalls kurz. Falsche Aufgaben werden nach den bestehenden Regeln höchstens zweimal erneut eingereiht. Vollständige richtige Antworten zählen für Lernstand, Statistik und Belohnung.
+
+## Technischer Deep-Dive – Lernplan und römische Zahlen
+
+Alles bleibt in `app.js`, `index.html` und `styles.css`; keine neue Laufzeitabhängigkeit oder externe Schnittstelle. `SESSION_MODES` enthält zwölf Modi einschließlich `roman`. `config.allowedModes` speichert eine validierte Liste dieser IDs pro Profil; `normalizedModes()` entfernt unbekannte Werte und Duplikate. Fehlt das Feld in alten Daten, werden alle Modi zugelassen. Eine explizit ungültige Liste erhält `['roman']`. `modeAllowed()` ist die gemeinsame Prüfung für Startseite, Übungsauswahl, Queue-Pool und Sitzungsstart; `onAnswer()` prüft ebenfalls den aktuellen Modus. `refreshDailySessionIfNeeded()` verwirft eine inzwischen gesperrte laufende Queue und erzeugt eine im ersten erlaubten Modus, auch beim Tageswechsel. Speichern und Abbrechen verwenden denselben erlaubten Standardmodus. Ausgeschaltete Lernstände bleiben gespeichert und zählen weiterhin zu historischen Belohnungssummen.
+
+Die Lernplan-Häkchen und Vorschlagsknöpfe bearbeiten nur einen Entwurf. Der Speichern-Handler verlangt mindestens ein Thema, begrenzt `romanMin`/`romanMax` auf 1–3999 und baut die Runde neu auf. Bei vertauschtem Bereich wird die Obergrenze auf die Untergrenze angehoben. Wie bestehende Einstellungen gelten Änderungen erst nach Speichern. Der Profilwechsel über `openProfileOverlay()` öffnet `openPinPrompt(callback)`; nur erfolgreiche Prüfung führt den Wechsel aus, Schließen verwirft den Callback. Der normale Admin-Aufruf nutzt denselben Dialog ohne Callback.
+
+`toRoman(number)` wandelt Ganzzahlen 1–3999 mittels absteigender Wert-/Zeichenpaare einschließlich Subtraktionspaaren um, ohne `eval`. `romanQuestion(direction)` zieht gleichverteilt aus dem konfigurierten Bereich und erstellt die Stellenwertzerlegung aus den von null verschiedenen Dezimalziffern. `renderRomanQuestion()` baut das Eingabeformular mit DOM-APIs auf; Zeichen und Länge sind begrenzt (maximal 15 römische Zeichen oder vier Dezimalziffern). Antworten werden kanonisch verglichen; mathematisch interpretierbare, aber unübliche römische Schreibweisen gelten nicht als richtig. Die normalen Auswahl-/Adaptiv-Einstellungen werden für diesen Modus bewusst durch die gewünschte Zeicheneingabe ersetzt.
+
+Die zwei Richtungen verwenden getrennte Wiederholungsstände `profile.romanSkills.toRoman` und `.toArabic` mit IDs `roman:toRoman`/`roman:toArabic`. Es gibt keine Einzelaufzeichnung für jede Zahl. Beide Richtungen gehören ab zwei Aufgaben in jede neue Runde; wiederholte IDs erzeugen neue Zufallszahlen. `practiceSkill()`, `buildQueue()`, `applyAnswerResult()`, `correctAnswersForProfile()` und `onAnswer()` binden die Familie in bestehende Wiederholung, Serien, Belohnungen und Statistik ein. `history[date].byOperation.roman` enthält ihre Tageswerte. Normalisierung ergänzt fehlende Richtungsstände und Historienwerte, Sicherungen enthalten Plan, Zahlenbereich und Lernstände unter dem bestehenden Root-Key. Laufende Formulare sind mit `sessionRevision` und `answering` gegen doppelte oder nach Abbruch verspätete Abgabe geschützt.
+
+Die erweiterten Integrationstests prüfen alle Umrechnungen 1–3999 mit unabhängiger Rückrechnung, Subtraktionsschreibweisen, beide Tastensätze, genaue Stellenwertlösungen, Retry-/Belohnungs-/Backupverhalten, Vorschlagsentwürfe/Speichern, leere Pläne, gesperrte Themen, Tageswechsel sowie richtige/falsche/abgebrochene Profil-PIN. Der DOM-Test ersetzt keine echte iPhone-Prüfung.
 
 ## Technischer Deep-Dive – Sprache, Aufbau und Kommunikation
 
@@ -69,6 +125,7 @@ Neue-Aufgaben-Limit gilt pro Runde. `newFactsPerDay` bleibt nur als Kompatibilit
 
 | Modus | Datenbereich / Identität | Besondere Regel |
 | --- | --- | --- |
+| Römische Zahlen | `roman:toRoman`, `roman:toArabic`, `profile.romanSkills` | Beide Richtungen, Bereich pro Profil, freie Zeicheneingabe |
 | Hunderter | `h:m:`, `h:d:`, `fact.hundreds` | Eigene Stände; Division unabhängig vom normalen Divisionsschalter |
 | Rechenbegriffe | `t:`, `profile.termSkills` | Textantworten verwenden Auswahl |
 | Zahlenrätsel | `r:`, `profile.riddleSkills` | Eigene Generatoren und Historie |
@@ -134,7 +191,7 @@ Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben un
 
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v52`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v53`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 
@@ -281,8 +338,8 @@ Bilder oder Videos werden eingebunden.
   Freie Rundenplätze werden mit unterschiedlichen Aufgaben der Reihe gefüllt;
   das allgemeine Limit für neue Aufgaben gilt nur für gemischte Runden. Mit
   „Noch einmal“ wird auf dem Abschlussbildschirm dieselbe Zahlenreihe erneut
-  gestartet. Nach „Fertig für heute“ bietet die Startseite wieder eine
-  gemischte Runde oder die Auswahl einer anderen Zahlenreihe an
+  gestartet. Nach „Fertig für heute“ bietet die Startseite wieder die im Lernplan
+  freigegebenen Themen, gegebenenfalls gemischte Runden oder andere Zahlenreihen an
 - Konfigurierbare Begrenzung neuer Aufgaben pro Runde; bekannte Wiederholungen
   haben Vorrang, neue Aufgaben werden innerhalb der Runde erneut abgefragt und
   die nächste Runde führt weitere neue Aufgaben ein

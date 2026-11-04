@@ -85,7 +85,20 @@
     '🍓','🍒','🍉','🍍','🍎','🍌','🥝','🍇','🍪','🍿',
     '🏀','🎾','🏓','🎯','🪁','🎈','🎁','👑','💎','🏰'
   ];
-  var SESSION_MODES = ['mixed', 'table', 'hundreds', 'terms', 'riddles', 'written', 'semi', 'semiFree', 'semiRest', 'remainder', 'precedence'];
+  var SESSION_MODES = ['mixed', 'table', 'hundreds', 'terms', 'riddles', 'written', 'semi', 'semiFree', 'semiRest', 'remainder', 'precedence', 'roman'];
+  var MODE_LABELS = {mixed:'Gemischtes 1×1',table:'Einzelne Zahlenreihen',hundreds:'Rechnen mit 100ern',
+    terms:'Rechenbegriffe',riddles:'Zahlenrätsel',written:'Schriftlich dividieren',semi:'Halbschriftlich · mit Hilfe',
+    semiFree:'Halbschriftlich · eigener Weg',semiRest:'Halbschriftlich · mit Rest',remainder:'Division mit Rest',
+    precedence:'Punkt vor Strich',roman:'Römische Zahlen'};
+
+  function normalizedModes(value){
+    if (!Array.isArray(value)) return SESSION_MODES.slice();
+    var modes = SESSION_MODES.filter(function(mode){return value.indexOf(mode) !== -1;});
+    return modes.length ? modes : ['roman'];
+  }
+  function modeAllowed(mode){return normalizedModes(state.config.allowedModes).indexOf(mode) !== -1;}
+  function firstLearningMode(){return normalizedModes(state.config.allowedModes)[0];}
+
   var PRECEDENCE_TYPES = ['mulAdd','addMul','mulSub','subMul','divAdd','addDiv','divSub','subDiv',
     'bracketMul','bracketSub','bracketDiv','bracketMixed','allMixed','bracketAll'];
   // Keep legacy records/queue keys, but never schedule their longer expressions again.
@@ -202,6 +215,7 @@
         min: 1, max: 10, tasksPerDay: 5, rewardEvery: 10,
         childName: "", avatar:normalizeAvatar(), sound: true, answerMode: "adaptive", gapTasks: false,
         enabledTables: [1,2,3,4,5,6,7,8,9,10], newFactsPerRound: 2,
+        allowedModes: SESSION_MODES.slice(), romanMin:1, romanMax:3999,
         autoUnlockTables: false, divisionEnabled: false, accentTheme: 'purple'
       },
       facts: {}, // key -> {a,b,box,dueDate,seen,correctCount,wrongCount,correctStreak,...}
@@ -219,6 +233,7 @@
       },
       termSkills: {},
       riddleSkills: {},
+      romanSkills: {},
       precedenceSkills: {},
       writtenSkills: {},
       semiSkills: {},
@@ -270,6 +285,9 @@
     TERM_CONCEPTS.forEach(function(concept){
       if (termSkills[concept]) total += Number(termSkills[concept].correctCount) || 0;
     });
+    ['toRoman','toArabic'].forEach(function(direction){
+      if (profile.romanSkills && profile.romanSkills[direction]) total += Number(profile.romanSkills[direction].correctCount) || 0;
+    });
     var riddleSkills = profile.riddleSkills || {};
     PRECEDENCE_TYPES.forEach(function(type){
       if (profile.precedenceSkills && profile.precedenceSkills[type]) total += Number(profile.precedenceSkills[type].correctCount) || 0;
@@ -303,6 +321,9 @@
     if (!p.config) p.config = defaultProfile().config;
     p.config.childName=String(p.config.childName||'').slice(0,80);
     p.config.avatar=normalizeAvatar(p.config.avatar);
+    p.config.allowedModes = normalizedModes(p.config.allowedModes);
+    p.config.romanMin = Math.max(1, Math.min(3999, parseInt(p.config.romanMin,10) || 1));
+    p.config.romanMax = Math.max(p.config.romanMin, Math.min(3999, parseInt(p.config.romanMax,10) || 3999));
     if (p.config.sound === undefined) p.config.sound = true;
     if (!p.config.answerMode) p.config.answerMode = "choice";
     if (['choice','input','adaptive'].indexOf(p.config.answerMode) === -1) p.config.answerMode = 'choice';
@@ -348,6 +369,11 @@
       normalizeLearningRecord(fact.hundreds.multiply, normalizationDate);
       normalizeLearningRecord(fact.hundreds.divide, normalizationDate);
     }
+    if (!p.romanSkills || typeof p.romanSkills !== 'object' || Array.isArray(p.romanSkills)) p.romanSkills = {};
+    ['toRoman','toArabic'].forEach(function(direction){
+      if (!p.romanSkills[direction] || typeof p.romanSkills[direction] !== 'object' || Array.isArray(p.romanSkills[direction])) p.romanSkills[direction] = learningDefaults(normalizationDate);
+      normalizeLearningRecord(p.romanSkills[direction], normalizationDate);
+    });
     if (!p.termSkills || typeof p.termSkills !== 'object') p.termSkills = {};
     TERM_CONCEPTS.forEach(function(concept){
       if (!p.termSkills[concept]) p.termSkills[concept] = learningDefaults(normalizationDate);
@@ -406,7 +432,7 @@
           divide:{ attempts:0, correct:0, wrong:0, totalResponseMs:0 }
         };
       }
-      ['multiply','divide','hundredsMultiply','hundredsDivide','terms','riddles','writtenDivide','semiDivide','remainderDivide','precedence'].forEach(function(operation){
+      ['multiply','divide','hundredsMultiply','hundredsDivide','terms','riddles','writtenDivide','semiDivide','remainderDivide','precedence','roman'].forEach(function(operation){
         var operationDay = historyDay.byOperation[operation] || {};
         operationDay.attempts = Math.max(0, Number(operationDay.attempts) || 0);
         operationDay.correct = Math.max(0, Number(operationDay.correct) || 0);
@@ -555,6 +581,10 @@
         if (state.facts[key].box >= DIVISION_UNLOCK_BOX) state.facts[key].division.unlocked = true;
       }
     }
+    if (!state.romanSkills) state.romanSkills = {};
+    ['toRoman','toArabic'].forEach(function(direction){
+      if (!state.romanSkills[direction]) state.romanSkills[direction] = learningDefaults(today);
+    });
     if (!state.termSkills) state.termSkills = {};
     TERM_CONCEPTS.forEach(function(concept){
       if (!state.termSkills[concept]) state.termSkills[concept] = learningDefaults(today);
@@ -665,6 +695,9 @@
 
   function practiceSkill(key){
     if (typeof key !== 'string') return null;
+    if (key === 'roman:toRoman' || key === 'roman:toArabic'){
+      return {key:key,kind:'roman',operation:'roman',direction:key.slice(6),fact:null,record:state.romanSkills[key.slice(6)]};
+    }
     if (key.indexOf('p:') === 0){
       var precedenceType = key.slice(2);
       if (PRECEDENCE_TYPES.indexOf(precedenceType) === -1 || !state.precedenceSkills[precedenceType]) return null;
@@ -753,6 +786,8 @@
   }
 
   function practiceSkillsInRange(focusTable, mode){
+    if (!modeAllowed(mode || (focusTable ? 'table' : 'mixed'))) return [];
+    if (mode === 'roman') return ['roman:toRoman','roman:toArabic'].map(practiceSkill);
     if (mode === 'precedence') return PRECEDENCE_PRACTICE_TYPES.map(function(type){return practiceSkill('p:' + type);});
     if (mode === 'remainder') return factsInRange().filter(function(fact){ return fact.b > 1; })
       .map(function(fact){ return practiceSkill('rd:' + factKey(fact.a, fact.b)); });
@@ -807,7 +842,7 @@
     // A focused table round should cover as many different members of the
     // selected row as its configured size permits. Mixed rounds keep the
     // normal limit for newly introduced facts.
-    var broadMode = !!focusTable || mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || mode === 'precedence' || isSemiMode(mode);
+    var broadMode = !!focusTable || mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || mode === 'precedence' || mode === 'roman' || isSemiMode(mode);
     var newLimit = Math.min(size, broadMode ? size : state.config.newFactsPerRound);
     var dueReviews = pool.filter(function(skill){ return skill.record.seen && skill.record.dueDate <= today; });
     var newCandidates = pool.filter(function(skill){ return !skill.record.seen; });
@@ -895,7 +930,10 @@
       occurrenceCounts[filler.key] = (occurrenceCounts[filler.key] || 0) + 1;
     }
     var queueKeys = chosen.map(function(skill){ return skill.key; });
-    if (mode === 'precedence' && size >= 2){
+    if (mode === 'roman' && size >= 2 && pool.length){
+      queueKeys[0] = 'roman:toRoman';queueKeys[1] = 'roman:toArabic';
+    }
+    if (mode === 'precedence' && size >= 2 && pool.length){
       // Every regular-sized round practices both bracket priority and point-before-line.
       [true,false].forEach(function(bracket){
         if (!queueKeys.some(function(key){return (key.indexOf('p:bracket') === 0) === bracket;})){
@@ -987,6 +1025,11 @@
   function refreshDailySessionIfNeeded(){
     ensureFactPool();
     var today = todayStr();
+    if (!modeAllowed(state.today.mode)){
+      state.today.mode = firstLearningMode();state.today.focusTable = null;
+      state.today.queue = [];state.today.index = 0;state.today.correct = 0;
+      state.today.completed = false;state.today.requeueCounts = {};
+    }
     if (state.today.date !== today){
       prepareStreakForDay(today);
       state.today = {
@@ -996,12 +1039,12 @@
         correct: 0,
         completed: false,
         bonus: false,
-        mode: 'mixed',
+        mode: firstLearningMode(),
         focusTable: null,
         requeueCounts: {},
         newFactKeys: []
       };
-      state.today.queue = buildQueue(state.config.tasksPerDay, null, 'mixed');
+      state.today.queue = buildQueue(state.config.tasksPerDay, null, state.today.mode);
       saveState();
     } else if (!state.today.queue || state.today.queue.length === 0){
       state.today.queue = buildQueue(state.config.tasksPerDay, state.today.focusTable, state.today.mode);
@@ -1229,6 +1272,62 @@
       return value !== correct && value !== scaleError;
     }).slice(0, 2);
     return { correct:correct, options:shuffle([correct, scaleError].concat(nearby)) };
+  }
+
+  function toRoman(number){
+    if (!Number.isInteger(number) || number < 1 || number > 3999) return '';
+    var pairs = [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+    var result = '';
+    pairs.forEach(function(pair){while (number >= pair[0]){result += pair[1];number -= pair[0];}});
+    return result;
+  }
+  function romanQuestion(direction, number){
+    var min = state.config.romanMin || 1, max = state.config.romanMax || 3999;
+    if (number === undefined) number = min + Math.floor(Math.random() * (max - min + 1));
+    var roman = toRoman(number), parts = [];
+    String(number).split('').forEach(function(digit,index,digits){
+      var value = Number(digit) * Math.pow(10,digits.length-index-1);
+      if (value) parts.push(direction === 'toRoman' ? value + ' = ' + toRoman(value) : toRoman(value) + ' = ' + value);
+    });
+    return {direction:direction,number:number,roman:roman,correct:direction === 'toRoman' ? roman : String(number),
+      prompt:(direction === 'toRoman' ? number : roman) + ' = ?',
+      explanation:'Zerlege nach Stellenwerten: ' + parts.join('; ') + '. ' +
+        (direction === 'toRoman' ? number + ' = ' + roman : roman + ' = ' + number) + '.'};
+  }
+  function renderRomanQuestion(key, exercise){
+    var revision = sessionRevision;
+    questionText.classList.add('word-question');choicesWrap.classList.remove('word-choices','keypad');
+    choicesWrap.innerHTML = '';feedbackText.textContent = '';feedbackText.className = 'feedback';awaitTap = false;
+    questionExplanation = exercise.explanation;questionStartTime = Date.now();setQuestionText(exercise.prompt);
+    var form = document.createElement('form');form.className = 'roman-answer';
+    var input = document.createElement('input');input.type = 'text';input.value = '';input.autocomplete = 'off';
+    input.inputMode = exercise.direction === 'toRoman' ? 'text' : 'numeric';
+    input.maxLength = exercise.direction === 'toRoman' ? 15 : 4;
+    input.setAttribute('aria-label',exercise.direction === 'toRoman' ? 'Römische Zahl eingeben' : 'Arabische Zahl eingeben');
+    input.setAttribute('autocapitalize','characters');input.spellcheck = false;
+    form.appendChild(input);
+    function live(){return answering && revision === sessionRevision;}
+    function clean(){input.value = input.value.toUpperCase().replace(exercise.direction === 'toRoman' ? /[^IVXLCDM]/g : /[^0-9]/g,'').slice(0,input.maxLength);}
+    input.addEventListener('input',clean);
+    var keys = document.createElement('div');keys.className = 'roman-keys';
+    (exercise.direction === 'toRoman' ? ['I','V','X','L','C','D','M'] : ['0','1','2','3','4','5','6','7','8','9']).concat(['⌫']).forEach(function(symbol){
+      var button = document.createElement('button');button.type = 'button';button.className = 'choice-btn';button.textContent = symbol;
+      if (symbol === '⌫') button.setAttribute('aria-label','Letztes Zeichen löschen');
+      button.addEventListener('click',function(){
+        if (!live()) return;
+        input.value = symbol === '⌫' ? input.value.slice(0,-1) : input.value + symbol;clean();
+      });keys.appendChild(button);
+    });
+    form.appendChild(keys);
+    var submit = document.createElement('button');submit.type = 'submit';submit.className = 'primary-btn';submit.textContent = 'Antwort prüfen';form.appendChild(submit);
+    form.addEventListener('submit',function(event){
+      event.preventDefault();if (!live()) return;clean();
+      if (!input.value){feedbackText.textContent = 'Gib zuerst eine Zahl ein.';return;}
+      input.disabled = true;submit.disabled = true;
+      var answer = exercise.direction === 'toRoman' ? input.value : String(Number(input.value));
+      onAnswer(key,answer,exercise.correct,null,true,exercise.number + ' = ' + exercise.roman);
+    });
+    choicesWrap.appendChild(form);
   }
 
   function specialQuestion(skill){
@@ -1737,6 +1836,7 @@
 
   function repeatRoundLabel(recoveryPending){
     if (recoveryPending) return 'Serie retten: zweite Runde 🔥';
+    if (state.today.mode === 'roman') return 'Noch einmal: Römische Zahlen 🔁';
     if (state.today.mode === 'precedence') return 'Noch einmal: Punkt vor Strich 🔁';
     if (state.today.mode === 'remainder') return 'Noch einmal: Division mit Rest 🔁';
     if (isSemiMode(state.today.mode)) return 'Noch einmal: ' + semiModeLabel(state.today.mode) + ' 🔁';
@@ -1800,19 +1900,30 @@
     }
     el('remainderBtn').disabled = practiceSkillsInRange(null, 'remainder').length === 0;
     el('remainderBtn').title = el('remainderBtn').disabled ? 'Wähle in den Einstellungen auch Zahlen größer als 1 aus.' : '';
-    [[startBtn,'play'],[bonusBtn,'play'],[tablePracticeBtn,'cards'],[hundredsBtn,'cards'],[termsBtn,'chat'],[riddlesBtn,'cards'],[writtenBtn,'cards'],[el('semiBtn'),'cards'],[el('remainderBtn'),'cards'],[el('precedenceBtn'),'cards']].forEach(function(item){
+    [[startBtn,'play'],[bonusBtn,'play'],[tablePracticeBtn,'cards'],[hundredsBtn,'cards'],[termsBtn,'chat'],[riddlesBtn,'cards'],[writtenBtn,'cards'],[el('semiBtn'),'cards'],[el('remainderBtn'),'cards'],[el('precedenceBtn'),'cards'],[el('romanBtn'),'cards']].forEach(function(item){
       iconLabel(item[0],item[0].textContent.replace(/ (🚀|🔥|🔢|💬|🧩)/g,''),item[1]);
     });
+    SESSION_MODES.forEach(function(mode){
+      if (mode === 'semiFree' || mode === 'semiRest') return;
+      var button = el(mode === 'mixed' ? 'startBtn' : mode === 'table' ? 'tablePracticeBtn' : mode + 'Btn');
+      if (button) button.hidden = !modeAllowed(mode);
+    });
+    el('semiBtn').hidden = !['semi','semiFree','semiRest'].some(modeAllowed);
+    ['semi','semiFree','semiRest'].forEach(function(mode){el(mode+'StartBtn').hidden = !modeAllowed(mode);});
+    el('mixedLearning').hidden = !modeAllowed('mixed');
+    el('homeSubtitle').textContent = 'Dein Lernplan · ' + normalizedModes(state.config.allowedModes).length + ' Themen zum Üben';
     showScreen(screenHome);
   }
 
   function startSession(bonus, focusTable, mode){
+    var requestedMode = mode || (focusTable ? 'table' : 'mixed');
+    if (!modeAllowed(requestedMode)) return;
     sessionRevision++;
     sessionRewardUnlocks = 0;
     var selectedTable = parseInt(focusTable, 10);
     var focused = configuredTables().indexOf(selectedTable) !== -1;
-    var specialMode = mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || mode === 'precedence' || isSemiMode(mode);
-    if (bonus || focused || specialMode){
+    var specialMode = mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || mode === 'precedence' || mode === 'roman' || isSemiMode(mode);
+    if (bonus || focused || specialMode || state.today.mode !== requestedMode){
       state.today.focusTable = focused ? selectedTable : null;
       state.today.mode = specialMode ? mode : (focused ? 'table' : 'mixed');
       state.today.queue = buildQueue(state.config.tasksPerDay, state.today.focusTable, state.today.mode);
@@ -1835,11 +1946,11 @@
     state.today.index = 0;
     state.today.correct = 0;
     state.today.bonus = false;
-    state.today.mode = 'mixed';
+    state.today.mode = firstLearningMode();
     state.today.focusTable = null;
     state.today.requeueCounts = {};
     state.today.newFactKeys = [];
-    state.today.queue = buildQueue(state.config.tasksPerDay, null, 'mixed');
+    state.today.queue = buildQueue(state.config.tasksPerDay, null, state.today.mode);
     saveState();
     renderHome();
   }
@@ -1891,6 +2002,7 @@
       renderQuestion();
       return;
     }
+    screenQuestion.classList.toggle('roman-mode',skill.kind === 'roman');
     var f = skill.fact;
     var gapTask = false;
     var gen, fmt, placeholder;
@@ -1901,6 +2013,7 @@
     el('remainderDivisionForm').hidden = skill.kind !== 'remainder';
     questionText.hidden = skill.kind === 'written' || skill.kind === 'semi';
     choicesWrap.hidden = skill.kind === 'written' || skill.kind === 'semi';
+    if (skill.kind === 'roman'){renderRomanQuestion(key, romanQuestion(skill.direction));return;}
     if (skill.kind === 'remainder'){
       feedbackText.textContent = '';feedbackText.className = 'feedback';awaitTap = false;
       questionText.classList.remove('word-question');choicesWrap.classList.remove('word-choices');
@@ -2364,7 +2477,7 @@
   }
 
   function onAnswer(key, chosen, correct, btnEl, wasTyped, masteryLabel){
-    if (!answering) return;
+    if (!answering || !modeAllowed(state.today.mode)) return;
     answering = false;
     var elapsed = Date.now() - questionStartTime;
     var learningElapsed = wasTyped ? Math.max(0, elapsed - INPUT_TIME_COMPENSATION_MS) : elapsed;
@@ -2520,8 +2633,8 @@
           : (wasBonus ? "Noch eine Runde geschafft! Extra-Übung hilft immer. 🌈"
             : "Du hast alle Aufgaben für heute geschafft.")));
     doneStreakVal.textContent = state.streak;
-    if (!recoveryPending && !streakRecovered && ['hundreds', 'terms', 'riddles', 'written','semi','semiFree','semiRest','remainder','precedence'].indexOf(state.today.mode) !== -1){
-      doneSubtitle.textContent = { precedence:'Punkt vor Strich geübt! 🌟', remainder:'Division mit Rest geübt! 🌟', hundreds:'Rechnen mit 100ern geschafft! 🌟',
+    if (!recoveryPending && !streakRecovered && ['hundreds', 'terms', 'riddles', 'written','semi','semiFree','semiRest','remainder','precedence','roman'].indexOf(state.today.mode) !== -1){
+      doneSubtitle.textContent = { roman:'Römische Zahlen geübt! 🌟', precedence:'Punkt vor Strich geübt! 🌟', remainder:'Division mit Rest geübt! 🌟', hundreds:'Rechnen mit 100ern geschafft! 🌟',
         terms:'Rechenbegriffe geübt! 🌟', riddles:'Zahlenrätsel gelöst! 🌟', written:'Schriftlich dividiert! 🌟',semi:'Halbschriftlich dividiert! 🌟',semiFree:'Deinen eigenen Rechenweg gefunden! 🌟',semiRest:'Mit Rest dividiert! 🌟' }[state.today.mode];
     }
     doneCorrectVal.textContent = state.today.correct + "/" + state.today.queue.length;
@@ -2591,13 +2704,15 @@
   riddlesBtn.addEventListener('click', function(){ startSession(state.today.completed, null, 'riddles'); });
   writtenBtn.addEventListener('click', function(){ startSession(state.today.completed, null, 'written'); });
   el('remainderBtn').addEventListener('click', function(){ startSession(state.today.completed, null, 'remainder'); });
+  el('romanBtn').addEventListener('click', function(){startSession(state.today.completed,null,'roman');});
   el('precedenceBtn').addEventListener('click', function(){ startSession(state.today.completed, null, 'precedence'); });
-  el('semiBtn').addEventListener('click',function(){showScreen(el('screen-semi-intro'));});
+  el('semiBtn').addEventListener('click',function(){if (['semi','semiFree','semiRest'].some(modeAllowed)) showScreen(el('screen-semi-intro'));});
   ['semi','semiFree','semiRest'].forEach(function(mode){
     el(mode+'StartBtn').addEventListener('click',function(){startSession(state.today.completed,null,mode);});
   });
   el('semiIntroBackBtn').addEventListener('click',renderHome);
   tablePracticeBtn.addEventListener('click', function(){
+    if (!modeAllowed('table')) return;
     practiceTableGrid.innerHTML = '';
     configuredTables().forEach(function(table){
       var button = document.createElement('button');
@@ -5351,9 +5466,9 @@
       btn.style.marginTop = '12px';
       btn.textContent = p.config.childName || 'Ohne Namen';
       btn.addEventListener('click', function(){
-        setActiveProfile(id);
         closeModal(profileOverlay);
-        renderHome();
+        if (id === root.activeProfileId){renderHome();return;}
+        openPinPrompt(function(){setActiveProfile(id);renderHome();});
       });
       profileList.appendChild(btn);
     });
@@ -5636,8 +5751,33 @@
     adminSaveActions.hidden = panelId === 'adminPanelOverview';
   }
 
+  function renderLearningPlan(modes){
+    var container = el('learningPlanChoices');container.innerHTML = '';el('learningPlanError').textContent = '';
+    SESSION_MODES.forEach(function(mode){
+      var label = document.createElement('label'), input = document.createElement('input');
+      input.type = 'checkbox';input.value = mode;input.checked = modes.indexOf(mode) !== -1;
+      label.appendChild(input);label.appendChild(document.createTextNode(MODE_LABELS[mode]));container.appendChild(label);
+    });
+  }
+  function selectedLearningModes(){
+    var result = [];
+    Array.prototype.forEach.call(el('learningPlanChoices').children,read);
+    function read(label){var input = label.children[0];if (input.checked) result.push(input.value);}
+    return result;
+  }
+  ['4','5','All'].forEach(function(level){
+    el('plan'+level+'Btn').addEventListener('click',function(){
+      var modes = level === '5' ? ['precedence','written','semiFree','semiRest','remainder','roman'] : SESSION_MODES.slice();
+      if (level === '4') modes = modes.filter(function(mode){return mode !== 'semiFree' && mode !== 'semiRest';});
+      renderLearningPlan(modes);
+      el('romanMin').value = level === '5' ? 100 : 1;el('romanMax').value = level === '4' ? 1000 : 3999;
+    });
+  });
+
   function openAdmin(){
     populateRangeSelects();
+    renderLearningPlan(state.config.allowedModes);
+    el('romanMin').value = state.config.romanMin;el('romanMax').value = state.config.romanMax;
     renderAdminProfiles();
     accentThemeSel.value = state.config.accentTheme || 'purple';
     rangeMinSel.value = state.config.min;
@@ -5655,14 +5795,17 @@
     newPinInput.value = '';
     selectDashboardOperation('multiply');
     renderBackupReminder();
-    showAdminTab('adminPanelOverview', false);
+    showAdminTab('adminPanelLearning', false);
     adminOverlay.classList.add('active');updateViewport();
   }
   function closeAdminModal(){
     adminOverlay.classList.remove('active');updateViewport();
   }
 
-  function openPinPrompt(){
+  var pendingPinAction = null;
+  function openPinPrompt(action){
+    pendingPinAction = typeof action === 'function' ? action : null;
+    el('pinPurpose').textContent = pendingPinAction ? 'Bitte PIN eingeben, um das Kind zu wechseln.' : 'Bitte PIN eingeben, um Einstellungen zu ändern.';
     pinInput.value = '';
     pinError.textContent = '';
     pinOverlay.classList.add('active');updateViewport();
@@ -5673,12 +5816,14 @@
     requestAnimationFrame(function(){ pinInput.focus(); });
   }
   function closePinPrompt(){
+    pendingPinAction = null;
     pinOverlay.classList.remove('active');updateViewport();
   }
   function submitPin(){
     if (pinInput.value === (root.pin || "6969")){
+      var action = pendingPinAction;
       closePinPrompt();
-      openAdmin();
+      if (action) action();else openAdmin();
     } else {
       pinError.textContent = 'Falscher PIN. Nochmal versuchen.';
       pinInput.value = '';
@@ -5749,6 +5894,11 @@
     var rewardIntervalChanged = rewardEvery !== state.config.rewardEvery;
     var wasAutoUnlocking = state.config.autoUnlockTables;
 
+    var allowed = selectedLearningModes();
+    if (!allowed.length){el('learningPlanError').textContent = 'Bitte mindestens ein Thema auswählen.';return;}
+    state.config.allowedModes = allowed;
+    state.config.romanMin = Math.max(1,Math.min(3999,parseInt(el('romanMin').value,10)||1));
+    state.config.romanMax = Math.max(state.config.romanMin,Math.min(3999,parseInt(el('romanMax').value,10)||3999));
     state.config.min = min;
     state.config.max = max;
     state.config.enabledTables = tables;
@@ -5778,8 +5928,8 @@
     ensureFactPool();
     state.today.newFactKeys = [];
     state.today.focusTable = null;
-    state.today.mode = 'mixed';
-    state.today.queue = buildQueue(tasks, null, 'mixed');
+    state.today.mode = firstLearningMode();
+    state.today.queue = buildQueue(tasks, null, state.today.mode);
     state.today.index = 0;
     state.today.correct = 0;
     state.today.completed = false;
