@@ -1085,3 +1085,8 @@ body.focused-view .app-bar {padding-top:calc(4px + var(--safe-top));padding-bott
   .roman-mode .roman-keys .choice-btn { min-height:44px; padding:6px; font-size:1.15rem; }
   .roman-mode .roman-answer .primary-btn { min-height:44px; padding:8px; font-size:1rem; }
 }
+
+/* Native learning inputs: iOS can pan the visual viewport as well as shrink it.
+   Anchor the whole learning shell to that rectangle, so its bottom meets the
+   keyboard instead of exposing the page background. Only the screen scrolls. */
+body.learning-input-viewport {position:fixed;top:var(--app-top,0px);left:0;right:0;width:100%;}

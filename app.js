@@ -45,7 +45,6 @@
   var SLOW_MS = 9000;
   var INPUT_TIME_COMPENSATION_MS = 2000;
   var CORRECT_ADVANCE_DELAY_MS = 1400;
-  var WRONG_TAP_DELAY_MS = 1200; // minimum time to look at the correct answer before a tap advances
   var GAME_DURATION_MS = 3 * 60 * 1000;
   function gameDurationMs(game){ return game && (game.kind === 'brick'||game.kind === 'tiles') ? 5 * 60 * 1000 : GAME_DURATION_MS; }
   function gameElapsedMs(g){return g&&g.playTimeMs||0;}
@@ -1778,7 +1777,7 @@
     ['navLearn','navGames','navStatistics'].forEach(function(id){el(id).setAttribute('aria-current',id===selected?'page':'false');});
     if(screen===screenGameChoice)renderGameAvailability();
     if(game)enterGameFullscreen(screen);
-    screen.scrollTop=0;window.scrollTo(0,0);
+    screen.scrollTop=0;window.scrollTo(0,0);updateViewport();
   }
   function renderStatistics(){
     var day=todayStr(),today=state.history[day]||{correct:0,wrong:0},week=0,total=0;
@@ -1988,6 +1987,7 @@
   }
 
   function renderQuestion(){
+    answerFeedbackToken++;awaitTap=false;
     if (state.today.index >= state.today.queue.length){
       finishSession();
       return;
@@ -2530,15 +2530,12 @@
     state.today.index++;
     saveState();
 
-    var answerRevision = sessionRevision;
+    var answerRevision = sessionRevision,feedbackToken = ++answerFeedbackToken;
+    awaitTap = true;
     if (isCorrect){
       setTimeout(function(){
-        if (answerRevision === sessionRevision) renderQuestion();
+        if (answerRevision === sessionRevision && feedbackToken === answerFeedbackToken) renderQuestion();
       }, questionExplanation ? 4500 : (newlyMastered ? 2400 : CORRECT_ADVANCE_DELAY_MS));
-    } else {
-      setTimeout(function(){
-        if (answerRevision === sessionRevision) awaitTap = true;
-      }, WRONG_TAP_DELAY_MS);
     }
   }
 
@@ -2648,18 +2645,21 @@
     launchConfetti();
   }
 
-  // After a wrong answer, any tap/click advances (except on the gear button
-  // or inside modals, so the parent area stays usable). touchstart is handled
-  // too because iOS does not reliably emit click on non-interactive elements.
-  var awaitTap = false;
+  // Capture runs before an answer button/submit handler: the gesture that
+  // submits an answer must never also dismiss its newly displayed feedback.
+  // Cancel a feedback touch so its synthetic click cannot answer the next task.
+  var awaitTap = false,answerFeedbackToken = 0;
   function tapAdvance(e){
-    if (!awaitTap) return;
+    if (!awaitTap || !screenQuestion.classList.contains('active')) return;
     if (e.target.closest && e.target.closest('.gear-btn, .modal-overlay, #abortSessionBtn')) return;
+    if (document.querySelector('.modal-overlay.active')) return;
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
     awaitTap = false;
     renderQuestion();
   }
-  document.addEventListener('click', tapAdvance);
-  document.addEventListener('touchstart', tapAdvance, { passive: true });
+  document.addEventListener('click', tapAdvance, true);
+  document.addEventListener('touchstart', tapAdvance, { passive: false, capture: true });
 
   startBtn.addEventListener('click', function(){ startSession(false); });
   function navigateBack(){
@@ -6012,6 +6012,17 @@
     if(field.bottom>panel.bottom-16)modal.scrollTop=(modal.scrollTop||0)+field.bottom-panel.bottom+16;
     else if(field.top<panel.top+16)modal.scrollTop=Math.max(0,(modal.scrollTop||0)+field.top-panel.top-16);
   }
+  function keepLearningInputVisible(){
+    var active=document.activeElement,viewport=window.visualViewport;
+    if(!document.body.classList.contains('learning-input-viewport')||!active||
+       !/^(INPUT|TEXTAREA)$/.test(active.tagName)||!viewport||viewport.scale&&viewport.scale!==1)return;
+    var panel=screenQuestion.getBoundingClientRect(),field=active.getBoundingClientRect();
+    if(!Number.isFinite(panel.bottom)||!Number.isFinite(field.bottom))return;
+    var bottom=Math.min(panel.bottom,(viewport.offsetTop||0)+viewport.height)-12;
+    var top=Math.max(panel.top,viewport.offsetTop||0)+12;
+    if(field.bottom>bottom)screenQuestion.scrollTop=(screenQuestion.scrollTop||0)+field.bottom-bottom;
+    else if(field.top<top)screenQuestion.scrollTop=Math.max(0,(screenQuestion.scrollTop||0)+field.top-top);
+  }
   var lastViewport=null,viewportStyles=Object.create(null),viewportFrame=0,viewportResizeGames=false;
   function setViewportStyle(name,value){
     if(viewportStyles[name]===value)return;
@@ -6034,13 +6045,16 @@
     var modalViewport=modal&&viewport&&viewport.height>0&&(!viewport.scale||viewport.scale===1);
     setViewportStyle('--modal-height',modalViewport?Math.round(viewport.height)+'px':standalone?'100vh':'100dvh');
     setViewportStyle('--modal-top',modalViewport?Math.round(viewport.offsetTop||0)+'px':'0px');
-    var height=viewport&&editing&&!modal?viewport.height:0;
+    var learningViewport=!!(viewport&&viewport.height>0&&editing&&!modal&&screen===screenQuestion&&(!viewport.scale||viewport.scale===1));
+    if(document.body.classList.contains('learning-input-viewport')!==learningViewport)document.body.classList.toggle('learning-input-viewport',learningViewport);
+    setViewportStyle('--app-top',learningViewport?Math.round(viewport.offsetTop||0)+'px':'0px');
+    var height=learningViewport?viewport.height:0;
     // Installed iOS apps can report dvh/visualViewport without the safe areas
     // on launch. With no browser toolbar, vh is the full app window height.
     setViewportStyle('--app-height',height>0?Math.round(height)+'px':standalone?'100vh':'100dvh');
     if(viewportFrame)cancelAnimationFrame(viewportFrame);
     viewportFrame=requestAnimationFrame(function(){
-      viewportFrame=0;keepModalInputVisible();
+      viewportFrame=0;keepModalInputVisible();keepLearningInputVisible();
       if(viewportResizeGames){viewportResizeGames=false;resizeFixedCanvases();resizeSnowCanvas();resizeRunnerCanvas();resizeExtraCanvases();if(arcadeGames.brick)arcadeGames.brick.inputRect=null;}
     });
   }

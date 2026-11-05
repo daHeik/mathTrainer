@@ -1922,3 +1922,76 @@ assert.strictEqual(JSON.stringify(oldPlan.config.allowedModes),'["roman"]');asse
 console.log('Roman: 1..3999 conversion, both keypads, place-value feedback, retries, rewards and backup OK; learning plans: presets, save validation, hidden/blocked modes, rollover and profile PIN OK');
 
 oldPlan.romanSkills={toRoman:42,toArabic:[]};api.normalizeProfile(oldPlan);assert.strictEqual(oldPlan.romanSkills.toRoman.correctCount,0);assert.strictEqual(oldPlan.romanSkills.toArabic.correctCount,0);
+
+
+// Installed iOS keyboard may pan the visible rectangle, leaving a bottom gap
+// when only its height is applied. Test real semi forms against that geometry.
+var keyboardProfile=api.normalizeProfile(api.defaultProfile());keyboardProfile.config.sound=false;
+api.setState(keyboardProfile);api.ensureFactPool();
+var keyboardRaf=context.requestAnimationFrame,keyboardCancel=context.cancelAnimationFrame,keyboardFrames=new Map(),keyboardFrameId=4000;
+context.requestAnimationFrame=function(fn){var id=++keyboardFrameId;keyboardFrames.set(id,fn);return id;};
+context.cancelAnimationFrame=function(id){keyboardFrames.delete(id);};
+function flushKeyboard(){var frames=Array.from(keyboardFrames.values());keyboardFrames.clear();frames.forEach(function(fn){fn();});}
+context.navigator.standalone=true;
+var keyboardPanel=elements['screen-question'],keyboardPanelRect=keyboardPanel.getBoundingClientRect;
+['semi','semiFree','semiRest'].forEach(function(mode){
+  api.startSession(false,null,mode);
+  var field=context.document.activeElement;field.tagName='INPUT';keyboardPanel.scrollTop=0;
+  context.window.visualViewport={width:390,height:390,offsetTop:86,scale:1};
+  keyboardPanel.getBoundingClientRect=function(){return {top:138,bottom:476};};
+  var inputBottom=510;
+  field.getBoundingClientRect=function(){return {top:inputBottom-48-keyboardPanel.scrollTop,bottom:inputBottom-keyboardPanel.scrollTop};};
+  api.viewport();flushKeyboard();
+  assert(context.document.body.classList.contains('learning-input-viewport'));
+  assert.strictEqual(context.document.documentElement.style['--app-height'],'390px');
+  assert.strictEqual(context.document.documentElement.style['--app-top'],'86px');
+  assert.strictEqual(keyboardPanel.scrollTop,46,'Only scroll enough to uncover the input');
+  context.window.visualViewport.offsetTop=34;keyboardPanel.getBoundingClientRect=function(){return {top:86,bottom:424};};
+  api.viewport();flushKeyboard();assert.strictEqual(context.document.documentElement.style['--app-top'],'34px');
+  var retainedScroll=keyboardPanel.scrollTop,styleWrites=0,keyboardSet=context.document.documentElement.style.setProperty;
+  context.document.documentElement.style.setProperty=function(k,v){styleWrites++;keyboardSet.call(this,k,v);};
+  for(var k=0;k<10;k++)api.viewport();flushKeyboard();
+  assert.strictEqual(styleWrites,0);assert.strictEqual(keyboardPanel.scrollTop,retainedScroll);
+  context.document.documentElement.style.setProperty=keyboardSet;
+  context.window.visualViewport.scale=2;api.viewport();flushKeyboard();
+  assert(!context.document.body.classList.contains('learning-input-viewport'),'Pinch zoom stays browser-controlled');
+  assert.strictEqual(context.document.documentElement.style['--app-height'],'100vh');
+  context.window.visualViewport.scale=1;api.viewport();flushKeyboard();
+  context.document.activeElement=context.document.body;api.viewport();flushKeyboard();
+  assert(!context.document.body.classList.contains('learning-input-viewport'));
+  assert.strictEqual(context.document.documentElement.style['--app-top'],'0px');
+  assert.strictEqual(context.document.documentElement.style['--app-height'],'100vh');
+});
+// Leaving a form clears its positioning even before focusout reaches us.
+api.startSession(false,null,'semi');context.document.activeElement.tagName='INPUT';api.viewport();flushKeyboard();
+assert(context.document.body.classList.contains('learning-input-viewport'));
+api.renderHome();flushKeyboard();assert(!context.document.body.classList.contains('learning-input-viewport'));
+delete context.window.visualViewport;delete context.navigator.standalone;context.document.activeElement=context.document.body;
+keyboardPanel.getBoundingClientRect=keyboardPanelRect;api.viewport();flushKeyboard();
+context.requestAnimationFrame=keyboardRaf;context.cancelAnimationFrame=keyboardCancel;
+console.log('Native learning keyboard: all three semi modes follow visible height AND offset; minimal input scroll, stable typing, zoom, close and exit reset OK');
+
+// Feedback waits for a fresh gesture; correct timers cannot overwrite a later answer.
+var feedbackProfile=api.normalizeProfile(api.defaultProfile());feedbackProfile.config.sound=false;
+feedbackProfile.config.tasksPerDay=4;api.setState(feedbackProfile);api.ensureFactPool();
+api.startSession(false,null,'roman');timers.length=0;
+var firstFeedbackKey=feedbackProfile.today.queue[0];api.onAnswer(firstFeedbackKey,'yes','yes',null,false,'Test');
+var automaticAdvance=timers.splice(0);assert.strictEqual(automaticAdvance.length,1);
+var prevented=0,stopped=0,advanceGesture={target:{},preventDefault:function(){prevented++;},stopPropagation:function(){stopped++;}};
+api.tapAdvance(advanceGesture);assert.strictEqual(prevented,1);assert.strictEqual(stopped,1);
+var freshForm=elements.choicesWrap.children[0];
+automaticAdvance.forEach(function(callback){callback();});
+assert.strictEqual(elements.choicesWrap.children[0],freshForm,'Skipped correct timer must not regenerate a question');
+var nextFeedbackKey=feedbackProfile.today.queue[feedbackProfile.today.index];
+api.onAnswer(nextFeedbackKey,'wrong','right',null,false,'Test');
+assert.strictEqual(timers.length,0,'Wrong answer has no automatic advance timer');
+var wrongForm=elements.choicesWrap.children[0],wrongFeedbackText=elements.feedbackText.textContent;
+automaticAdvance.forEach(function(callback){callback();});
+assert.strictEqual(elements.choicesWrap.children[0],wrongForm);assert.strictEqual(elements.feedbackText.textContent,wrongFeedbackText);
+api.tapAdvance({target:{closest:function(){return true;}}});assert.strictEqual(elements.choicesWrap.children[0],wrongForm,'Back and modal controls remain available');
+api.tapAdvance(advanceGesture);assert.notStrictEqual(elements.choicesWrap.children[0],wrongForm,'Wrong feedback advances immediately on the next gesture');
+var onceAdvanced=elements.choicesWrap.children[0];api.tapAdvance(advanceGesture);assert.strictEqual(elements.choicesWrap.children[0],onceAdvanced,'One gesture cannot skip a second question');
+api.onAnswer(feedbackProfile.today.queue[feedbackProfile.today.index],'yes','yes',null,false,'Test');
+var regularAdvance=timers.splice(0);regularAdvance.forEach(function(callback){callback();});
+assert.notStrictEqual(elements.choicesWrap.children[0],onceAdvanced,'Correct feedback still advances automatically without a gesture');
+console.log('Feedback: wrong waits indefinitely for touch/click; correct supports immediate skip or normal timer; stale timers, double gestures and navigation guards OK');

@@ -26,7 +26,7 @@ var css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
 // Avatar imports must not replace the app shell, learning forms or game layout.
 [
   '.app-bar', '#app>.card', '.screen.active', '.app-navigation',
-  'body.standalone-app .app-navigation', 'body.focused-view',
+  'body.standalone-app .app-navigation', 'body.focused-view', 'body.learning-input-viewport',
   '.game-immersive.active', '.game-immersive .game-toolbar',
   '.game-immersive .game-wrap', '.written-equation', '.written-number',
   '.semi-division', '.semi-work', '.runner-controls', '.classic-controls',

@@ -3,9 +3,9 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `2e0e16b` mit lokaler Korrektur der Pages-Artefaktnamen; PWA-Cache `1x1-trainer-v53`, keine separate semantische App-Version |
-| Letzte Quellcodeänderung | 2026-11-04 |
-| Letzte Projekt-/README-Änderung | 2026-11-04 |
+| Version | Basis `7233392` mit lokalen Korrekturen für iPhone-Tastatur und Rückmeldungssteuerung; PWA-Cache `1x1-trainer-v54`, keine separate semantische App-Version |
+| Letzte Quellcodeänderung | 2026-11-05 |
+| Letzte Projekt-/README-Änderung | 2026-11-05 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
 
 ## TL;DR – so funktioniert mathTrainer
@@ -36,7 +36,7 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 
 1. Im Projektordner `python3 -m http.server 8080` starten und `http://localhost:8080/index.html` öffnen. Die App braucht für normalen Betrieb einen Webserver; `file://` prüft die PWA nicht vollständig.
 2. Namen und Avatar wählen, danach auf der Startseite Lernmodus oder gemischte 1×1-Runde starten. Die zusätzlichen Modi erklären ihre Rechenwege; die Lernantworten verwenden Auswahl, Eingabe oder den eingestellten adaptiven Modus.
-3. Nach Rückmeldung die nächste Aufgabe bearbeiten. Beantwortete Aufgaben und Belohnungen werden lokal gespeichert. Abbrechen verwirft nicht den bereits verdienten Fortschritt.
+3. Nach falschen Antworten bleibt die Lösung bis zum nächsten Tippen/Klicken stehen. Bei richtigen Antworten automatisch warten oder durch Tippen/Klicken sofort weitergehen. Beantwortete Aufgaben und Belohnungen werden lokal gespeichert. Abbrechen verwirft nicht den bereits verdienten Fortschritt.
 4. Über „Admin“ den Elternbereich öffnen. Der initiale Code `6969` lässt sich dort ändern. Unter „Lernen“ zuerst den Lernplan für das aktive Kind wählen: Vorschlag Klasse 4/5 oder einzelne Themen-Häkchen. Rundengröße, römischen Zahlenbereich und Belohnungsintervall anpassen und speichern. Weitere Zahlenreihen-/Eingabeoptionen sind eingeklappt. Name und Avatar bleiben frei bearbeitbar; der Wechsel zu einem anderen Kind braucht die Eltern-PIN.
 5. Im Statistikbereich Tages-/Wochenwerte und Lernstände prüfen. Vor Browserwechsel oder Löschen lokaler Daten im Elternbereich eine JSON-Sicherung exportieren. Import ersetzt den geprüften lokalen Bestand; vorherige Sicherung behalten.
 6. Verdiente Spiele in „Spiele“ auswählen. Erst die erste Spielaktion verbraucht ein Kontingent. Pause und ausgeblendete Ansichten verbrauchen keine aktive Spielzeit.
@@ -98,6 +98,22 @@ Die Lernplan-Häkchen und Vorschlagsknöpfe bearbeiten nur einen Entwurf. Der Sp
 Die zwei Richtungen verwenden getrennte Wiederholungsstände `profile.romanSkills.toRoman` und `.toArabic` mit IDs `roman:toRoman`/`roman:toArabic`. Es gibt keine Einzelaufzeichnung für jede Zahl. Beide Richtungen gehören ab zwei Aufgaben in jede neue Runde; wiederholte IDs erzeugen neue Zufallszahlen. `practiceSkill()`, `buildQueue()`, `applyAnswerResult()`, `correctAnswersForProfile()` und `onAnswer()` binden die Familie in bestehende Wiederholung, Serien, Belohnungen und Statistik ein. `history[date].byOperation.roman` enthält ihre Tageswerte. Normalisierung ergänzt fehlende Richtungsstände und Historienwerte, Sicherungen enthalten Plan, Zahlenbereich und Lernstände unter dem bestehenden Root-Key. Laufende Formulare sind mit `sessionRevision` und `answering` gegen doppelte oder nach Abbruch verspätete Abgabe geschützt.
 
 Die erweiterten Integrationstests prüfen alle Umrechnungen 1–3999 mit unabhängiger Rückrechnung, Subtraktionsschreibweisen, beide Tastensätze, genaue Stellenwertlösungen, Retry-/Belohnungs-/Backupverhalten, Vorschlagsentwürfe/Speichern, leere Pläne, gesperrte Themen, Tageswechsel sowie richtige/falsche/abgebrochene Profil-PIN. Der DOM-Test ersetzt keine echte iPhone-Prüfung.
+
+## Rückmeldungen und native iPhone-Tastatur
+
+**Falsche Antwort:** Die Lösung bleibt ohne Zeitlimit stehen. Ein neues Tippen oder Klicken irgendwo im Aufgabenbildschirm zeigt die nächste Aufgabe. Es gibt keine bisherige Mindestwartezeit von 1,2 Sekunden mehr. Der Antwort-Klick selbst schließt die Rückmeldung nicht. Zurück- und Eltern-/Dialogbedienelemente behalten ihre normale Funktion.
+
+**Richtige Antwort:** Die App wechselt wie bisher nach kurzer Zeit automatisch weiter (normal 1,4 Sekunden, bei neu gemeisterten Aufgaben 2,4 Sekunden und bei zusätzlicher Erklärung 4,5 Sekunden). Durch Tippen/Klicken kann die Wartezeit sofort übersprungen werden. Das gilt auch nach der letzten Antwort für den Wechsel zum Rundenabschluss. Nur vollständige abgegebene Antworten zählen; korrigierbare Zwischenfehler in schriftlichen/halbschriftlichen Rechenwegen bleiben im jeweiligen Arbeitsschritt.
+
+`onAnswer()` setzt nach der Bewertung die gemeinsame Weiter-Bereitschaft `awaitTap`. Nur richtige Antworten erhalten einen Timer. `tapAdvance()` verarbeitet Klicks und Touchstart in der Capture-Phase, also vor dem Antwort-Handler eines Buttons. Dadurch zählt die ursprüngliche Antwortgeste nicht gleichzeitig als Weiter-Geste. Ein zum Weitergehen verwendetes Touchereignis wird unterdrückt, damit sein synthetischer Folge-Klick nicht versehentlich eine Antwort der nächsten Aufgabe auswählt. Ein zusätzliches `answerFeedbackToken` wird beim Rendern einer Aufgabe ungültig: Ein übersprungener alter Timer kann weder eine neue Zufallsaufgabe erzeugen noch eine spätere Fehlerlösung schließen. `sessionRevision` schützt weiterhin vor Callbacks nach Abbruch/Neustart.
+
+Bei halbschriftlicher Division öffnet das Eingabefeld die native Zifferntastatur. Auf der installierten iPhone-App kann iOS den sichtbaren Bereich dabei nicht nur verkleinern, sondern auch nach oben oder unten verschieben. Zuvor übernahm die Lernansicht nur `visualViewport.height`; eine zusätzliche Verschiebung konnte oberhalb der Tastatur eine freie graue Fläche hinterlassen. Die Lernansicht berücksichtigt nun auch `visualViewport.offsetTop`.
+
+Solange eine native Eingabe in `screen-question` aktiv ist und nicht gezoomt wird, setzt `updateViewport()` die Klasse `learning-input-viewport`, `--app-height` auf die sichtbare Höhe und `--app-top` auf deren oberen Versatz. CSS verankert die App-Hülle währenddessen per `position:fixed` an diesem sichtbaren Rechteck. `keepLearningInputVisible()` scrollt ausschließlich den Aufgabenbereich und nur so weit, dass das aktive Feld mit 12 Pixeln Rand sichtbar ist. Das gilt für alle drei halbschriftlichen Stufen ebenso wie für andere native Lernfelder. Dialoge behalten ihre separate Höhen-/Positionsbehandlung.
+
+Bei Fokusverlust oder Verlassen der Lernansicht werden Position und Eingabehöhe zurückgenommen; installierte Apps nutzen dann weiterhin `100vh`, Browseransichten `100dvh`. Ein Bildschirmwechsel stößt die Aktualisierung ausdrücklich an, auch wenn das Fokusereignis später eintrifft. Pinch-Zoom bleibt erhalten; bei verändertem Zoomfaktor greift die Positionskorrektur nicht ein. Ohne VisualViewport-API gelten die normalen CSS-Höhen. Identische gerundete Messwerte verursachen weiterhin keine wiederholten CSS-/Scroll-Schreibzugriffe.
+
+Die Lernmodustests simulieren die installierte App mit sichtbarer Höhe und versetztem Tastaturbereich, prüfen alle halbschriftlichen Stufen, minimale Scrollkorrekturen, ruhige Eingabe, Zoom sowie Zurücksetzen beim Schließen/Verlassen. Zusätzliche Tests sichern manuelles/automatisches Weitergehen und veraltete Timer ab. Die Fehlerlösung wurde in Safari am Desktop geprüft; eine native iPhone-Tastatur lässt sich damit nicht nachweisen. Der ursprüngliche graue Bereich ist auf dem physischen iPhone noch nachzuprüfen. Änderungen sind lokal vorbereitet, nicht automatisch veröffentlicht.
 
 ## Technischer Deep-Dive – Sprache, Aufbau und Kommunikation
 
@@ -191,7 +207,7 @@ Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben un
 
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v53`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v54`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 

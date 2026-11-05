@@ -380,3 +380,20 @@ ignore normal choice/adaptive for this mode. Explain each nonzero decimal place
 in both directions (2026: 2000=MM,20=XX,6=VI); preserve retries/rewards, revision
 guards, repeat and abort. No zero/overline numeral representation.
 Run existing learning-modes/offline/arcade-extra/frog-punch suites and docs checks.
+
+
+## Native keyboard and feedback (2026-11-05)
+
+For active native question inputs at visualViewport.scale=1, follow BOTH visible
+height and offsetTop: learning-input-viewport fixes the body at --app-top with
+--app-height. keepLearningInputVisible scrolls only screen-question minimally.
+Reset on focusout/view changes; preserve standalone 100vh fallback, independent
+modal geometry, viewport write deduplication and pinch zoom. Do not claim desktop
+simulation verifies the installed iPhone keyboard.
+After onAnswer, wrong feedback waits indefinitely for a fresh touch/click;
+correct feedback keeps its timer but supports immediate skip. Capture handlers
+must run before answer handlers so submission cannot dismiss itself. Cancel the
+advance touch to prevent a synthetic click answering the next question.
+Invalidate answerFeedbackToken on every renderQuestion, retaining sessionRevision
+guards; an old skipped timer must never regenerate the next task or close a
+later wrong solution. Intermediate correctable form errors stay in the form.
