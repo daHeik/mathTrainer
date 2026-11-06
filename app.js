@@ -4995,7 +4995,7 @@
   }
   function snowRopeY(rope,x){var t=Math.max(0,Math.min(1,(x-rope.x)/rope.w));return rope.y0+(rope.y1-rope.y0)*t+16*Math.sin(t*Math.PI);}
   function initSnow(){
-    var g=arcadeGames.snow;g.terrainSeed=Math.floor(Math.random()*4294967296)>>>0;g.terrainCache={};g.distance=0;g.coins=0;g.flips=0;g.combo=0;g.spawnIn=.8;g.wave=0;g.rocks=[];g.gaps=[];g.items=[];g.ropes=[];g.ramps=[];g.ice=[];g.houses=[];g.patternBag=[];g.lastPattern=null;g.nextFeatureX=0;
+    var g=arcadeGames.snow;g.terrainSeed=Math.floor(Math.random()*4294967296)>>>0;g.terrainCache={};g.distance=0;g.coins=0;g.flips=0;g.combo=0;g.spawnIn=.8;g.wave=0;g.rocks=[];g.gaps=[];g.items=[];g.ropes=[];g.ramps=[];g.ice=[];g.houses=[];g.patternBag=[];g.lastPattern=null;g.nextFeatureX=0;g.safeLandingUntilX=0;
     g.effects=[];g.notice=null;g.held=false;g.graceUntil=0;g.speedPercent=100;g.speedDecayElapsed=0;g.lastTrickAt=-100;g.grindDistance=0;g.cameraY=snowGround(160)-245*snowViewHeight()/360;g.chaser=null;g.chaserFall=null;g.chasesEscaped=0;g.nextChaseAt=35;g.section='Bergstart';
     g.landingSmashUntil=0;
     g.player={y:snowGround(160)-28,h:28,vy:0,rotation:0,grounded:true,grinding:null};
@@ -5040,6 +5040,8 @@
   }
   function spawnSnowTerrain(){
     var g=arcadeGames.snow,x=Math.max(g.distance+Math.max(790,snowSpeed(g)*2.5),g.nextFeatureX),hard=Math.min(5,Math.floor(g.elapsed/25)),pattern=snowNextPattern(g),span=260;
+    // Reserve landing/reaction space even after the launch feature scrolls away.
+    if(pattern==='ravine')x=Math.max(x,(g.safeLandingUntilX||0)+55);
     x=snowFeatureAnchor(g,x,pattern);
     var names={rocks:'Felsengarten',ravine:'Schluchtsprung',bunting:'Girlanden',ramp:'Sprungschanze',village:'Bergdorf',ice:'Eispiste',doubleDrop:'Doppelabfahrt'};g.section=names[pattern];
     if(pattern==='rocks'){g.rocks.push({x:x,w:32,h:22},{x:x+220,w:40,h:27+hard});span=300;}
@@ -5055,6 +5057,10 @@
       if(pattern==='village')for(var i=0;i<3;i++)g.houses.push({x:entry+i*135,w:74,h:40+i%2*16});
     }
     for(var i=0;i<8;i++){var coinX=x-35+i*Math.max(38,span/8);g.items.push({x:coinX,y:snowGround(coinX)-48-Math.sin(i/7*Math.PI)*70});}
+    // Three seconds at maximum speed: flight plus a grounded reaction window.
+    // Apply after building this section so an intentional ramp/ravine pair stays intact.
+    var landingRunway=snowBaseSpeed()*2*3;
+    g.ramps.concat(g.ropes).forEach(function(feature){g.safeLandingUntilX=Math.max(g.safeLandingUntilX||0,feature.x+feature.w+landingRunway);});
     g.nextFeatureX=x+span+200;g.wave++;g.spawnIn=Math.max(1.6,(span+160)/snowSpeed(g));
   }
   function snowContactEffect(g,type,x,y,message){

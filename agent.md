@@ -489,3 +489,15 @@ the exact board, clear pending/animation/pointers, mark inactive/nonrunning and
 reject later actions. Field pointerdown starts without moving/spawning a tile
 and consumes one reward once; direction input still starts too. Five-minute
 active limit, pause, demo isolation and record persistence remain unchanged.
+
+
+## Snow landing runway (2026-11-06)
+
+spawnSnowTerrain reserves safeLandingUntilX monotonically after each ramp/rope
+end: 1716 world px = 3 seconds at maximum speed, independent of current boost.
+Before placing a later ravine, start its anchor at least safeLandingUntilX + 55
+so even its paired approach ramp begins beyond the reserve. Keep the intentional
+ramp/ravine pair (25px from takeoff to gap, already visible at takeoff). Reserve
+after constructing the pair, not before its own gap. Include double ramps and
+village ropes. Do not clear the reserve when old features are pruned or during
+recovery; only reset on a new game. Other scenery need not be spaced out.

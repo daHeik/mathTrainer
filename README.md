@@ -3,7 +3,7 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `371af96` mit lokal korrigiertem 2048-Spielende/Tippstart und berührungsabhängiger Schneefahrt-Verfolgerkollision; PWA-Cache `1x1-trainer-v59`, keine separate semantische App-Version |
+| Version | Basis `1001a15` mit lokal geschützten Landebereichen vor nachfolgenden Schneefahrt-Schluchten; PWA-Cache `1x1-trainer-v60`, keine separate semantische App-Version |
 | Letzte Quellcodeänderung | 2026-11-06 |
 | Letzte Projekt-/README-Änderung | 2026-11-06 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
@@ -290,7 +290,7 @@ Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben un
 
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v59`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v60`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 
@@ -617,6 +617,27 @@ Bilder oder Videos werden eingebunden.
   Flugzeit. Gelände wird bei hohem Tempo weiter voraus erzeugt. Eis beschleunigt
   auf mindestens 150 % und nutzt dieselbe Begrenzung/Abklingregel statt eines
   zusätzlichen, unbegrenzten Tempoaufschlags.
+  Nach Schanzen und Girlanden reserviert die Streckenplanung einen Landebereich
+  ohne nachfolgende Schlucht: Ab dem Ende der letzten Schanze bzw. Girlande
+  bleiben mindestens 1716 Weltpixel frei von neuen Schluchten. Das entspricht
+  drei Sekunden Fahrt bei Höchsttempo und bietet Raum für Flug, Landung und
+  Reaktion. Auch die Anfahrtsschanze der nächsten Schlucht beginnt erst hinter
+  dieser Reserve. Doppel-Schanzen und die Girlanden im Bergdorf zählen mit;
+  die Reserve wird unabhängig vom aktuellen Tempo bemessen und bleibt bestehen,
+  wenn die vorherige Schanze/Girlande bereits aus den Objektlisten entfernt ist.
+  Dadurch kann ein späterer Tempo-Boost den Schutz nicht verkürzen.
+
+  `spawnSnowTerrain()` führt diese monotone Weltgrenze in `safeLandingUntilX`
+  und berücksichtigt sie vor der Geländesuche für den nächsten Schluchtabschnitt.
+  Andere Abschnitte werden dadurch nicht pauschal auseinandergezogen. Die
+  bewusst zusammengehörige Schanze vor einer Schlucht bleibt möglich: Zwischen
+  deren Absprung und dem Schluchtanfang liegen nur 25 Weltpixel, sodass die
+  Schlucht beim Absprung bereits innerhalb des 480 Pixel breiten Ausblicks
+  vor der Figur liegt. Es wird keine Schlucht nachträglich in die reservierte
+  Landestrecke eingefügt. Der Zustand gilt nur für das laufende Spiel, wird beim
+  Neustart zurückgesetzt und verändert weder Profile noch Backups. Tests prüfen
+  alle Schanzen-/Girlandenarten bei 100 und 200 %, Objektbereinigung und Boosts.
+
   Das Grundtempo bleibt konstant bei 286 Pixeln/Sekunde (+30 %), ohne zeitabhängigen
   Anstieg. Der Verfolger startet mit dem dann aktuellen Fahrtempo plus
   16 Pixeln/Sekunde und behält dieses Tempo während der Verfolgung bei.

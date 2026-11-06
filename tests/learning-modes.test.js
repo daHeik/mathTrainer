@@ -2283,3 +2283,37 @@ assert.strictEqual(waitingRavine.attempts,0);assert.strictEqual(waitingRavine.ch
 assert(waitingRavine.chaserFall);assert.strictEqual(waitingRavine.chaserFall.x,780);
 elements.snowHomeBtn.click();
 console.log('Snow chaser contact: waits beneath jumps/grinds, clamps horizontal catch-up, descending/ground contact, pause/grace and renewed separation OK');
+
+
+// A later ravine must never be inserted into a ramp/garland's flight and
+// landing runway, including when the old feature has already been pruned.
+['ramp','doubleDrop','bunting','village','ravine'].forEach(function(pattern){
+  [100,200].forEach(function(percent){
+    api.startArcadeGame('snow',true);var game=api.games().snow;
+    game.distance=600;game.speedPercent=percent;game.elapsed=150;
+    for(var zone=0;zone<30;zone++)game.terrainCache[zone]={knots:[0,1400],heights:[300,300]};
+    game.patternBag=[pattern,'rocks','ravine'];api.spawnSnowTerrain();
+    var features=game.ramps.concat(game.ropes);
+    assert(features.length>0);
+    var lastExit=Math.max.apply(null,features.map(function(feature){return feature.x+feature.w;}));
+    var safeEnd=lastExit+286*2*3;
+    assert.strictEqual(game.safeLandingUntilX,safeEnd);
+    // Non-ravine sections still fit in the reserved area; do not space out all scenery.
+    api.spawnSnowTerrain();assert(game.rocks[0].x<safeEnd);
+    game.ramps=[];game.ropes=[];
+    var oldGaps=game.gaps.length;api.spawnSnowTerrain();
+    assert.strictEqual(game.gaps.length,oldGaps+1);
+    var gap=game.gaps[oldGaps],pairedRamp=game.ramps[0];
+    assert(gap.x>=safeEnd,'Following ravine respects maximum-speed landing/reaction space for '+pattern);
+    assert(gap.x-(pairedRamp.x+pairedRamp.w)<480,'Intentional ravine is visible before its own launch');
+    assert(pairedRamp.x+1e-7>=safeEnd,'The next forced jump also begins after the safe runway');
+  });
+});
+// Slow entry followed by a boost must not invalidate the reserve made earlier.
+api.startArcadeGame('snow',true);var boostedRunway=api.games().snow;
+boostedRunway.patternBag=['doubleDrop','ravine'];boostedRunway.speedPercent=100;api.spawnSnowTerrain();
+var reservedLanding=boostedRunway.safeLandingUntilX;
+boostedRunway.speedPercent=200;boostedRunway.distance+=700;api.spawnSnowTerrain();
+assert(boostedRunway.gaps[0].x>=reservedLanding);
+elements.snowHomeBtn.click();
+console.log('Snow terrain: ramp/double-ramp/garland/village/ravine landing reserves at 100..200%, pruning, mid-flight boost, visible paired ravine and intervening scenery OK');
