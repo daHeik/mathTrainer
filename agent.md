@@ -216,7 +216,7 @@ owns the target; release/cancel/lost capture, pause, recovery and resize clear
 it. Clear pending pointers on pause so resume requires a fresh contact.
 Preserve buttons/keyboard and auto-fire. Cache stays one version above HEAD.
 Math learning records and storage keys stay unchanged. Games consume a play
-on their first move, not selection. All games use active simulation time with
+on their first action, not selection; 2048 also starts/consumes on a field tap. All games use active simulation time with
 a three-minute cap (Bricks and 2048: five minutes) and pause/hidden-view suspension.
 Use `gameDurationMs(game)` in shared arcade loops, attempt checks and HUDs.
 Bricks' base speed is `351 * 1.25^(level-1)`; extras multiply this base.
@@ -242,7 +242,11 @@ boosts/decay affect only the rider. No extra chaser-speed escalation per escape.
 After at least 20 active chase seconds, fall at the next existing ravine edge
 crossed by the chaser; do not create gaps or allow flips/lead to bypass the
 minimum time. Keep gaps behind the camera until the chaser passes them. Award
-+250 once. Catch at gap <= 28 takes priority. Pause/waiting freeze chase and
++250 once. Clamp gap >= 0 so a pursuer cannot overtake the rider. Horizontal
+catch-up alone never loses an attempt: test snowRiderPolygon against the drawn
+pursuer's ground-height contour, honoring grace. Elevated jumps/grinds stay safe;
+physical contact (including landing onto pursuer) takes priority. Use actual
+clamped travel for the next-ravine sweep. Pause/waiting freeze chase and
 1.2s fall animation; recovery clears both states. Next chase after 30 active
 seconds. These states are ephemeral; rendering must not mutate gameplay.
 Snow HUD: one 32px translucent row; contextual hints only when needed in a
@@ -474,3 +478,14 @@ Keep right-edge terrain lookahead, but prioritize the rider: visible head
 grinding, <= 90% airborne. Bounds apply after smoothing and immediately on
 resize. Deep terrain framing must yield to rider bounds. Use snowViewHeight,
 not fixed landscape pixels; preserve world coordinates and physics.
+
+
+## 2048 single attempt (2026-11-06)
+
+2048 has one attempt per reward, not three. End only when canMove is false
+(full board without any merge); any empty cell or possible merge keeps play
+alive. Remove the old recoverTiles/two-smallest-tile rescue. On finish retain
+the exact board, clear pending/animation/pointers, mark inactive/nonrunning and
+reject later actions. Field pointerdown starts without moving/spawning a tile
+and consumes one reward once; direction input still starts too. Five-minute
+active limit, pause, demo isolation and record persistence remain unchanged.

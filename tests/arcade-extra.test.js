@@ -5,7 +5,7 @@ var games={},losses=[],api=A.create({
  get:function(kind){return games[kind];},
  begin:function(kind){games[kind].awaitingStart=false;games[kind].running=true;return true;},
  advance:function(g,dt){if(!g.active||!g.running||g.pausedAt!=null)return 0;g.playTimeMs=(g.playTimeMs||0)+dt*1000;return dt;},
- lose:function(kind,reason){var g=games[kind];losses.push({kind:kind,reason:reason});g.attempts++;g.running=false;if(g.attempts>=3)g.active=false;else{api.definitions[kind].recover(g);g.awaitingStart=true;}}
+ lose:function(kind,reason){var g=games[kind];losses.push({kind:kind,reason:reason});g.attempts++;g.running=false;if(kind==='tiles'||g.attempts>=3)g.active=false;else{api.definitions[kind].recover(g);g.awaitingStart=true;}}
 });
 function start(kind){
  var g=games[kind]={kind:kind,active:true,running:true,awaitingStart:false,attempts:0,score:0,elapsed:0,canvas:{width:480,height:640},ctx:ctx()};api.definitions[kind].init(g);return g;
@@ -19,7 +19,7 @@ assert.deepEqual(A.slideBoard(grid,'right').board.slice(0,4),[0,0,4,8]);
 assert.deepEqual(A.slideBoard([2,0,0,0,2,0,0,0,2,0,0,0,2,0,0,0],'down').board,[0,0,0,0,0,0,0,0,4,0,0,0,4,0,0,0]);
 var tiles=start('tiles');tiles.board=[2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];api.action('tiles','left',true);assert.equal(tiles.moves,0);assert.equal(tiles.board.filter(Boolean).length,1);
 tiles.board=grid.slice();api.action('tiles','left',true);assert.equal(tiles.score,12);assert.equal(tiles.moves,1);assert.equal(tiles.board.filter(Boolean).length,3);api.update('tiles',.14);
-tiles.board=[2,4,2,4,4,2,4,2,2,4,2,4,4,2,4,2];tiles.score=880;api.update('tiles',.01);assert.equal(tiles.attempts,1);assert.equal(tiles.score,880);assert.equal(tiles.board.filter(Boolean).length,14);assert(tiles.board.includes(4));assert(A.canMove(tiles.board));
+tiles.board=[2,4,2,4,4,2,4,2,2,4,2,4,4,2,4,2];tiles.score=880;api.update('tiles',.01);assert.equal(tiles.attempts,1);assert.equal(tiles.score,880);assert.equal(tiles.board.filter(Boolean).length,16);assert(!tiles.active);assert(!A.canMove(tiles.board));var finalTiles=tiles.board.slice();api.action('tiles','left',true);assert.deepEqual(tiles.board,finalTiles);
 api.draw('tiles');
 // Even at the highest difficulty every next platform is within the normal jump
 // envelope, including the worst opposing positions of two moving platforms.
@@ -94,4 +94,4 @@ touch.touchTarget={x:touch.ship.x,y:touch.ship.y};api.update('asteroid',.01);ass
 api.definitions.asteroid.recover(touch);assert.equal(touch.touchTarget,null);
 touch.touchTarget={x:20,y:30};touch.canvas.height=300;api.resize('asteroid',640);assert.equal(touch.touchTarget,null);
 A.kinds.forEach(function(kind){var g=start(kind);g.pausedAt=1;var before=JSON.stringify(g);api.update(kind,1);api.action(kind,'left',true);assert.equal(JSON.stringify(g),before);g.canvas.height=300;api.draw(kind);g.canvas.height=960;api.draw(kind);});
-console.log('OK: canonical 2048 merges/no-op/spawn/rescue, reachable Doodle chain/bounce/wrap/recovery, connected maze/power/ghosts, inertial Asteroid split/wrap/respawn, pause and portrait/landscape rendering.');
+console.log('OK: canonical 2048 merges/no-op/spawn/final board, reachable Doodle chain/bounce/wrap/recovery, connected maze/power/ghosts, inertial Asteroid split/wrap/respawn, pause and portrait/landscape rendering.');

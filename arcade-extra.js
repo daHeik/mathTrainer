@@ -102,10 +102,6 @@
       s.board=result.board;s.motions=result.motions;s.score+=result.score;s.moves++;s.anim=.13;addTile(s);
       if(!s.won&&s.board.some(function(n){return n>=2048;})){s.won=true;notice(s,'2048! Du kannst weiterspielen.');}
     }
-    function recoverTiles(s){
-      var sorted=s.board.map(function(v,i){return {v:v,i:i};}).filter(function(a){return a.v>0;}).sort(function(a,b){return a.v-b.v;});
-      sorted.slice(0,2).forEach(function(a){s.board[a.i]=0;});s.anim=0;s.pending=null;notice(s,'Zwei kleine Steine freigeräumt');
-    }
     function updateTiles(s,dt){
       dt=tick(s,dt);if(!dt)return;s.anim=Math.max(0,s.anim-dt);
       if(!s.anim){if(!canMove(s.board)){host.lose('tiles','Kein Zug mehr möglich');return;}if(s.pending){var a=s.pending;s.pending=null;tilesAction(s,a);}}
@@ -223,7 +219,7 @@
     }
     var definitions={
       doodle:{title:'Doodle Jump',help:'Du springst automatisch. Halte links/rechts oder ziehe die Figur. Federn tragen dich höher.',init:initDoodle,update:updateDoodle,draw:drawDoodle,recover:recoverDoodle},
-      tiles:{title:'2048',help:'Wische in eine Richtung. Gleiche Zahlen verschmelzen. Erreiche 2048!',init:initTiles,update:updateTiles,draw:drawTiles,recover:recoverTiles},
+      tiles:{title:'2048',help:'Tippe zum Starten. Wische in eine Richtung. Gleiche Zahlen verschmelzen. Ein Versuch pro Spiel!',init:initTiles,update:updateTiles,draw:drawTiles},
       maze:{title:'Pac-Man',help:'Sammle alle Punkte. Wische oder nutze die Pfeile. Große Punkte lassen dich Geister fangen.',init:initMaze,update:updateMaze,draw:drawMaze,recover:recoverMaze},
       asteroid:{title:'Asteroids',help:'Halte und bewege deinen Finger im Spielfeld: Das Schiff dreht sich zum Finger und gibt Schub. Beim Loslassen gleitet es weiter. Es feuert automatisch.',init:initAsteroid,update:updateAsteroid,draw:drawAsteroid,recover:recoverAsteroid}
     };

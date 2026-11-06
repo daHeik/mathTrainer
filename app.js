@@ -4260,12 +4260,12 @@
   function arcadeRecord(kind){var g=arcadeGames[kind],key=ARCADE_RECORDS[kind];if(g&&g.score>state.reward[key]){state.reward[key]=g.score;saveState();}}
   function arcadeHud(kind){
     var g=arcadeGames[kind];if(!g)return;
-    var values={Time:formatGameTime(Math.max(0,gameDurationMs(g)-(g.startedAt?gameElapsedMs(g):0))),Attempts:'Versuch: '+Math.min(3,g.attempts+1)+'/3',Score:'Punkte: '+g.score,Best:'Rekord: '+state.reward[ARCADE_RECORDS[kind]]};
+    var values={Time:formatGameTime(Math.max(0,gameDurationMs(g)-(g.startedAt?gameElapsedMs(g):0))),Attempts:kind==='tiles'?'Ein Versuch':'Versuch: '+Math.min(3,g.attempts+1)+'/3',Score:'Punkte: '+g.score,Best:'Rekord: '+state.reward[ARCADE_RECORDS[kind]]};
     Object.keys(values).forEach(function(key){var node=el(kind+key);if(node.textContent!==values[key])node.textContent=values[key];});
   }
   function stopArcadeGame(kind){if(extraPointers)delete extraPointers[kind];if(kind==='brick')brickPointer=null;else if(kind==='runner')runnerPointer=null;else snakeSwipe=null;var g=arcadeGames[kind];if(!g)return;arcadeRecord(kind);g.active=false;if(g.frame)cancelAnimationFrame(g.frame);arcadeGames[kind]=null;}
   function arcadeMessage(kind,title,message){el(kind+'OverlayTitle').textContent=title;el(kind+'OverlayText').textContent=message;el(kind+'Overlay').hidden=false;}
-  function finishArcadeGame(kind,title){var g=arcadeGames[kind];g.running=false;g.active=false;arcadeRecord(kind);arcadeHud(kind);arcadeMessage(kind,title,(g.attempts>=3&&g.lastCrashReason?g.lastCrashReason+' · ':'')+g.score+' Punkte · Deine nächste Belohnung wartet beim nächsten Lernziel.');updatePlayAgainButton(el(kind+'AgainBtn'),g.isDemo);if(g.isDemo){el(kind+'AgainBtn').style.display='block';el(kind+'AgainBtn').textContent='Nochmal spielen';}}
+  function finishArcadeGame(kind,title){var g=arcadeGames[kind];g.running=false;g.active=false;g.awaitingStart=false;if(kind==='tiles'){g.anim=0;g.pending=null;delete extraPointers[kind];extraArcade.draw(kind);}arcadeRecord(kind);arcadeHud(kind);arcadeMessage(kind,title,(g.attempts>=(kind==='tiles'?1:3)&&g.lastCrashReason?g.lastCrashReason+' · ':'')+g.score+' Punkte · Deine nächste Belohnung wartet beim nächsten Lernziel.');updatePlayAgainButton(el(kind+'AgainBtn'),g.isDemo);if(g.isDemo){el(kind+'AgainBtn').style.display='block';el(kind+'AgainBtn').textContent='Nochmal spielen';}}
   function startArcadeGame(kind,demo){
     if(demo!==true&&state.reward.availablePlays<1)return;
     stopArcadeGame(kind);
@@ -4286,6 +4286,7 @@
   }
   function loseArcadeAttempt(kind,reason){
     var g=arcadeGames[kind];if(!g.running)return;g.running=false;g.attempts++;g.lastCrashReason=reason||(kind==='brick'?'Ball verloren':'Hindernis getroffen');arcadeRecord(kind);playWrongSound();
+    if(kind==='tiles'){finishArcadeGame(kind,'Spiel beendet');return;}
     if(g.attempts>=3||gameElapsedMs(g)>=gameDurationMs(g)){finishArcadeGame(kind,g.attempts>=3?'Drei Versuche gespielt!':'Zeit geschafft!');return;}
     if(kind==='brick')g.balls=[{x:g.paddle.x+g.paddle.w/2,y:g.paddle.y-(g.ballRadius||6)-1,r:g.ballRadius||6,vx:0,vy:0}];else if(extraArcade.definitions[kind])extraArcade.definitions[kind].recover(g);else if(kind==='snow')snowRecover();else if(kind==='runner')recoverRunner();else recoverSnake();
     g.awaitingStart=true;arcadeMessage(kind,g.lastCrashReason,'Noch '+(3-g.attempts)+' Versuche · Tippe, wenn du bereit bist!');arcadeHud(kind);
@@ -4892,7 +4893,7 @@
     wrap.addEventListener('pointerdown',function(e){
       var g=arcadeGames[kind];if(!g||!g.active||g.pausedAt!=null)return;e.preventDefault();if(extraPointers[kind])return;
       extraPointers[kind]={id:e.pointerId,x:e.clientX,y:e.clientY,done:false};if(wrap.setPointerCapture)wrap.setPointerCapture(e.pointerId);
-      if(kind==='doodle'||kind==='asteroid')beginArcadeAttempt(kind);if(kind==='doodle')g.pointerX=point(e).x;if(kind==='asteroid'&&g.running)g.touchTarget=point(e);
+      if(kind==='doodle'||kind==='asteroid'||kind==='tiles')beginArcadeAttempt(kind);if(kind==='doodle')g.pointerX=point(e).x;if(kind==='asteroid'&&g.running)g.touchTarget=point(e);
     });
     wrap.addEventListener('pointermove',function(e){
       var p=extraPointers[kind],g=arcadeGames[kind];if(!p||p.id!==e.pointerId||!g||g.pausedAt!=null)return;e.preventDefault();
@@ -5071,13 +5072,16 @@
     if(g.chaserFall){g.chaserFall.age+=dt;if(g.chaserFall.age>=1.2)g.chaserFall=null;}
     if(!g.chaser&&g.elapsed>=g.nextChaseAt)g.chaser={gap:180,startFlips:g.flips,speed:snowSpeed(g)+16,age:0};
     if(!g.chaser)return;
-    var chaser=g.chaser;chaser.age=(chaser.age||0)+dt;
-    chaser.gap+=(snowSpeed(g)-chaser.speed)*dt;
-    if(chaser.gap<=28&&g.elapsed>=g.graceUntil){loseArcadeAttempt('snow','Verfolger zu nah');return;}
+    var chaser=g.chaser,oldGap=chaser.gap;chaser.age=(chaser.age||0)+dt;
+    chaser.gap=Math.max(0,chaser.gap+(snowSpeed(g)-chaser.speed)*dt);
+    var x=g.distance+160-chaser.gap,y=snowGround(x);
+    // The pursuer stays beneath an airborne rider; only actual contact counts.
+    var pursuer=[{x:x-10,y:y-36},{x:x+10,y:y-36},{x:x+10,y:y-2},{x:x-10,y:y-2}];
+    if(g.elapsed>=g.graceUntil&&snowPolygonsOverlap(snowRiderPolygon(g,g.distance+160),pursuer)){loseArcadeAttempt('snow','Verfolger berührt');return;}
     if(chaser.age+1e-9<20)return;
-    var x=g.distance+160-chaser.gap;
     // Only consider the part of this frame after the minimum pursuit time.
-    var from=x-chaser.speed*Math.min(dt,Math.max(0,chaser.age-20));
+    var travel=snowSpeed(g)*dt-(chaser.gap-oldGap);
+    var from=x-(dt?travel/dt:0)*Math.min(dt,Math.max(0,chaser.age-20));
     var ravine=null;
     g.gaps.forEach(function(gap){
       if(gap.x>=from&&gap.x<=x&&(!ravine||gap.x<ravine.x))ravine=gap;

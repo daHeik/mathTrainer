@@ -2202,9 +2202,84 @@ finiteChase.elapsed=finiteChase.nextChaseAt-.01;api.updateSnowChaser(finiteChase
 finiteChase.elapsed+=.01;api.updateSnowChaser(finiteChase,0);assert(finiteChase.chaser);assert.strictEqual(finiteChase.chaser.age,0,'Later pursuit has a fresh deadline');
 var earlyChase=startSnowChase();earlyChase.chaser.gap=280;earlyChase.flips=earlyChase.chaser.startFlips+2;
 earlyChase.gaps=[{x:-150,w:100}];api.updateSnowChaser(earlyChase,0);assert(earlyChase.chaser,'Even a large lead and two flips cannot bypass 20 seconds');assert.strictEqual(earlyChase.chaserFall,null);
-var caughtChase=startSnowChase();caughtChase.chaser.gap=29;caughtChase.chaser.speed=302;caughtChase.chaser.age=19.9;caughtChase.elapsed=55;
-api.updateSnowChaser(caughtChase,.1);assert.strictEqual(caughtChase.attempts,1,'Being caught still loses an attempt, including at the deadline');
+var caughtChase=startSnowChase();caughtChase.chaser.gap=1;caughtChase.chaser.speed=302;caughtChase.chaser.age=19.9;caughtChase.elapsed=55;
+api.updateSnowChaser(caughtChase,.1);assert.strictEqual(caughtChase.attempts,1,'Physical contact still loses an attempt, including at the deadline');
 assert.strictEqual(caughtChase.chaserFall,null);assert.strictEqual(caughtChase.chaser,null);assert.strictEqual(caughtChase.score,0);
 assert.strictEqual(caughtChase.nextChaseAt,caughtChase.elapsed+30,'Recovery schedules a new pursuit');
 elements.snowHomeBtn.click();
 console.log('Snow finite chase: minimum 20 active seconds then next existing ravine, +250 once, draw motion, pause freeze, cooldown and caught/recovery rules OK');
+
+// 2048: a tap starts exactly one paid attempt without moving the board. An
+// actual blocked board stays intact; the old two-tile rescue must never run.
+var tilesProfile=api.getState();tilesProfile.reward.availablePlays=2;
+api.startArcadeGame('tiles',false);var singleTiles=api.games().tiles;
+var initialTiles=singleTiles.board.slice(),tilesPlayed=tilesProfile.reward.gamesPlayed;
+assert.strictEqual(elements.tilesAttempts.textContent,'Ein Versuch');
+var tilesTap={pointerId:901,clientX:240,clientY:240,preventDefault:function(){}};
+elements.tilesWrap.events.pointerdown(tilesTap);
+assert(singleTiles.running);assert.strictEqual(elements.tilesOverlay.hidden,true);
+assert.strictEqual(tilesProfile.reward.availablePlays,1);
+assert.strictEqual(tilesProfile.reward.gamesPlayed,tilesPlayed+1);
+assert.deepStrictEqual(singleTiles.board,initialTiles,'Starting by tap does not move or spawn a tile');
+elements.tilesWrap.events.pointerup(tilesTap);
+elements.tilesWrap.events.pointerdown(tilesTap);elements.tilesWrap.events.pointerup(tilesTap);
+assert.strictEqual(tilesProfile.reward.availablePlays,1,'Repeated taps spend no extra credit');
+var blockedTiles=[2,4,2,4,4,2,4,2,2,4,2,4,4,2,4,2];
+singleTiles.board=blockedTiles.slice();singleTiles.board[0]=0;
+api.extras.update('tiles',.2);assert(singleTiles.active,'Any free cell permits continued play');
+singleTiles.board=blockedTiles.slice();singleTiles.board[0]=4;
+api.extras.update('tiles',.2);assert(singleTiles.active,'Full board with a merge remains playable');
+singleTiles.board=blockedTiles.slice();singleTiles.score=999;singleTiles.anim=.13;singleTiles.pending='left';
+api.extras.update('tiles',.14);
+assert(!singleTiles.active&&!singleTiles.running&&!singleTiles.awaitingStart);
+assert.strictEqual(singleTiles.attempts,1);assert.strictEqual(singleTiles.pending,null);assert.strictEqual(singleTiles.anim,0);
+assert.deepStrictEqual(Array.from(singleTiles.board),blockedTiles,'No tiles are cleared after game over');
+assert(elements.tilesOverlayText.textContent.includes('Kein Zug mehr möglich'));
+assert.strictEqual(elements.tilesOverlayTitle.textContent,'Spiel beendet');
+var endedTiles=JSON.stringify([singleTiles.board,singleTiles.score,singleTiles.moves,singleTiles.playTimeMs]);
+['left','right','up','down'].forEach(function(direction){api.extras.action('tiles',direction,true);});
+elements.tilesWrap.events.pointerdown(tilesTap);elements.tilesWrap.events.pointermove({pointerId:901,clientX:340,clientY:240,preventDefault:function(){}});elements.tilesWrap.events.pointerup(tilesTap);
+api.extras.update('tiles',1);assert.strictEqual(api.beginArcadeAttempt('tiles'),false);
+assert.strictEqual(JSON.stringify([singleTiles.board,singleTiles.score,singleTiles.moves,singleTiles.playTimeMs]),endedTiles);
+assert.strictEqual(tilesProfile.reward.availablePlays,1);
+assert(tilesProfile.reward.bestTilesScore>=999);elements.tilesHomeBtn.click();
+console.log('2048 lifecycle: tap starts one paid attempt, free cells/full merge stay playable, blocked full board ends intact and rejects later input/ticks/restart OK');
+
+
+// Horizontal catch-up alone must not punish a jump or an elevated grind.
+function contactSnow(){
+  var game=startSnowChase();game.distance=600;game.spawnIn=999;
+  game.terrainCache[0]={knots:[0,1400],heights:[300,300]};
+  game.rocks=[];game.gaps=[];game.ramps=[];game.ice=[];game.ropes=[];
+  game.player.y=272;game.player.rotation=0;game.player.grinding=null;
+  game.chaser.gap=1;game.chaser.speed=302;return game;
+}
+var airborneChase=contactSnow();airborneChase.player.grounded=false;airborneChase.player.y=130;airborneChase.player.vy=-100;
+api.stepGame('snow',.1);
+assert.strictEqual(airborneChase.attempts,0);assert.strictEqual(airborneChase.chaser.gap,0);
+api.stepGame('snow',.1);assert.strictEqual(airborneChase.chaser.gap,0,'Pursuer cannot overtake an airborne rider');
+assert.strictEqual(airborneChase.attempts,0);
+var frozenContact=JSON.stringify([airborneChase.chaser,airborneChase.player,airborneChase.distance]);
+airborneChase.pausedAt=1;api.updateSnowChaser(airborneChase,1);
+assert.strictEqual(JSON.stringify([airborneChase.chaser,airborneChase.player,airborneChase.distance]),frozenContact);airborneChase.pausedAt=null;
+// A garland is safe while separated vertically; descending into the pursuer is not.
+var grindChase=contactSnow(),safeRope={x:600,w:1000,y0:200,y1:200};
+grindChase.player.grinding=safeRope;grindChase.player.grounded=true;grindChase.ropes=[safeRope];
+api.stepGame('snow',.2);assert.strictEqual(grindChase.attempts,0);assert.strictEqual(grindChase.chaser.gap,0);
+assert.strictEqual(grindChase.player.grinding,safeRope);
+grindChase.player.grinding=null;grindChase.player.grounded=false;grindChase.player.y=232;grindChase.player.vy=300;
+api.stepGame('snow',.01);assert.strictEqual(grindChase.attempts,0,'Space above pursuer remains safe while descending');
+api.stepGame('snow',.04);assert.strictEqual(grindChase.attempts,1,'Landing on pursuer causes physical contact');
+assert.strictEqual(grindChase.lastCrashReason,'Verfolger berührt');assert.strictEqual(grindChase.chaser,null);
+var groundedChase=contactSnow();api.stepGame('snow',.1);assert.strictEqual(groundedChase.attempts,1);
+var protectedChase=contactSnow();protectedChase.graceUntil=protectedChase.elapsed+1;api.stepGame('snow',.1);assert.strictEqual(protectedChase.attempts,0);
+// Rider speed boosts can still open the gap again after the pursuer catches up.
+protectedChase.player.grounded=false;protectedChase.player.y=130;protectedChase.speedPercent=200;
+api.stepGame('snow',.1);assert(protectedChase.chaser.gap>0);
+var waitingRavine=contactSnow();waitingRavine.chaser.gap=0;waitingRavine.chaser.age=20;
+waitingRavine.player.grounded=false;waitingRavine.player.y=130;waitingRavine.player.vy=-100;
+waitingRavine.gaps=[{x:780,w:80}];api.stepGame('snow',.1);
+assert.strictEqual(waitingRavine.attempts,0);assert.strictEqual(waitingRavine.chaser,null);
+assert(waitingRavine.chaserFall);assert.strictEqual(waitingRavine.chaserFall.x,780);
+elements.snowHomeBtn.click();
+console.log('Snow chaser contact: waits beneath jumps/grinds, clamps horizontal catch-up, descending/ground contact, pause/grace and renewed separation OK');

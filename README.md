@@ -3,7 +3,7 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `3a57637` mit lokal angepasster Schneefahrt-Kamera und prozentualen Sichtbarkeitsgrenzen; PWA-Cache `1x1-trainer-v58`, keine separate semantische App-Version |
+| Version | Basis `371af96` mit lokal korrigiertem 2048-Spielende/Tippstart und berührungsabhängiger Schneefahrt-Verfolgerkollision; PWA-Cache `1x1-trainer-v59`, keine separate semantische App-Version |
 | Letzte Quellcodeänderung | 2026-11-06 |
 | Letzte Projekt-/README-Änderung | 2026-11-06 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
@@ -41,7 +41,7 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 5. Im Statistikbereich Tages-/Wochenwerte und Lernstände prüfen. Vor Browserwechsel oder Löschen lokaler Daten im Elternbereich eine JSON-Sicherung exportieren. Import ersetzt den geprüften lokalen Bestand; vorherige Sicherung behalten.
 6. Verdiente Spiele in „Spiele“ auswählen. Erst die erste Spielaktion verbraucht ein Kontingent. Pause und ausgeblendete Ansichten verbrauchen keine aktive Spielzeit.
 
-Normale Spiele laufen bis zu drei aktive Minuten pro Kontingent; **Bricks und 2048 bis zu fünf Minuten**. Diese Ausnahme ist in `gameDurationMs()` implementiert. Beim Zeitende endet der Durchlauf; mit weiterem Kontingent kann ein neues Belohnungsspiel gestartet werden. Drei verbrauchte Versuche beenden früher. **Frog Punch hat stattdessen drei vollständige Runden à 40 Sekunden pro Kontingent**; verpasste Frösche kosten keine Versuche. Demo-Starter wie `snow.html` öffnen dieselbe Spielimplementierung ohne Lernbelohnung.
+Normale Spiele laufen bis zu drei aktive Minuten pro Kontingent; **Bricks und 2048 bis zu fünf Minuten**. Diese Ausnahme ist in `gameDurationMs()` implementiert. Beim Zeitende endet der Durchlauf; mit weiterem Kontingent kann ein neues Belohnungsspiel gestartet werden. Drei verbrauchte Versuche beenden früher; **2048 bietet nur einen Versuch pro Kontingent** und endet bei einem vollständig belegten Feld ohne mögliche Verschmelzung. **Frog Punch hat stattdessen drei vollständige Runden à 40 Sekunden pro Kontingent**; verpasste Frösche kosten keine Versuche. Demo-Starter wie `snow.html` öffnen dieselbe Spielimplementierung ohne Lernbelohnung.
 
 ## Lernplan pro Kind – einfache Auswahl statt Ausweichen auf leichte Aufgaben
 
@@ -230,6 +230,31 @@ Backups sind lokal erzeugte JSON-Dateien und werden vor Übernahme geprüft. Neu
 
 Die zwölf Canvas-Spiele teilen Lebenszyklus, Pause, erste-Spielaktion-Buchung, Profilrekorde und Touchabbildung. Das dreizehnte Spiel, Frog Punch, verwendet SVG-/DOM-Ziele und drei Zeitrunden; es ist in dieselbe Auswahl, Pause und Kontingentbuchung integriert. Die ursprünglichen Spiele liegen in `app.js`, Doodle/2048/Pac-Man/Asteroids in `arcade-extra.js` mit `VocabArcade.create()` als Schnittstelle. Ein Spiel auf der Auswahlseite zu öffnen bucht noch nichts ab. Aktive Spielzeit und Versuchszahl werden unabhängig vom Öffnen der Spielauswahl geführt. Eine Verlängerung derselben Welt wie in Vocabulator ist hier nicht implementiert.
 
+### 2048: Start, ein Versuch und endgültiges Spielende
+
+Ein Tipp/Klick auf das Spielfeld startet die aktive Zeit und bucht genau ein
+Kontingent, ohne Zahlen zu bewegen oder einen neuen Stein zu erzeugen. Wischen,
+Pfeiltasten und Bildschirmtasten können ebenfalls starten und bewegen die Zahlen.
+Das Öffnen der Spielauswahl oder des Bereitschaftsbildschirms allein verbraucht
+weiterhin kein Kontingent. Die maximale Dauer bleibt bei fünf aktiven Minuten;
+Pause und ausgeblendete Ansichten halten die Zeit an.
+
+`canMove()` in `arcade-extra.js` lässt das Spiel bei jedem freien Feld weiterlaufen.
+Auch ein vollständig gefülltes Feld bleibt spielbar, wenn gleiche benachbarte
+Zahlen noch verschmelzen können. Erst ein volles, blockiertes Feld meldet
+„Kein Zug mehr möglich“. Ein unveränderter Zug erzeugt keinen neuen Stein.
+Die Prüfung nach einem Zug wartet dessen kurze Animation ab.
+
+`loseArcadeAttempt()` in `app.js` beendet 2048 bereits nach diesem ersten Versuch.
+Die frühere Rettung durch Entfernen der zwei kleinsten Steine entfällt. Sie war
+der Grund für freie Felder unter der Blockiert-Meldung. `finishArcadeGame()`
+stoppt die Simulation, löscht vorgemerkte Züge und die Animation und zeichnet das
+unveränderte endgültige Brett. Taps, Wischbewegungen, Pfeile und weitere Updates
+können es anschließend nicht fortsetzen. Ein neuer Durchlauf benötigt ein neues
+Kontingent; Demos können wie bisher ohne Lernkontingent neu gestartet werden.
+Der Profilrekord wird gespeichert; Profil- und Backupformat ändern sich nicht.
+Die übrigen Spiele behalten ihre Versuchszahl.
+
 Canvas-Zeichenauflösung folgt Anzeige und Pixeldichte, logische Weltkoordinaten und Kollisionen bleiben davon getrennt. Physik darf nicht von Retina-Pixelmaßen abhängen. Pause und versteckte Ansichten stoppen aktive Zeit. `gameDurationMs()` liefert die Sonderdauer für Bricks/2048 und muss in HUD, Zeitende und Versuchswiederaufnahme konsistent verwendet werden.
 
 Bricks nutzt `351 * 1.25^(level-1)` als Grundtempo; Extras multiplizieren dieses zusätzlich. Tower speichert unveränderliche Welt-Y-Positionen und verschiebt nur die Kamera einschließlich Boden und Kulisse. Cleo kollidiert rasterbasiert, zeichnet interpoliert und puffert höchstens einen nächsten Richtungswechsel. Schneefahrt startet mit 286 px/s, verwendet 100–200 % mit +20 Prozentpunkten pro gelandetem Flip und aktivem Abbau von einem Punkt pro Sekunde. Der Verfolger hält sein beim Start festgelegtes Tempo und stürzt nach mindestens 20 aktiven Sekunden an der nächsten Schlucht ab. Asteroids behält Geschwindigkeit als Vektor; Fingerkontakt richtet und beschleunigt, setzt die Geschwindigkeit aber nicht direkt.
@@ -265,7 +290,7 @@ Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben un
 
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v58`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v59`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 
@@ -505,7 +530,7 @@ Bilder oder Videos werden eingebunden.
   nächsten Spiel fehlen. Bricks und 2048 enden nach höchstens fünf aktiven Minuten,
   die anderen Canvas-Spiele nach drei. Frog Punch bietet stattdessen drei Runden à 40 Sekunden;
   Pausen, Wartezeit vor Versuchen und ausgeblendete Ansichten zählen nicht mit.
-  Bei den Canvas-Spielen beenden drei Fehlversuche das Spiel (Dino kann einen Bonusversuch sammeln).
+  Bei den Canvas-Spielen beenden drei Fehlversuche das Spiel (Dino kann einen Bonusversuch sammeln); 2048 hat nur einen Versuch und endet endgültig bei vollem, blockiertem Feld.
   Beim Dino sorgen riskant platzierte Sterne, Combo-Multiplikatoren, fünf Sekunden
   Super-Dino nach jeweils drei Sternen, seltene Bonus-Versuch-Eier und ein
   persönlicher Punkterekord sorgen für Abwechslung; das Spiel wird in sechs
@@ -532,7 +557,7 @@ Bilder oder Videos werden eingebunden.
   höchstens einem vorgemerkten Wechsel zusätzlich zur laufenden Bewegung.
   Schneefahrt: Snowboard-Runner mit
   Sprüngen, Saltos, Grinds, Boosts und Verfolger. Alle Spiele speichern Rekorde
-  pro Profil und verbrauchen erst beim ersten Spielzug ein Kontingent.
+  pro Profil und verbrauchen erst beim Spielstart ein Kontingent (2048 auch durch bloßes Tippen auf das Spielfeld).
 - Die aktuelle App-Version steht dezent in Hellgrau unten auf der Startseite.
 - Die Spieleauswahl nutzt die eingefärbten SVG-Icons aus dem Vocabulator.
 - Vier weitere Spiele aus dem Vocabulator: Doodle Jump mit automatischen
@@ -541,8 +566,9 @@ Bilder oder Videos werden eingebunden.
   vier Geistern und acht Sekunden Kraftpunkten; Asteroids mit trägem Raumflug,
   automatischem Feuer und zerfallenden Asteroiden. Alle haben Touch-/Tastensteuerung,
   Pause, Vollbild und eigene Profilrekorde. Fehlversuche erhalten Welt und Punkte;
-  bei blockiertem 2048 werden für den nächsten Versuch die zwei kleinsten Steine
-  entfernt. Langes Halten der Bildschirmtasten löst keine Textauswahl aus.
+  2048 ist die Ausnahme mit nur einem Versuch: Ein vollständig belegtes Feld
+  ohne mögliche Verschmelzung beendet das Spiel. Es werden keine Steine entfernt
+  und keine weiteren Eingaben angenommen. Langes Halten der Bildschirmtasten löst keine Textauswahl aus.
   Doodle Jump steigert die Schwierigkeit nur mit aktiver Spielzeit und erreicht
   das Maximum frühestens nach 120 Sekunden. Plattformen werden von 84 auf 48
   Pixel schmaler, seitliche Abstände wachsen von 86–110 auf 102–136,
@@ -598,9 +624,14 @@ Bilder oder Videos werden eingebunden.
   vorhandenen Schlucht ab, deren Anfang er erreicht. Es entsteht keine zusätzliche
   Schlucht. Saltos und großer Abstand verkürzen diese Mindestzeit nicht mehr.
   Der Sturz bringt einmalig 250 Punkte; die nächste Verfolgung beginnt frühestens
-  30 aktive Sekunden später. Wird der Abstand vorher auf höchstens 28 Pixel
-  verkürzt, geht weiterhin ein Versuch verloren. Pause und Warten halten die
-  Verfolgung und die Sturzanimation an.
+  30 aktive Sekunden später. Aufholen allein kostet keinen Versuch: Der
+  Verfolger bleibt in Fahrtrichtung höchstens auf gleicher Position und fährt
+  am Boden unter einem springenden Snowboarder oder einer erhöhten Girlande
+  weiter. Erst die Berührung beider Figuren kostet einen Versuch, etwa beim
+  Landen auf dem Verfolger oder direktem Bodenkontakt. Eine niedrige Girlande
+  schützt deshalb nur, solange die Figuren sich tatsächlich nicht berühren.
+  Tempo-Boosts können den Abstand wieder vergrößern. Pause und Warten halten
+  die Verfolgung und die Sturzanimation an.
 
   Die obere Statusleiste belegt nur noch 32 statt 102 logische Canvas-Pixel und
   zeigt Münzen, Saltos, Combo, Tempo und Strecke in einer Zeile. Abschnittsnamen
@@ -612,7 +643,11 @@ Bilder oder Videos werden eingebunden.
   in `chaser.age` und nach dem Abschütteln die Weltposition und Animationszeit
   in `chaserFall`. Nach der Mindestzeit prüft es die vom Verfolger während des
   Frames überquerten Schluchtanfänge; auch eine schmale Schlucht wird dadurch
-  nicht übersprungen. Bereits vor der Zeitgrenze betretene Schluchten zählen nicht.
+  nicht übersprungen. Der horizontale Abstand ist auf mindestens null begrenzt;
+  die Schluchtprüfung berücksichtigt die dadurch begrenzte tatsächliche Bewegung.
+  Die Kollision verwendet `snowRiderPolygon()` (inklusive Drehung und Grindneigung)
+  und eine zur gezeichneten Verfolgerfigur passende Kontur am Boden. Höhenabstand
+  verhindert Treffer; die bestehende Schutzzeit unterdrückt auch diese Kollision. Bereits vor der Zeitgrenze betretene Schluchten zählen nicht.
   Solange eine Verfolgung läuft, bleiben Schluchten hinter der Kamera bis zum
   Passieren durch den Verfolger erhalten. Diese Zustände gelten nur für das
   laufende Spiel und ändern weder Profilspeicher noch Backupformat.
@@ -620,7 +655,7 @@ Bilder oder Videos werden eingebunden.
   reduzierter Bewegung entfällt die Drehung. Nach einem verlorenen Versuch
   löscht `snowRecover()` beide Verfolgerzustände und plant den Neustart nach
   30 aktiven Sekunden. Die Integrationstests prüfen Mindestzeit, nächste vorhandene
-  Schlucht, einmalige Punkte, Pause, Fallposition und Wiederanlauf.
+  Schlucht, einmalige Punkte, Pause, Fallposition, Wiederanlauf und Berührungen bei Sprüngen/Grinds/Landungen.
 - Bricks steigert das Grundtempo mit jedem Level um 25 % gegenüber dem
   vorherigen Level. Ab Level 3 wechseln Treppe, Raute, Doppeltürme, Schachbrett,
   Festung und Wellen; spätere Felder haben robustere Steine und ab Level 5
