@@ -239,6 +239,14 @@ full active second. Pause/waiting freeze decay; only a new game resets speed.
 Base speed is a constant 286 px/s, never elapsed-time dependent. Each chaser
 locks `speed` to the rider's actual speed at chase start plus 16 px/s; later
 boosts/decay affect only the rider. No extra chaser-speed escalation per escape.
+After at least 20 active chase seconds, fall at the next existing ravine edge
+crossed by the chaser; do not create gaps or allow flips/lead to bypass the
+minimum time. Keep gaps behind the camera until the chaser passes them. Award
++250 once. Catch at gap <= 28 takes priority. Pause/waiting freeze chase and
+1.2s fall animation; recovery clears both states. Next chase after 30 active
+seconds. These states are ephemeral; rendering must not mutate gameplay.
+Snow HUD: one 32px translucent row; contextual hints only when needed in a
+text-width pill. Keep scenery visible; no fixed 102px full-width panel.
 Actual speed is current base speed times this percentage, without a second
 additive boost. Ice provides at least 150% within the same system. At >=150%
 rocks break on contact. Scale jump/ramp impulses and gravity together via

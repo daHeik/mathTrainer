@@ -4995,7 +4995,7 @@
   function snowRopeY(rope,x){var t=Math.max(0,Math.min(1,(x-rope.x)/rope.w));return rope.y0+(rope.y1-rope.y0)*t+16*Math.sin(t*Math.PI);}
   function initSnow(){
     var g=arcadeGames.snow;g.terrainSeed=Math.floor(Math.random()*4294967296)>>>0;g.terrainCache={};g.distance=0;g.coins=0;g.flips=0;g.combo=0;g.spawnIn=.8;g.wave=0;g.rocks=[];g.gaps=[];g.items=[];g.ropes=[];g.ramps=[];g.ice=[];g.houses=[];g.patternBag=[];g.lastPattern=null;g.nextFeatureX=0;
-    g.effects=[];g.notice=null;g.held=false;g.graceUntil=0;g.speedPercent=100;g.speedDecayElapsed=0;g.lastTrickAt=-100;g.grindDistance=0;g.cameraY=snowGround(160)-245*snowViewHeight()/360;g.chaser=null;g.chasesEscaped=0;g.nextChaseAt=35;g.section='Bergstart';
+    g.effects=[];g.notice=null;g.held=false;g.graceUntil=0;g.speedPercent=100;g.speedDecayElapsed=0;g.lastTrickAt=-100;g.grindDistance=0;g.cameraY=snowGround(160)-245*snowViewHeight()/360;g.chaser=null;g.chaserFall=null;g.chasesEscaped=0;g.nextChaseAt=35;g.section='Bergstart';
     g.landingSmashUntil=0;
     g.player={y:snowGround(160)-28,h:28,vy:0,rotation:0,grounded:true,grinding:null};
   }
@@ -5014,7 +5014,7 @@
     var g=arcadeGames.snow,p=g.player,target=snowRecoveryPoint(g),screenY=p.y-g.cameraY;
     // Advance only to safe snow; preserve score, terrain, collectibles and progress.
     g.distance=target-160;g.effects=[];g.notice={text:'Sichere Weiterfahrt',until:g.elapsed+1.5};g.held=false;g.combo=0;p.vy=0;p.rotation=0;p.grounded=true;p.grinding=null;p.y=snowSurface(g,target)-p.h;
-    g.cameraY=p.y-Math.max(60,Math.min(snowViewHeight()*.7,screenY));g.graceUntil=g.elapsed+1.5;g.landingSmashUntil=0;g.chaser=null;g.nextChaseAt=g.elapsed+30;
+    g.cameraY=p.y-Math.max(60,Math.min(snowViewHeight()*.7,screenY));g.graceUntil=g.elapsed+1.5;g.landingSmashUntil=0;g.chaser=null;g.chaserFall=null;g.nextChaseAt=g.elapsed+30;
   }
   function snowPress(){if(arcadeGames.snow&&arcadeGames.snow.pausedAt!=null)return;var g=arcadeGames.snow;if(!g||!g.active)return;if(g.awaitingStart&&!beginArcadeAttempt('snow'))return;g.held=true;if(g.player.grounded){g.player.vy=-410*snowPhysicsScale(g);g.player.grounded=false;g.player.grinding=null;g.player.rotation=0;}}
   function snowRelease(){if(arcadeGames.snow)arcadeGames.snow.held=false;}
@@ -5067,12 +5067,29 @@
     }
   }
   function updateSnowChaser(g,dt){
-    if(!g.chaser&&g.elapsed>=g.nextChaseAt)g.chaser={gap:180,startFlips:g.flips,speed:snowSpeed(g)+16};
+    if(g.pausedAt!=null)return;
+    if(g.chaserFall){g.chaserFall.age+=dt;if(g.chaserFall.age>=1.2)g.chaserFall=null;}
+    if(!g.chaser&&g.elapsed>=g.nextChaseAt)g.chaser={gap:180,startFlips:g.flips,speed:snowSpeed(g)+16,age:0};
     if(!g.chaser)return;
-    g.chaser.gap+=(snowSpeed(g)-g.chaser.speed)*dt;
-    if(g.chaser.gap>=270&&g.flips-g.chaser.startFlips>=2){g.chasesEscaped++;g.score+=250;g.chaser=null;g.nextChaseAt=g.elapsed+30;}
-    else if(g.chaser.gap<=28&&g.elapsed>=g.graceUntil)loseArcadeAttempt('snow','Verfolger zu nah');
+    var chaser=g.chaser;chaser.age=(chaser.age||0)+dt;
+    chaser.gap+=(snowSpeed(g)-chaser.speed)*dt;
+    if(chaser.gap<=28&&g.elapsed>=g.graceUntil){loseArcadeAttempt('snow','Verfolger zu nah');return;}
+    if(chaser.age+1e-9<20)return;
+    var x=g.distance+160-chaser.gap;
+    // Only consider the part of this frame after the minimum pursuit time.
+    var from=x-chaser.speed*Math.min(dt,Math.max(0,chaser.age-20));
+    var ravine=null;
+    g.gaps.forEach(function(gap){
+      if(gap.x>=from&&gap.x<=x&&(!ravine||gap.x<ravine.x))ravine=gap;
+    });
+    if(ravine){
+      var fallX=Math.max(from,ravine.x);
+      g.chaserFall={x:fallX,y:snowGround(fallX),age:0};
+      g.chasesEscaped++;g.score+=250;g.chaser=null;g.nextChaseAt=g.elapsed+30;
+      g.notice={text:'Verfolger in die Schlucht gestürzt! +250',until:g.elapsed+2.4};
+    }
   }
+
   function snowSurface(g,x){
     var y=snowGround(x);
     g.ramps.forEach(function(r){if(x>=r.x&&x<=r.x+r.w){var t=(x-r.x)/r.w;y=Math.min(y,snowGround(r.x)*(1-t)+(snowGround(r.x+r.w)-24)*t);}});
@@ -5196,7 +5213,7 @@
     }
     if(p.y>ground+200){loseArcadeAttempt('snow','Schlucht verfehlt');return;}
     g.items=g.items.filter(function(coin){if(Math.abs(coin.x-x)<24&&Math.abs(coin.y-(p.y+14))<25){g.coins++;g.score+=20;return false;}return coin.x>g.distance-30;});
-    ['gaps','ropes','ramps','ice','houses'].forEach(function(key){g[key]=g[key].filter(function(o){return o.x+o.w>g.distance-50;});});
+    ['gaps','ropes','ramps','ice','houses'].forEach(function(key){var cutoff=g.distance-50;if(key==='gaps'&&g.chaser)cutoff=Math.min(cutoff,g.distance+160-g.chaser.gap-50);g[key]=g[key].filter(function(o){return o.x+o.w>cutoff;});});
     updateSnowCamera(g,dt);
     updateSnowChaser(g,dt);
   }
@@ -5226,7 +5243,13 @@
     g.ramps.forEach(function(r){ctx.fillStyle='#c79469';ctx.beginPath();ctx.moveTo(r.x-g.distance,snowGround(r.x));ctx.lineTo(r.x+r.w-g.distance,snowGround(r.x+r.w)-24);ctx.lineTo(r.x+r.w-g.distance,snowGround(r.x+r.w));ctx.fill();});
     g.houses.forEach(function(h){var x=h.x-g.distance,y=snowGround(h.x);ctx.fillStyle='#8a6978';ctx.fillRect(x,y-h.h,h.w,h.h);ctx.fillStyle='#f7faf5';ctx.beginPath();ctx.moveTo(x-6,y-h.h);ctx.lineTo(x+h.w/2,y-h.h-26);ctx.lineTo(x+h.w+6,y-h.h);ctx.fill();ctx.fillStyle='#f9de99';ctx.fillRect(x+15,y-h.h+12,12,14);});
     g.ropes.forEach(function(r){ctx.strokeStyle='#506e78';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(r.x-g.distance,snowGround(r.x));ctx.lineTo(r.x-g.distance,r.y0-12);ctx.moveTo(r.x+r.w-g.distance,snowGround(r.x+r.w));ctx.lineTo(r.x+r.w-g.distance,r.y1-12);ctx.stroke();ctx.beginPath();for(var at=r.x;at<=r.x+r.w;at+=10){var x=at-g.distance,y=snowRopeY(r,at);if(at===r.x)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.stroke();for(var at=r.x+15,n=0;at<r.x+r.w;at+=28,n++){var x=at-g.distance,y=snowRopeY(r,at);ctx.fillStyle=['#ef8b89','#ffd374','#83c6c0'][n%3];ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+17,y+1);ctx.lineTo(x+8,y+17);ctx.fill();}});
-    if(g.chaser){var chaseX=160-g.chaser.gap,worldX=g.distance+chaseX,y=snowGround(worldX);ctx.strokeStyle='#8a493e';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(chaseX-13,y);ctx.lineTo(chaseX+16,y);ctx.moveTo(chaseX,y-4);ctx.lineTo(chaseX,y-23);ctx.lineTo(chaseX+11,y-12);ctx.stroke();ctx.fillStyle='#8a493e';ctx.beginPath();ctx.arc(chaseX,y-30,6,0,Math.PI*2);ctx.fill();}
+    if(g.chaser||g.chaserFall){
+      var fall=g.chaserFall,chaseX=fall?fall.x-g.distance:160-g.chaser.gap;
+      var chaseY=fall?fall.y+160*fall.age+500*fall.age*fall.age:snowGround(g.distance+chaseX);
+      var reducedChase=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      ctx.save();ctx.translate(chaseX,chaseY);if(fall&&!reducedChase)ctx.rotate(fall.age*3);
+      ctx.strokeStyle='#8a493e';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-13,0);ctx.lineTo(16,0);ctx.moveTo(0,-4);ctx.lineTo(0,-23);ctx.lineTo(11,-12);ctx.stroke();ctx.fillStyle='#8a493e';ctx.beginPath();ctx.arc(0,-30,6,0,Math.PI*2);ctx.fill();ctx.restore();
+    }
     g.items.forEach(function(coin){ctx.fillStyle='#ecc368';ctx.beginPath();ctx.arc(coin.x-g.distance,coin.y,6,0,Math.PI*2);ctx.fill();});
     g.effects.forEach(function(effect){ctx.globalAlpha=Math.max(0,effect.life/.55);ctx.fillStyle=effect.type==='rock'?'#607887':'#ffffff';ctx.beginPath();var ex=effect.x-g.distance;ctx.moveTo(ex-3,effect.y+2);ctx.lineTo(ex,effect.y-3);ctx.lineTo(ex+4,effect.y+1);ctx.closePath();ctx.fill();});ctx.globalAlpha=1;
     if(g.elapsed<g.graceUntil){ctx.strokeStyle='#65cddd';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(160,p.y+12,22,28,0,0,Math.PI*2);ctx.stroke();}
@@ -5234,13 +5257,20 @@
     ctx.strokeStyle='#314b5c';ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-16,14);ctx.lineTo(17,14);ctx.moveTo(-4,10);ctx.lineTo(0,-2);ctx.lineTo(5,5);ctx.stroke();ctx.fillStyle='#314b5c';ctx.beginPath();ctx.arc(1,-9,5,0,Math.PI*2);ctx.fill();runnerPoly(ctx,[[-7,-13],[0,-26],[7,-13]],'#644776');ctx.fillStyle='#644776';ctx.fillRect(-9,-14,19,3);
     if(snowSpeedPercent(g)>100){ctx.strokeStyle='#eead56';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-20,6);ctx.lineTo(-55,4);ctx.moveTo(-24,13);ctx.lineTo(-65,13);ctx.stroke();}
     ctx.strokeStyle='#ed826c';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-2,-3);ctx.lineTo(-22,Math.sin(g.elapsed*12)*4);ctx.stroke();ctx.restore();ctx.restore();
-    ctx.fillStyle='rgba(16,19,36,.72)';ctx.fillRect(0,0,640,102);
-    ctx.fillStyle='#f2e8db';ctx.font='bold 13px sans-serif';ctx.textAlign='left';ctx.fillText('Münzen: '+g.coins+' · Saltos: '+g.flips,14,26);ctx.textAlign='right';ctx.fillText(Math.floor(g.distance/10)+' m',626,26);
-    ctx.fillText('Tempo: '+Math.round(snowSpeedPercent(g))+'%',14,47);
-    ctx.textAlign='center';ctx.fillText(g.section+' · Combo ×'+Math.max(1,g.combo),320,47);
-    if(g.chaser){ctx.fillStyle='#ffb9a3';ctx.fillText('Verfolger! '+Math.max(0,Math.ceil(g.chaser.gap/10))+' m · Backflips!',320,68);}
-    else if(snowSpeedPercent(g)>=150){ctx.fillStyle='#ffd58b';ctx.fillText('Steine zertrümmern!',320,68);}else if(g.elapsed<g.graceUntil)ctx.fillText('Kurz geschützt',320,68);
-    if(g.notice&&g.elapsed<g.notice.until){ctx.fillStyle='#f2e8db';ctx.font='bold 13px sans-serif';ctx.fillText(g.notice.text,320,90);}
+    ctx.fillStyle='rgba(16,19,36,.58)';ctx.fillRect(0,0,640,32);
+    ctx.fillStyle='#f2e8db';ctx.font='bold 13px sans-serif';ctx.textAlign='left';ctx.fillText('Münzen: '+g.coins+' · Saltos: '+g.flips,12,21);
+    ctx.textAlign='center';ctx.fillText('Combo ×'+Math.max(1,g.combo),320,21);
+    ctx.textAlign='right';ctx.fillText('Tempo: '+Math.round(snowSpeedPercent(g))+'% · '+Math.floor(g.distance/10)+' m',628,21);
+    var hint='',hintColor='#f2e8db';
+    if(g.chaser){hint='Verfolger! '+Math.max(0,Math.ceil(g.chaser.gap/10))+' m · Durchhalten!';hintColor='#ffb9a3';}
+    else if(g.notice&&g.elapsed<g.notice.until)hint=g.notice.text;
+    else if(snowSpeedPercent(g)>=150){hint='Steine zertrümmern!';hintColor='#ffd58b';}
+    else if(g.elapsed<g.graceUntil)hint='Kurz geschützt';
+    if(hint){
+      var hintWidth=Math.min(616,ctx.measureText(hint).width+24);
+      ctx.fillStyle='rgba(16,19,36,.58)';ctx.fillRect((640-hintWidth)/2,38,hintWidth,26);
+      ctx.fillStyle=hintColor;ctx.textAlign='center';ctx.fillText(hint,320,56);
+    }
   }
   el('snowWrap').addEventListener('pointerdown',function(e){e.preventDefault();if(el('snowWrap').setPointerCapture)el('snowWrap').setPointerCapture(e.pointerId);snowPress();});
   ['pointerup','pointercancel','lostpointercapture'].forEach(function(name){el('snowWrap').addEventListener(name,snowRelease);});

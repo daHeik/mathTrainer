@@ -2150,3 +2150,45 @@ assert.strictEqual(caretQuotient.value,'123');assert.strictEqual(caretQuotient.s
 caretQuotient.setSelectionRange(1,2);remainderKey('9');assert.strictEqual(caretQuotient.value,'193');
 remainderKey('⌫');assert.strictEqual(caretQuotient.value,'13');assert.strictEqual(caretQuotient.selectionStart,1);
 console.log('App keypads: caret insert, range replacement, local backspace, length limit, normalization, focus protection and stale handlers OK for Roman/numeric/remainder fields');
+
+
+// After 20 active seconds, the next existing ravine ends the chase.
+function startSnowChase(){
+  api.startArcadeGame('snow',true);var game=api.games().snow;api.beginArcadeAttempt('snow');
+  game.elapsed=35;game.speedPercent=100;api.updateSnowChaser(game,0);game.chaser.speed=286;game.gaps=[];return game;
+}
+var finiteChase=startSnowChase(),chaseScore=finiteChase.score;
+for(var chaseTick=0;chaseTick<199;chaseTick++){finiteChase.distance+=28.6;finiteChase.elapsed+=.1;api.updateSnowChaser(finiteChase,.1);}
+assert(finiteChase.chaser);assert.strictEqual(finiteChase.chaserFall,null);
+var pausedChase=JSON.stringify([finiteChase.chaser,finiteChase.chaserFall,finiteChase.score,finiteChase.gaps]);
+finiteChase.pausedAt=1;api.updateSnowChaser(finiteChase,100);assert.strictEqual(JSON.stringify([finiteChase.chaser,finiteChase.chaserFall,finiteChase.score,finiteChase.gaps]),pausedChase);
+finiteChase.pausedAt=null;finiteChase.distance+=28.6;finiteChase.elapsed+=.1;api.updateSnowChaser(finiteChase,.1);
+assert(finiteChase.chaser,'No artificial ravine at 20 seconds');
+// A ravine already entered before the threshold is not the following one.
+finiteChase.gaps=[{x:finiteChase.distance+160-finiteChase.chaser.gap-100,w:200}];
+finiteChase.distance+=28.6;finiteChase.elapsed+=.1;api.updateSnowChaser(finiteChase,.1);
+assert(finiteChase.chaser,'Wait for the next ravine edge after 20 seconds');finiteChase.gaps=[];
+var nextRavine={x:finiteChase.distance+160-finiteChase.chaser.gap+40,w:90};finiteChase.gaps.push(nextRavine);
+finiteChase.distance+=57.2;finiteChase.elapsed+=.2;api.updateSnowChaser(finiteChase,.2);
+assert.strictEqual(finiteChase.chaser,null);assert(finiteChase.chaserFall);assert.strictEqual(finiteChase.chasesEscaped,1);
+assert.strictEqual(finiteChase.score,chaseScore+250);assert.strictEqual(finiteChase.attempts,0);
+assert.strictEqual(finiteChase.gaps.length,1,'Use the existing ravine without creating a gap');
+assert.strictEqual(finiteChase.chaserFall.x,nextRavine.x);
+assert(finiteChase.notice.text.includes('Schlucht'));assert.strictEqual(finiteChase.nextChaseAt,finiteChase.elapsed+30);
+var falling=finiteChase.chaserFall;api.updateSnowChaser(finiteChase,.3);assert.strictEqual(falling.age,.3);
+var drawnChaser=[],originalChaseTranslate=finiteChase.ctx.translate;
+finiteChase.ctx.translate=function(x,y){drawnChaser.push([x,y]);};
+api.drawGame('snow');finiteChase.ctx.translate=originalChaseTranslate;
+assert(drawnChaser.some(function(point){return point[0]===falling.x-finiteChase.distance&&Math.abs(point[1]-(falling.y+160*.3+500*.3*.3))<1e-7;}),'Render the chaser below the ravine lip');
+finiteChase.pausedAt=1;api.updateSnowChaser(finiteChase,5);assert.strictEqual(falling.age,.3,'Pause freezes fall animation too');finiteChase.pausedAt=null;
+api.updateSnowChaser(finiteChase,1);assert.strictEqual(finiteChase.chaserFall,null);assert.strictEqual(finiteChase.score,chaseScore+250,'Credit the fall only once');
+finiteChase.elapsed=finiteChase.nextChaseAt-.01;api.updateSnowChaser(finiteChase,0);assert.strictEqual(finiteChase.chaser,null);
+finiteChase.elapsed+=.01;api.updateSnowChaser(finiteChase,0);assert(finiteChase.chaser);assert.strictEqual(finiteChase.chaser.age,0,'Later pursuit has a fresh deadline');
+var earlyChase=startSnowChase();earlyChase.chaser.gap=280;earlyChase.flips=earlyChase.chaser.startFlips+2;
+earlyChase.gaps=[{x:-150,w:100}];api.updateSnowChaser(earlyChase,0);assert(earlyChase.chaser,'Even a large lead and two flips cannot bypass 20 seconds');assert.strictEqual(earlyChase.chaserFall,null);
+var caughtChase=startSnowChase();caughtChase.chaser.gap=29;caughtChase.chaser.speed=302;caughtChase.chaser.age=19.9;caughtChase.elapsed=55;
+api.updateSnowChaser(caughtChase,.1);assert.strictEqual(caughtChase.attempts,1,'Being caught still loses an attempt, including at the deadline');
+assert.strictEqual(caughtChase.chaserFall,null);assert.strictEqual(caughtChase.chaser,null);assert.strictEqual(caughtChase.score,0);
+assert.strictEqual(caughtChase.nextChaseAt,caughtChase.elapsed+30,'Recovery schedules a new pursuit');
+elements.snowHomeBtn.click();
+console.log('Snow finite chase: minimum 20 active seconds then next existing ravine, +250 once, draw motion, pause freeze, cooldown and caught/recovery rules OK');

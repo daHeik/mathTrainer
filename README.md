@@ -3,7 +3,7 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `48aa62a` mit lokalen Erweiterungen für stellenweise Rechenschritte, Ergebnisstellen und cursorgerechte App-Tastaturen; PWA-Cache `1x1-trainer-v56`, keine separate semantische App-Version |
+| Version | Basis `1c6b370` mit lokaler Begrenzung der Schneefahrt-Verfolgung, animiertem Schluchtsturz und kompakter Statusleiste; PWA-Cache `1x1-trainer-v57`, keine separate semantische App-Version |
 | Letzte Quellcodeänderung | 2026-11-06 |
 | Letzte Projekt-/README-Änderung | 2026-11-06 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
@@ -232,7 +232,7 @@ Die zwölf Canvas-Spiele teilen Lebenszyklus, Pause, erste-Spielaktion-Buchung, 
 
 Canvas-Zeichenauflösung folgt Anzeige und Pixeldichte, logische Weltkoordinaten und Kollisionen bleiben davon getrennt. Physik darf nicht von Retina-Pixelmaßen abhängen. Pause und versteckte Ansichten stoppen aktive Zeit. `gameDurationMs()` liefert die Sonderdauer für Bricks/2048 und muss in HUD, Zeitende und Versuchswiederaufnahme konsistent verwendet werden.
 
-Bricks nutzt `351 * 1.25^(level-1)` als Grundtempo; Extras multiplizieren dieses zusätzlich. Tower speichert unveränderliche Welt-Y-Positionen und verschiebt nur die Kamera einschließlich Boden und Kulisse. Cleo kollidiert rasterbasiert, zeichnet interpoliert und puffert höchstens einen nächsten Richtungswechsel. Schneefahrt startet mit 286 px/s, verwendet 100–200 % mit +20 Prozentpunkten pro gelandetem Flip und aktivem Abbau von einem Punkt pro Sekunde. Der Verfolger hält sein beim Start festgelegtes Tempo. Asteroids behält Geschwindigkeit als Vektor; Fingerkontakt richtet und beschleunigt, setzt die Geschwindigkeit aber nicht direkt.
+Bricks nutzt `351 * 1.25^(level-1)` als Grundtempo; Extras multiplizieren dieses zusätzlich. Tower speichert unveränderliche Welt-Y-Positionen und verschiebt nur die Kamera einschließlich Boden und Kulisse. Cleo kollidiert rasterbasiert, zeichnet interpoliert und puffert höchstens einen nächsten Richtungswechsel. Schneefahrt startet mit 286 px/s, verwendet 100–200 % mit +20 Prozentpunkten pro gelandetem Flip und aktivem Abbau von einem Punkt pro Sekunde. Der Verfolger hält sein beim Start festgelegtes Tempo und stürzt nach mindestens 20 aktiven Sekunden an der nächsten Schlucht ab. Asteroids behält Geschwindigkeit als Vektor; Fingerkontakt richtet und beschleunigt, setzt die Geschwindigkeit aber nicht direkt.
 
 Automatische Saisons stammen aus einer gemeinsamen lokalen Kalendersteuerung. Dekoration und reduzierte Bewegung ändern keine Trefferflächen oder Level-Zufallswerte. Konfetti erscheint beim Lernabschluss und bei einer perfekten Frog-Punch-Runde; beim Ansichtswechsel und vor der nächsten Frog-Punch-Runde wird es entfernt. Herkunft und bewusst abweichende Regeln gegenüber Vocabulator sind in `agent.md` dokumentiert.
 
@@ -265,7 +265,7 @@ Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben un
 
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v56`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v57`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 
@@ -584,6 +584,33 @@ Bilder oder Videos werden eingebunden.
   Das Grundtempo bleibt konstant bei 286 Pixeln/Sekunde (+30 %), ohne zeitabhängigen
   Anstieg. Der Verfolger startet mit dem dann aktuellen Fahrtempo plus
   16 Pixeln/Sekunde und behält dieses Tempo während der Verfolgung bei.
+  Nach mindestens 20 aktiven Verfolgungssekunden stürzt er an der nächsten
+  vorhandenen Schlucht ab, deren Anfang er erreicht. Es entsteht keine zusätzliche
+  Schlucht. Saltos und großer Abstand verkürzen diese Mindestzeit nicht mehr.
+  Der Sturz bringt einmalig 250 Punkte; die nächste Verfolgung beginnt frühestens
+  30 aktive Sekunden später. Wird der Abstand vorher auf höchstens 28 Pixel
+  verkürzt, geht weiterhin ein Versuch verloren. Pause und Warten halten die
+  Verfolgung und die Sturzanimation an.
+
+  Die obere Statusleiste belegt nur noch 32 statt 102 logische Canvas-Pixel und
+  zeigt Münzen, Saltos, Combo, Tempo und Strecke in einer Zeile. Abschnittsnamen
+  entfallen. Warnungen und kurze Ereignismeldungen erscheinen bei Bedarf in
+  einer schmalen, an die Textbreite angepassten Fläche darunter. Verfolgerwarnungen
+  haben Vorrang vor Ereignismeldungen, diese wiederum vor Tempo-/Schutzhinweisen.
+
+  Technisch verwaltet `updateSnowChaser()` das Alter der laufenden Verfolgung
+  in `chaser.age` und nach dem Abschütteln die Weltposition und Animationszeit
+  in `chaserFall`. Nach der Mindestzeit prüft es die vom Verfolger während des
+  Frames überquerten Schluchtanfänge; auch eine schmale Schlucht wird dadurch
+  nicht übersprungen. Bereits vor der Zeitgrenze betretene Schluchten zählen nicht.
+  Solange eine Verfolgung läuft, bleiben Schluchten hinter der Kamera bis zum
+  Passieren durch den Verfolger erhalten. Diese Zustände gelten nur für das
+  laufende Spiel und ändern weder Profilspeicher noch Backupformat.
+  `drawSnowGame()` zeichnet den Fall für bis zu 1,2 aktive Sekunden; bei
+  reduzierter Bewegung entfällt die Drehung. Nach einem verlorenen Versuch
+  löscht `snowRecover()` beide Verfolgerzustände und plant den Neustart nach
+  30 aktiven Sekunden. Die Integrationstests prüfen Mindestzeit, nächste vorhandene
+  Schlucht, einmalige Punkte, Pause, Fallposition und Wiederanlauf.
 - Bricks steigert das Grundtempo mit jedem Level um 25 % gegenüber dem
   vorherigen Level. Ab Level 3 wechseln Treppe, Raute, Doppeltürme, Schachbrett,
   Festung und Wellen; spätere Felder haben robustere Steine und ab Level 5
