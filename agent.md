@@ -161,12 +161,14 @@ All three stages use three-digit dividends 100..999, including the remainder;
 never generate four-digit exercises. Native input fields allow three digits.
 Keys `sd:mode:divisor` for divisors 2..9 (24 records) live in `semiSkills`;
 history operation `semiDivide`. Include in normalization, reward totals/backups.
-Intro `screen-semi-intro` explains and compares own examples; guided chunks
-use a place-value suggestion. Free paths accept ANY positive divisible chunk
-no greater than the remaining dividend and a correct partial quotient, with
-no fixed number/order of rows. Never split/change the divisor. Stop splitting
-when remaining < divisor, then sum, rest and multiplication proof. Only full
-completion including proof earns one answer/reward; final wrong totals use
+Intro `screen-semi-intro` explains the ordered place-value example. All stages
+require a semiAllowedParts candidate: largest divisible hundreds OR largest
+divisible tens amount, with units only when neither works. Guided mode prefills
+semiSuggestedPart (the coarser first candidate); semiFree and semiRest may choose
+either large candidate. Other chunks remain correctable
+intermediate errors without updating records or progress. Never split/change the divisor. Stop splitting
+when remaining < divisor, then sum and rest. Confirming that total completes
+the exercise without a multiplication proof and earns one answer/reward; final wrong totals use
 normal retries, intermediate errors/hints permit correction. Protect all form
 callbacks with sessionRevision and answering; retain repeat/abort contracts.
 Keep previous `written` records/behavior unchanged. Pedagogical references and
@@ -403,13 +405,13 @@ later wrong solution. Intermediate correctable form errors stay in the form.
 
 Semi inputs use type=number and enterkeyhint=done, WITHOUT numeric inputmode or
 numeric pattern (those select the iOS number pad without a return key). Each
-field's Enter submits the current phase through the existing onsubmit handler,
-not just next-field navigation. Prevent implicit duplicate submit; ignore key
+field's Enter first focuses the missing editable field of the current phase;
+only fully filled phases submit through the existing onsubmit handler. Prevent implicit duplicate submit; ignore key
 repeat/composition and keep revision/answering guards. App validation stays in
 charge via noValidate. Preserve three-digit input limits, reject malformed number
 notation, and never call setSelectionRange on a number input. Hide desktop
 spinners without replacing the native keyboard. Check all three semi modes and
-part/total/rest/proof phases; desktop Enter cannot verify the native iPhone UI.
+part/total/rest phases; desktop Enter cannot verify the native iPhone UI.
 
 
 ## Semi-written tablet landscape layout (2026-11-06)
@@ -422,3 +424,36 @@ Only long completed-work lists get an independently scrollable, keyboard-focusab
 area with an accessible name and height based on --app-height. Never discard
 steps to fit the view. tests/layout-preview.html?layout=tablet shows 1024x400 and
 1194x470 visible-area approximations; this is not a native iPad keyboard test.
+
+
+## Vertical semi-written steps and result places (2026-11-06)
+
+Show source equation, completed equation rows, separator and highlighted remaining
+amount/divisor=? together. Label the input side with the current step. Never
+show the old isolated remaining badge or a 0/divisor=? step. Result has three
+H/T/U slots from the start: ___ then _5_ after 400/8=50 for 432/8. Slots reflect
+the accumulated partial quotient, so adding later partial quotients may change earlier digits;
+label this as the sum so far. Keep zero places blank while work remains; show real
+zeros after all divisible amounts are consumed, without leading zeros.
+Only parts/total phases remain. Remove proof input, hint and completion gate.
+Done checks for empty editable fields before validating; 0 is filled, readonly
+suggestions are skipped. Preserve one-time rewards, total-error retry and state.
+
+
+## Required semi place order (2026-11-06)
+
+For 843/3 allow 600/3,240/3,3/3 OR the shortcut 840/3,3/3. Compute the largest
+divisible amount for each dividend place 100 and 10, deduplicate; use place 1
+only when both are impossible. 864/8 allows 800,40,24 OR 840,24, but not 800,64.
+Validate allowed candidates before the quotient; hint/copy/intro use the same rule. Persisted
+semiFree ID stays unchanged although UI now says self-entered place amounts.
+
+
+## Cursor-aware app keypads (2026-11-06)
+
+Text-input-backed app keypads (Roman and remainder) must use editKeypadValue:
+insert at selectionStart, replace selections, backspace locally, retain suffix
+and length limits, then collapse selection after the edit. Prevent pointerdown
+focus changes on keypad buttons. Roman cleaning preserves/map selection positions
+and must not rewrite unchanged values. Keep live/revision guards. This helper is
+for type=text fields; never apply setSelectionRange to the semi number inputs.

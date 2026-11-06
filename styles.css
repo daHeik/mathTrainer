@@ -911,7 +911,7 @@ body.focused-view .app-bar {padding-top:calc(4px + var(--safe-top));padding-bott
 .semi-division {width:100%;max-width:560px;margin:0 auto;text-align:left;flex:none;}
 .semi-problem {font-size:clamp(1.5rem,6vw,2rem);font-weight:700;text-align:center;margin:12px 0;}
 .semi-remaining {background:var(--theme-soft);padding:10px 12px;border-radius:12px;font-weight:600;}
-.semi-breakdown,.semi-tip {line-height:1.5;overflow-wrap:anywhere;}
+.semi-tip {line-height:1.5;overflow-wrap:anywhere;}
 .semi-tip {color:var(--ink-soft);font-size:.9rem;}
 .semi-steps {padding-left:26px;font-variant-numeric:tabular-nums;line-height:1.8;}
 .semi-work {display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:end;}
@@ -920,7 +920,7 @@ body.focused-view .app-bar {padding-top:calc(4px + var(--safe-top));padding-bott
 .semi-input:focus {outline:3px solid var(--accent);outline-offset:2px;}
 .semi-input[readonly] {background:var(--theme-soft);font-weight:700;}
 .semi-operator {font-size:1.15rem;white-space:nowrap;padding-bottom:23px;}
-.semi-final,.semi-proof {padding:12px 0;}
+.semi-final {padding:12px 0;}
 .semi-division button {margin:10px 0;}
 
 .runner-controls {display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%;flex:none;margin:0;}
@@ -1099,7 +1099,6 @@ body.learning-input-viewport {position:fixed;top:var(--app-top,0px);left:0;right
 /* Semi-written division uses tablet width for context + work, not a tall stack.
    Touch targets stay 48px; only long completed-work lists scroll separately. */
 .semi-heading .written-title {margin:0;font-size:1rem;line-height:1.35;}
-.semi-heading .semi-problem {margin:6px 0 12px;}
 .semi-context,.semi-entry {min-width:0;}
 .semi-steps:empty,.semi-tip:empty {display:none;}
 .semi-actions {display:flex;gap:10px;align-items:stretch;}
@@ -1113,18 +1112,36 @@ body.learning-input-viewport {position:fixed;top:var(--app-top,0px);left:0;right
   .semi-mode .semi-division {max-width:none;}
   .semi-heading {display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:12px;}
   .semi-heading .written-title {max-width:55%;}
-  .semi-heading .semi-problem {margin:0;font-size:1.7rem;white-space:nowrap;}
   .semi-layout {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:24px;align-items:start;}
   .semi-remaining {margin:0 0 8px;padding:8px 10px;line-height:1.4;}
-  .semi-context>.semi-breakdown {margin:0 0 8px;font-size:.95rem;line-height:1.4;}
-  .semi-steps {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;max-height:clamp(72px,calc(var(--app-height) - 340px),160px);overflow:auto;overscroll-behavior:contain;margin:0;padding:2px 4px 2px 24px;line-height:1.6;font-size:.95rem;}
   .semi-work {gap:10px;}
   .semi-field {margin:0 0 8px;gap:6px;}
   .semi-input {padding:8px 10px;min-height:48px;}
   .semi-operator {padding-bottom:20px;}
-  .semi-final,.semi-proof {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px;padding:0;}
-  .semi-final>p,.semi-proof>p {grid-column:1/-1;margin:0 0 10px;line-height:1.4;}
-  .semi-proof>.semi-field {grid-column:1/-1;}
+  .semi-final {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px;padding:0;}
+  .semi-final>p {grid-column:1/-1;margin:0 0 10px;line-height:1.4;}
   .semi-actions button {margin:2px 0;}
   .semi-tip {margin:8px 0 0;line-height:1.4;}
 }
+
+/* A vertical calculation keeps the remaining dividend attached to the work. */
+.semi-original {font-weight:750;margin-bottom:8px;}
+.semi-equation {display:grid;grid-template-columns:3ch 2ch 1ch 2ch minmax(3ch,1fr);align-items:baseline;gap:.35ch;font-size:1.15rem;line-height:1.65;font-variant-numeric:tabular-nums;white-space:pre;}
+.semi-equation>span:first-child {text-align:right;}
+.semi-context .semi-steps {display:block;list-style:none;padding:0 4px;margin:0;}
+.semi-context .semi-steps>li {margin:2px 0;}
+.semi-context .semi-remaining {border-top:2px solid var(--ink-soft);border-radius:0;margin:6px 0 0;padding:8px 6px;background:var(--theme-soft);}
+.semi-next-label {display:block;color:var(--bg-1);font-size:.8rem;font-weight:700;}
+.semi-next-equation {font-weight:750;}
+.semi-step-title {font-size:1rem;line-height:1.35;margin:0 0 8px;}
+.semi-instruction {font-size:.9rem;line-height:1.4;color:var(--ink-soft);margin:0 0 10px;}
+.semi-instruction:empty {display:none;}
+.semi-rest-note {font-size:.85rem;}
+@media(min-width:760px) and (orientation:landscape) {
+  .semi-context .semi-steps {max-height:clamp(64px,calc(var(--app-height) - 310px),176px);overflow:auto;}
+  .semi-heading .written-title {max-width:none;}
+}
+
+.semi-result-slots {display:inline-grid;grid-template-columns:repeat(3,1.55ch);gap:5px;vertical-align:baseline;}
+.semi-result-slot {display:flex;align-items:center;justify-content:center;min-height:32px;border-bottom:2px solid var(--theme-border);color:var(--bg-1);}
+.semi-result-note {margin:0 0 10px;color:var(--ink-soft);font-size:.72rem;line-height:1.35;}

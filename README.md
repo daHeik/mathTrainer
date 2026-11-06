@@ -3,7 +3,7 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `29e646b` mit lokalen Erweiterungen für Fertig-Taste und iPad-Querformat bei halbschriftlicher Division; PWA-Cache `1x1-trainer-v55`, keine separate semantische App-Version |
+| Version | Basis `48aa62a` mit lokalen Erweiterungen für stellenweise Rechenschritte, Ergebnisstellen und cursorgerechte App-Tastaturen; PWA-Cache `1x1-trainer-v56`, keine separate semantische App-Version |
 | Letzte Quellcodeänderung | 2026-11-06 |
 | Letzte Projekt-/README-Änderung | 2026-11-06 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
@@ -55,8 +55,8 @@ Der Elternbereich öffnet direkt den Reiter **Lernen**. Jedes Profil hat seinen 
 
 | Vorschlag | Freigegebene Themen |
 | --- | --- |
-| Klasse 4 | Alle Themen außer halbschriftlicher Division mit eigenem Weg und mit Rest; römischer Zahlenbereich 1–1000 |
-| Klasse 5 | Punkt vor Strich, schriftliche Division, halbschriftliche Division mit eigenem Weg/mit Rest, Division mit Rest, römische Zahlen; römischer Zahlenbereich 100–3999 |
+| Klasse 4 | Alle Themen außer halbschriftlicher Division mit selbst eingetragenen Anteilen und mit Rest; römischer Zahlenbereich 1–1000 |
+| Klasse 5 | Punkt vor Strich, schriftliche Division, halbschriftliche Division mit selbst eingetragenen Anteilen/mit Rest, Division mit Rest, römische Zahlen; römischer Zahlenbereich 100–3999 |
 | Alle Themen | Alle zwölf Themen; römischer Zahlenbereich 1–3999 |
 
 Diese Vorschläge sind **keine vollständigen Klassenlehrpläne**. Sie wählen aus den vorhandenen Aufgabenfamilien aus. Insbesondere bleiben schriftliche und halbschriftliche Aufgaben dreistellig; Bruchrechnung, Dezimalzahlen und weitere Klasse-5-Themen werden dadurch nicht ergänzt. Die Vorschläge ändern außer Themen und römischem Zahlenbereich keine bisherigen Detaileinstellungen. Passe die Auswahl an den tatsächlichen Unterricht an.
@@ -74,6 +74,10 @@ Unter **Gezielt üben → Römische Zahlen** werden Zahlen aus dem eingestellten
 - Gesucht ist eine römische Zahl: kompakte Tasten **I, V, X, L, C, D, M**, Löschen und „Antwort prüfen“.
 - Gesucht ist eine Zahl in Dezimalschreibweise: kompakte Tasten **0–9**, Löschen und „Antwort prüfen“.
 - Alternativ im Eingabefeld mit der Tastatur schreiben. Kleinbuchstaben werden großgeschrieben, fremde Zeichen entfernt. Die Eingabe wird erst beim Prüfen gezählt; eine leere Eingabe zählt nicht. Führende Nullen bei Dezimalzahlen sind erlaubt.
+
+**Cursor und Markierung:** Die app-eigenen Zeichen-/Zifferntasten fügen an der aktuellen Cursorposition ein. Markierter Text wird ersetzt. Die Löschtaste entfernt die Markierung oder das Zeichen direkt vor dem Cursor; am Textanfang bleibt die Eingabe unverändert. Das gilt in beiden Richtungen der römischen Zahlen und auch für den app-eigenen Ziffernblock bei Division mit Rest. Beispiel: Cursor zwischen `MM` und `VI`, dann `X` ergibt `MMXVI`. Die vorhandenen Eingabelimits bleiben bestehen; auch bei erreichter Maximallänge lässt sich eine Markierung ersetzen.
+
+`editKeypadValue()` verwendet bei den zugehörigen Textfeldern `selectionStart`/`selectionEnd`, ändert nur den betroffenen Bereich und setzt den Cursor unmittelbar hinter die eingefügten Zeichen. Ein Pointerdown auf den Zeichentasten verhindert den Fokuswechsel zum Button, sodass die Auswahl beim Tippen erhalten bleibt. Die römische Eingabebereinigung schreibt unveränderte Werte nicht neu und übernimmt bei Großschreibung/Zeichenfilterung die entsprechend angepasste Auswahlposition. Die Tastatur setzt damit keine zusätzliche Prüfung oder Belohnung in Gang. Nach Abgabe/Abbruch bleiben die bisherigen Eingabesicherungen wirksam.
 
 Die Umrechnung verwendet die übliche Schreibweise mit Subtraktionspaaren **IV, IX, XL, XC, CD, CM**. Beispielsweise ist für 4 `IV` richtig; `IIII` wird als falsche Antwort behandelt. Der Bereich endet bei 3999, damit keine Überstriche oder zusätzlichen Zeichen nötig sind. Für null gibt es hier keine römische Darstellung.
 
@@ -107,27 +111,57 @@ Die erweiterten Integrationstests prüfen alle Umrechnungen 1–3999 mit unabhä
 
 `onAnswer()` setzt nach der Bewertung die gemeinsame Weiter-Bereitschaft `awaitTap`. Nur richtige Antworten erhalten einen Timer. `tapAdvance()` verarbeitet Klicks und Touchstart in der Capture-Phase, also vor dem Antwort-Handler eines Buttons. Dadurch zählt die ursprüngliche Antwortgeste nicht gleichzeitig als Weiter-Geste. Ein zum Weitergehen verwendetes Touchereignis wird unterdrückt, damit sein synthetischer Folge-Klick nicht versehentlich eine Antwort der nächsten Aufgabe auswählt. Ein zusätzliches `answerFeedbackToken` wird beim Rendern einer Aufgabe ungültig: Ein übersprungener alter Timer kann weder eine neue Zufallsaufgabe erzeugen noch eine spätere Fehlerlösung schließen. `sessionRevision` schützt weiterhin vor Callbacks nach Abbruch/Neustart.
 
-### Halbschriftliche Division direkt über „Fertig“ abschicken
+### Halbschriftliche Division – Fertig, Rechenweg und Ergebnisstellen
 
-In allen drei Stufen der halbschriftlichen Division fordern die Zahlenfelder jetzt die native Zahlentastatur **mit Eingabetaste** und der Beschriftung **„Fertig“** an. Nach dem Ausfüllen der sichtbaren Felder prüft „Fertig“ direkt den aktuellen Schritt: Teilrechnung, Summe einschließlich gegebenenfalls Rest oder Multiplikationsprobe. Das vorherige Minimieren der Tastatur und anschließende Tippen auf den Prüfknopf entfällt. Die Prüfknöpfe bleiben als Alternative vorhanden. Auf Desktop-Tastaturen übernimmt Enter dieselbe Funktion.
+Alle drei Stufen verwenden die native Zahlentastatur mit Eingabetaste und der angeforderten Beschriftung **„Fertig“**. Die Taste springt zuerst zum noch leeren, bearbeitbaren Feld des aktuellen Schritts. Beispiel: Nach Eingabe von `400` in `400 : 8 = …` fokussiert „Fertig“ das Teilergebnis für `50`, ohne die Aufgabe zu bewerten. Erst wenn beide Felder ausgefüllt sind, wird die Teilrechnung geprüft. Das gilt auch für Summe und Rest: Eine eingetragene Summe führt zuerst ins noch leere Restfeld; `0` gilt als ausgefüllter Rest.
 
-Ein korrekter Zwischenschritt fokussiert das nächste Eingabefeld. Leere oder falsche Zwischenangaben bleiben korrigierbar; eine vollständig falsche Gesamtlösung verwendet weiterhin die normalen Fehler-/Wiederholungsregeln. Eine fertig bearbeitete Aufgabe einschließlich Probe zählt genau einmal. Bei Restaufgaben müssen Summe und Rest vor dem Abschicken ausgefüllt sein; „Fertig“ wechselt nicht lediglich zum nächsten Feld.
+Der Prüfknopf und die Enter-Taste auf Desktop-Tastaturen verwenden dieselbe Logik. Eine korrekte Teilrechnung fokussiert die nächste Eingabe. Leere Felder werden nicht als Fehler gewertet, fachlich falsche Zwischenangaben bleiben korrigierbar. Nach Bestätigung der Gesamtsumme einschließlich gegebenenfalls Rest ist die Aufgabe abgeschlossen und zählt genau einmal für Statistik und Belohnungen. **Es gibt keine abschließende Gegenrechnung oder Probe mehr.** Falsche Gesamtergebnisse verwenden weiterhin die normalen Fehler-/Wiederholungsregeln.
 
-Technisch verwendet `renderSemiDivision()` `type="number"` mit `enterkeyhint="done"`, ohne `inputmode="numeric"` oder Ziffern-`pattern`. Diese beiden bisherigen Hinweise würden auf iOS das reine Ziffernpad ohne Eingabetaste auswählen. Die Unterscheidung zwischen Zahlentastatur und Ziffernpad ist in den [WebKit-Keyboardtests](https://github.com/WebKit/WebKit/blob/main/Tools/TestWebKitAPI/Tests/ios/KeyboardInputTestsIOS.mm) belegt. Beschriftung und Farbe der nativen Taste bestimmt weiterhin das Betriebssystem.
+`renderSemiDivision()` nutzt `type="number"` mit `enterkeyhint="done"`, ohne `inputmode="numeric"` oder Ziffern-`pattern`. Diese bisherigen Hinweise würden auf iOS das reine Ziffernpad ohne Eingabetaste auswählen; die Unterscheidung ist in den [WebKit-Keyboardtests](https://github.com/WebKit/WebKit/blob/main/Tools/TestWebKitAPI/Tests/ios/KeyboardInputTestsIOS.mm) belegt. Beschriftung und Farbe bestimmt das Betriebssystem. Enter unterdrückt die implizite Browser-Abgabe und führt den gemeinsamen Formular-Handler aus. Gedrückthalten und laufende Texteingabe-Komposition lösen keine doppelte Prüfung aus. `form.noValidate` hält die fachliche JavaScript-Validierung maßgeblich. Ziffernfolgen sind auf drei Stellen begrenzt; Dezimal-, Exponential- und negative Schreibweisen werden bei der Prüfung abgewiesen. Kein `setSelectionRange()` auf Zahlenfeldern; Desktop-Zahlenschalter bleiben ausgeblendet. `sessionRevision`/`answering` schützen vor verspäteten und doppelten Abgaben.
 
-Enter ruft denselben Formular-Handler wie der Prüfknopf auf und unterdrückt die zusätzliche implizite Browser-Abgabe. Gedrückthalten und laufende Texteingabe-Komposition lösen keine doppelte Prüfung aus. `form.noValidate` hält die bestehende fachliche JavaScript-Validierung maßgeblich. Die Zahleneingabe ist auf dreistellige Ziffernfolgen begrenzt; Dezimal-, Exponential- und negative Schreibweisen werden bei der Prüfung abgewiesen, nicht stillschweigend in andere positive Zahlen umgewandelt. Zahlenfelder unterstützen keine Text-Caretpositionierung; der Fokushelfer ruft deshalb kein `setSelectionRange()` mehr auf. Desktop-Zahlenschalter sind für das kompakte Layout ausgeblendet. Die Schutzprüfungen für Abbruch und doppelte endgültige Abgabe bleiben erhalten.
+### Rechnen untereinander und fortlaufende Ergebnisanzeige
 
-Geprüft sind alle drei Stufen und Phasen einschließlich Rest, Fehlern, Fokuswechsel, mehrfacher Eingabetaste und verspäteter Abgabe nach Abbruch. In Safari am Desktop wurde eine vollständige Aufgabe ausschließlich mit Enter abgeschlossen. Das native iPhone-Tastaturlayout und seine blaue „Fertig“-Taste sind damit noch nicht auf einem physischen Gerät nachgewiesen.
+Die ursprüngliche Division steht oben im Rechenweg, darunter folgen bestätigte Teilrechnungen in ausgerichteten Zeilen. Nach einer Trennlinie erscheint die nächste noch zu teilende Zahl deutlich hervorgehoben. Zusätzlich benennt die Eingabeseite den aktuellen Schritt, beispielsweise **„Schritt 2: 32 weiter aufteilen“**. Das bisherige alleinstehende „Noch aufzuteilen“ entfällt.
 
-### iPad im Querformat – Aufgabe und Eingabe nebeneinander
+```text
+432 : 8 = _ 5 _
+400 : 8 = 50
+---------------
+ 32 : 8 = ?       Jetzt weiterteilen
+```
 
-Ab 760 Pixeln Breite im Querformat nutzt die halbschriftliche Division die verfügbare Breite mit zwei Spalten: links stehen der verbleibende Teil, die Zerlegung und bisherige Teilrechnungen; rechts die aktuellen Zahlenfelder und Prüf-/Tippknöpfe. Aufgabentitel und vollständige Division bleiben in einer gemeinsamen Kopfzeile sichtbar. In der Ergebnisphase stehen Summe und Rest nebeneinander; für die Probe bleibt eine große Eingabe. Die Aufteilung gilt für alle drei Stufen und bereits vor dem Öffnen der Tastatur, damit sie beim Tippen nicht erst umspringt.
+Oben sind von Anfang an drei Stellen für **Hunderter / Zehner / Einer** sichtbar: `_ _ _`. Nach `400 : 8 = 50` werden daraus `_ 5 _`; nach weiteren `32 : 8 = 4` steht dort `_ 5 4`. Die Anzeige ist als **„Bisher errechnet“** beschriftet und zeigt die Summe der bestätigten Teilergebnisse. Diese Summe ist vorläufig: Beim vorgeschriebenen Weg für `276 : 4` ergeben `200 : 4 = 50` und `60 : 4 = 15` nacheinander `_ 5 _` und `_ 6 5`. Bereits angezeigte Ziffern können sich durch das Addieren also noch ändern.
 
-Die Tabletansicht hat weniger Außenabstand, aber weiterhin mindestens **48 Pixel hohe Eingabefelder und Knöpfe**. Leere Hinweise und die anfangs leere Teilrechnungsliste belegen keinen Platz. Die Hauptaktion steht vor „Tipp anzeigen“; beide Aktionen sind nebeneinander angeordnet. Ein eingeblendeter Tipp darf weiter Platz benötigen, statt andere Inhalte zu überdecken. Im Hochformat und auf schmalen Geräten bleibt die natürliche Anordnung untereinander erhalten. Zoom wird weiterhin unterstützt.
+Während noch weiter geteilt wird, bleiben Nullstellen als Platzhalter leer. Sobald alle teilbaren Anteile verteilt sind, werden echte Nullziffern des Ergebnisses sichtbar: Bei `848 : 8` nach `800 : 8 = 100` zunächst `1 _ _`, nach `40 : 8 = 5` zunächst `1 _ 5` und nach `8 : 8 = 1` schließlich `1 0 6`. Führende Nullen werden nie ergänzt; bei 54 bleibt die Hunderterstelle leer. Bei Restaufgaben gilt der teilbare Anteil bereits als verteilt, sobald der verbleibende Betrag kleiner als der Divisor ist. Ein Rest erscheint dann als **„Rest: …“**, nicht als weitere Division; bei null wird keine unnötige `0 : … = ?`-Zeile erzeugt.
 
-`renderSemiDivision()` gliedert das Formular in `semi-heading`, `semi-layout`, `semi-context`, `semi-entry` und `semi-actions`. Die zusätzliche Klasse `semi-mode` am Aufgabenbildschirm begrenzt die Layoutregeln auf diese Aufgabenfamilie; beim nächsten Aufgabenmodus wird sie zurückgesetzt. Rechenlogik, Reihenfolge der Eingabefelder, Validierung, Belohnungen und die Fertig-/Enter-Behandlung bleiben gleich. CSS setzt die Tabletspalten mittels Grid und begrenzt lediglich lange Listen bereits erledigter Teilrechnungen: Die Liste bleibt als benannte, fokussierbare geordnete Liste vollständig erhalten und ist bei Bedarf separat scrollbar. Ihre maximale Höhe berücksichtigt `--app-height`, also die schon vorhandene Anpassung an den sichtbaren Bereich oberhalb der Tastatur. Bei außergewöhnlich kleiner Höhe oder großer Schrift bleibt der gesamte Aufgabenbereich scrollbar; Inhalte werden nicht abgeschnitten oder Schrift zum Einpassen verkleinert.
+`equation()` erzeugt Zeilen mit denselben fünf CSS-Spalten für Dividend, Doppelpunkt, Divisor, Gleichheitszeichen und Ergebnis. `showRemaining()` aktualisiert die hervorgehobene Folgezeile und die drei Ergebnisstellen aus `quotients`, `remaining` und `phase`. Diese Darstellung ändert keine Aufgabenwerte und keine gespeicherten Lernstände. Der Ablauf hat nur die Phasen `parts` und `total`; die frühere `proof`-Phase und ihr Formularfeld sind entfernt. Auch bisherige Sicherungen mit normalen Semi-Lernständen bleiben verwendbar, da keine neuen Speicherkeys nötig sind.
 
-Zur Sichtprüfung `http://localhost:8080/tests/layout-preview.html?layout=tablet` öffnen. Die beiden Rahmen mit **1024 × 400** und **1194 × 470** Pixeln bilden begrenzte sichtbare Bereiche oberhalb einer Tastatur nach. Es handelt sich nicht um eine emulierte native iPad-Tastatur. Die normale Vorschau ohne `layout=tablet` behält die bisherigen schmalen Formate. Im vorhandenen lokalen Testprofil wurden geführte Teilrechnungen/Gesamtsumme und eine freie Restaufgabe mit Summe/Rest in Safari geprüft; Kopfzeile, Rechenweg, Eingabe, Aktionen und Rückmeldung waren gleichzeitig sichtbar. Die bisherigen Integrationstests bestehen auch mit der neuen DOM-Gliederung. Ein physischer iPad-Test bleibt erforderlich, um das tatsächliche Tastatur-/Safe-Area-Verhalten des Geräts nachzuweisen.
+### Große Stellenwertanteile mit Abkürzung
+
+Die Teilbeträge bleiben an Stellenwerte gebunden: Erlaubt sind jeweils der **größte ohne Rest teilbare Hunderteranteil** und der **größte teilbare Zehneranteil**. Dadurch dürfen Hunderter mit passenden Zehnern zusammengefasst werden: Bei `843 : 3` sind sowohl `600 : 3` als auch direkt `840 : 3` erlaubt, weil 84 durch 3 teilbar ist. Erst wenn weder ein Hunderter- noch ein Zehneranteil möglich ist, folgt der Eineranteil. Der Divisor bleibt unverändert.
+
+```text
+843 : 3 = _ _ _
+600 : 3 = 200
+---------------
+243 : 3 = ?
+240 : 3 = 80
+---------------
+  3 : 3 = 1
+Ergebnis: 281
+```
+
+Für `432 : 8` bleibt der Weg `400 : 8 = 50`, danach `32 : 8 = 4`: Von 32 lässt sich weder ein Hunderter- noch ein voller Zehneranteil durch 8 teilen. Bei `864 : 8` sind der Weg `800`, `40`, `24` und die Abkürzung `840`, `24` erlaubt. Beliebige kleinere Teilstücke bleiben ausgeschlossen: Bei `843 : 3` werden etwa 300, 30 und 3 als erster Teil abgewiesen, ebenso die vorzeitige Einer-Abkürzung 843. „Selbst aufteilen“ lässt zwischen den passenden großen Anteilen wählen; „Mit Hilfe“ gibt weiterhin den Hunderterweg vor. Bei „Mit Rest“ endet das Teilen, sobald weniger als der Divisor übrig ist.
+
+`semiAllowedParts()` sucht für die Stellen 100 und 10 jeweils absteigend den größten genau teilbaren Betrag bis zum verbleibenden Dividenden und entfernt doppelte Werte. Nur wenn beide fehlen, wird der größte teilbare Eineranteil zugelassen. `semiSuggestedPart()` liefert den ersten, gröberen Vorschlag für die Hilfestufe. `checkSemiPart()` akzeptiert jeden dieser großen Anteile mit richtigem Teilquotienten. Ein abweichender Betrag erzeugt einen korrigierbaren Hinweis auf die erlaubten Anteile; er schreibt keinen endgültigen Lernfehler und verändert die Ergebnisstellen nicht. Einführung, Tipp, Schrittüberschrift und Eltern-Themenbezeichnung verwenden denselben Ablauf. Die gespeicherten Modus-IDs `semi`, `semiFree`, `semiRest` und die bisherigen Lernstände bleiben erhalten.
+
+### iPad im Querformat – Rechenweg und Eingabe nebeneinander
+
+Ab 760 Pixeln Breite im Querformat stehen links die Originalaufgabe mit Ergebnisstellen, die bestätigten Teilrechnungen und der nächste offene Teil untereinander. Rechts bleiben Schrittüberschrift, aktuelle Zahlenfelder und Prüf-/Tippknöpfe sichtbar. In der Ergebnisphase stehen Summe und Rest nebeneinander. Die Aufteilung gilt für alle drei Stufen bereits vor dem Öffnen der Tastatur.
+
+Die Tabletansicht spart Außenabstände und leere Hinweise, behält aber mindestens **48 Pixel hohe Eingabefelder und Knöpfe**. Nur sehr lange Listen erledigter Teilrechnungen scrollen separat; Originalaufgabe und aktive Folgezeile bleiben außerhalb dieser Liste sichtbar. Die Liste bleibt benannt, fokussierbar und vollständig erhalten; ihre Höhe richtet sich nach `--app-height`, also dem sichtbaren Bereich oberhalb der Tastatur. Auf schmalen Geräten und im Hochformat stehen die Bereiche untereinander. Bei außergewöhnlich kleiner Höhe oder großer Schrift bleibt die ganze Ansicht scrollbar, statt Inhalte abzuschneiden oder Schrift zu verkleinern. Die Fertig-Taste ist unabhängig vom Layout nutzbar.
+
+Zur Sichtprüfung `http://localhost:8080/tests/layout-preview.html?layout=tablet` öffnen: Die Rahmen mit **1024 × 400** und **1194 × 470** Pixeln bilden begrenzte sichtbare Bereiche nach, keine native iPad-Tastatur. In Safari wurde der neue Ablauf mit vorhandenen Testdaten geprüft: Eingabe eines Teildividenden, Enter-Wechsel ins leere Teilergebnis, aktualisierte Ergebnisstellen, hervorgehobene Folgezeile sowie Abschluss nach der Summe ohne Probe. Die Integrationstests sichern zusätzlich das Beispiel `432 : 8`, alle drei Stufen, fehlende Felder, Nullrest, vorgeschriebene Stellenwertfolgen mit wechselnden Teilsummen, echte Nullziffern und einmalige Belohnungen ab. Der physische iPad-/iPhone-Tastaturtest bleibt davon getrennt.
 
 ### Sichtbarer Aufgabenbereich über der Tastatur
 
@@ -182,9 +216,9 @@ Punkt-vor-Strich-Aufgaben bestehen aus genau zwei Operationen, auch in Klammern,
 
 Schriftliche Stellenwertdivision zerlegt den Quotienten nach Stellen und lässt Nullbeiträge aus. Bei `848 : 8 = 106` sind die Arbeitsschritte `800 : 8 = 100` und `48 : 8 = 6`; keine künstliche Zwischenzeile `0 : 8 = 0`. Drei H/T/U-Zellen pro Zahl erhalten ihre Stellenposition, Leerstellen gelten als null und werden nicht nachträglich rechtsbündig verschoben. Zeilen werden der Reihe nach geprüft, erst danach die Summe oben. Die komplette Aufgabe zählt einmal.
 
-Halbschriftliche Modi `semi`, `semiFree` und `semiRest` erzeugen dreistellige Dividenden 100–999 und Divisoren 2–9. Eigene Rechenwege akzeptieren jeden positiven, durch den Divisor teilbaren Teil, solange er den Restdividenden nicht überschreitet. Der Divisor bleibt unverändert; keine feste Zeilenanzahl oder Reihenfolge wird erzwungen. Am Ende folgen Summe, gegebenenfalls Rest kleiner als der Divisor und die Multiplikationsprobe.
+Halbschriftliche Modi `semi`, `semiFree` und `semiRest` erzeugen dreistellige Dividenden 100–999 und Divisoren 2–9. Alle verwenden große teilbare Hunderter- oder Zehneranteile; die gröbere Stufe darf durch Zusammenfassen übersprungen werden. Einer folgen erst, wenn keine größere Stufe mehr möglich ist. Der Divisor bleibt unverändert. Am Ende werden Summe und gegebenenfalls Rest bestätigt, ohne zusätzliche Multiplikationsprobe.
 
-Zwischenfehler und Hinweise erlauben Korrektur; erst die vollständige Aufgabe einschließlich Probe löst eine gezählte Antwort aus. Gesamtergebnisfehler verwenden die üblichen Wiederholungen. Formularcallbacks werden mit Sitzungsrevision und Antwortsperre geschützt, damit alte Ereignisse nach Abbruch/Neustart keinen fremden Fortschritt buchen.
+Zwischenfehler und Hinweise erlauben Korrektur; erst das bestätigte Gesamtergebnis einschließlich gegebenenfalls Rest löst eine gezählte Antwort aus. Gesamtergebnisfehler verwenden die üblichen Wiederholungen. Formularcallbacks werden mit Sitzungsrevision und Antwortsperre geschützt, damit alte Ereignisse nach Abbruch/Neustart keinen fremden Fortschritt buchen.
 
 ## Technischer Deep-Dive – Profile, Migration und Backup
 
@@ -231,7 +265,7 @@ Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben un
 
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v55`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v56`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 
@@ -320,19 +354,18 @@ und halbschriftliches Dividieren behalten ihre eigenen Lernstände.
 
 Ein eigener Startseiten-Modus vermittelt schrittweises Dividieren: den
 Dividenden in gut teilbare Teile zerlegen, jeden Teil durch denselben Divisor
-teilen, Teilergebnisse addieren und mit der Umkehraufgabe prüfen.
-Beispiel: 276 : 4 → 240 : 4 = 60 und 36 : 4 = 9 → 69;
-Probe: 69 · 4 = 276. Auch andere passende Zerlegungen sind richtig.
+teilen und Teilergebnisse addieren.
+Beispiel: 843 : 3 → 600 : 3 = 200, 240 : 3 = 80 und 3 : 3 = 1 → 281.
+Alternativ ist die Abkürzung 840 : 3 = 280, danach 3 : 3 = 1 erlaubt. Kleine beliebige Teilstücke sind ausgeschlossen. Eine zusätzliche Gegenrechnung wird nicht abgefragt.
 
 - **Mit Hilfe:** dreistellige Aufgaben bis 999; passende Teile sind vorgegeben.
-- **Eigener Rechenweg:** dreistellige Aufgaben bis 999, Teile selbst wählen.
-- **Mit Rest:** ebenfalls bis 999, eigene Zerlegung, Rest kleiner als der Divisor und Probe
-  `Ergebnis · Divisor + Rest = Dividend`.
+- **Selbst aufteilen:** dreistellige Aufgaben bis 999, passende große Stellenwertanteile selbst eintragen.
+- **Mit Rest:** ebenfalls bis 999, Stellenwertanteile selbst eintragen, Rest kleiner als der Divisor.
 
-Die Einführung erklärt den Weg und vergleicht zwei Zerlegungen. Tipps und
+Die Einführung erklärt den Stellenwertweg und die erlaubte Abkürzung an einem vollständigen Beispiel. Tipps und
 gezielte Rückmeldungen unterstützen beim Üben. Alle Stufen teilen durch
 2 bis 9; sie sind unabhängig von der Freischaltung normaler Divisionsaufgaben.
-Eine vollständige Aufgabe einschließlich Probe zählt einmal für Statistik und
+Eine vollständig bestätigte Gesamtsumme einschließlich gegebenenfalls Rest zählt einmal für Statistik und
 Spielbelohnungen, nicht jede einzelne Teilrechnung. Fehler im Gesamtergebnis
 werden wie in anderen Lernmodi wiederholt. Lernstände, gewählte Stufe und
 Sicherungen bleiben erhalten; der bisherige Modus „Schriftlich dividieren“

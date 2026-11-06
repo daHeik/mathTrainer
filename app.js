@@ -87,7 +87,7 @@
   var SESSION_MODES = ['mixed', 'table', 'hundreds', 'terms', 'riddles', 'written', 'semi', 'semiFree', 'semiRest', 'remainder', 'precedence', 'roman'];
   var MODE_LABELS = {mixed:'Gemischtes 1×1',table:'Einzelne Zahlenreihen',hundreds:'Rechnen mit 100ern',
     terms:'Rechenbegriffe',riddles:'Zahlenrätsel',written:'Schriftlich dividieren',semi:'Halbschriftlich · mit Hilfe',
-    semiFree:'Halbschriftlich · eigener Weg',semiRest:'Halbschriftlich · mit Rest',remainder:'Division mit Rest',
+    semiFree:'Halbschriftlich · selbst aufteilen',semiRest:'Halbschriftlich · mit Rest',remainder:'Division mit Rest',
     precedence:'Punkt vor Strich',roman:'Römische Zahlen'};
 
   function normalizedModes(value){
@@ -641,7 +641,7 @@
   }
 
   function isSemiMode(mode){return ['semi','semiFree','semiRest'].indexOf(mode)!==-1;}
-  function semiModeLabel(mode){return {semi:'Halbschriftlich · mit Hilfe',semiFree:'Halbschriftlich · eigener Weg',semiRest:'Halbschriftlich · mit Rest'}[mode];}
+  function semiModeLabel(mode){return {semi:'Halbschriftlich · mit Hilfe',semiFree:'Halbschriftlich · selbst aufteilen',semiRest:'Halbschriftlich · mit Rest'}[mode];}
   function semiSkillKeys(mode){
     var keys=[];
     ['semi','semiFree','semiRest'].forEach(function(stage){
@@ -650,12 +650,22 @@
     });
     return keys;
   }
-  function semiSuggestedPart(remaining,divisor){
-    var quotient=Math.floor(remaining/divisor);
-    if(!quotient)return 0;
-    var place=Math.pow(10,String(quotient).length-1);
-    return Math.floor(quotient/place)*place*divisor;
+  function semiAllowedParts(remaining,divisor){
+    var choices=[];
+    for(var place=100;place>=1;place/=10){
+      // Units are the fallback only when no larger place-value chunk works.
+      if(place===1&&choices.length)break;
+      for(var part=Math.floor(remaining/place)*place;part>=place;part-=place){
+        if(part%divisor===0){
+          if(choices.indexOf(part)===-1)choices.push(part);
+          break;
+        }
+      }
+    }
+    return choices;
   }
+  function semiSuggestedPart(remaining,divisor){return semiAllowedParts(remaining,divisor)[0]||0;}
+  function semiPartUnit(part){return part%100===0?'Hunderter':part%10===0?'Zehner':'Einer';}
   function semiDivisionQuestion(skill){
     var minimum=Math.ceil(100/skill.divisor);
     var maximum=skill.mode==='semi'?Math.min(99,Math.floor(999/skill.divisor)):Math.floor((999-(skill.mode==='semiRest'?skill.divisor-1:0))/skill.divisor);
@@ -669,6 +679,8 @@
     chunk=Number(chunk);
     if(chunk>remaining)return 'Dieser Teil ist größer als die noch übrige Zahl '+remaining+'.';
     if(chunk%exercise.divisor)return 'Dieser Teil lässt sich nicht ohne Rest durch '+exercise.divisor+' teilen. Suche ein passendes Vielfaches.';
+    var allowed=semiAllowedParts(remaining,exercise.divisor);
+    if(allowed.indexOf(chunk)===-1)return 'Nimm einen großen Stellenwertanteil: '+allowed.map(function(part){return part+' ('+semiPartUnit(part)+')';}).join(' oder ')+'.';
     if(!/^[0-9]{1,4}$/.test(String(quotient))||Number(quotient)*exercise.divisor!==chunk)return 'Prüfe die Teilrechnung: Welche Zahl mal '+exercise.divisor+' ergibt '+chunk+'?';
     return '';
   }
@@ -1293,6 +1305,20 @@
       explanation:'Zerlege nach Stellenwerten: ' + parts.join('; ') + '. ' +
         (direction === 'toRoman' ? number + ' = ' + roman : roman + ' = ' + number) + '.'};
   }
+  function editKeypadValue(input,text,backspace){
+    var value=input.value,start=typeof input.selectionStart==='number'?input.selectionStart:value.length;
+    var end=typeof input.selectionEnd==='number'?input.selectionEnd:start;
+    if(backspace){
+      if(start===end){if(!start)return;start--;}
+      text='';
+    }else{
+      var limit=input.maxLength>0?input.maxLength:Infinity;
+      text=text.slice(0,Math.max(0,limit-value.length+end-start));
+      if(!text)return;
+    }
+    input.value=value.slice(0,start)+text+value.slice(end);
+    if(input.setSelectionRange)input.setSelectionRange(start+text.length,start+text.length);
+  }
   function renderRomanQuestion(key, exercise){
     var revision = sessionRevision;
     questionText.classList.add('word-question');choicesWrap.classList.remove('word-choices','keypad');
@@ -1306,15 +1332,24 @@
     input.setAttribute('autocapitalize','characters');input.spellcheck = false;
     form.appendChild(input);
     function live(){return answering && revision === sessionRevision;}
-    function clean(){input.value = input.value.toUpperCase().replace(exercise.direction === 'toRoman' ? /[^IVXLCDM]/g : /[^0-9]/g,'').slice(0,input.maxLength);}
+    function filtered(value){return value.toUpperCase().replace(exercise.direction === 'toRoman' ? /[^IVXLCDM]/g : /[^0-9]/g,'').slice(0,input.maxLength);}
+    function clean(){
+      var value=input.value,normalized=filtered(value);
+      if(value===normalized)return;
+      var start=typeof input.selectionStart==='number'?input.selectionStart:value.length;
+      var end=typeof input.selectionEnd==='number'?input.selectionEnd:start;
+      input.value=normalized;
+      input.setSelectionRange(filtered(value.slice(0,start)).length,filtered(value.slice(0,end)).length);
+    }
     input.addEventListener('input',clean);
     var keys = document.createElement('div');keys.className = 'roman-keys';
     (exercise.direction === 'toRoman' ? ['I','V','X','L','C','D','M'] : ['0','1','2','3','4','5','6','7','8','9']).concat(['⌫']).forEach(function(symbol){
       var button = document.createElement('button');button.type = 'button';button.className = 'choice-btn';button.textContent = symbol;
-      if (symbol === '⌫') button.setAttribute('aria-label','Letztes Zeichen löschen');
+      if (symbol === '⌫') button.setAttribute('aria-label','Zeichen vor dem Cursor oder Markierung löschen');
+      button.addEventListener('pointerdown',function(event){event.preventDefault();});
       button.addEventListener('click',function(){
         if (!live()) return;
-        input.value = symbol === '⌫' ? input.value.slice(0,-1) : input.value + symbol;clean();
+        editKeypadValue(input,symbol,symbol==='⌫');clean();
       });keys.appendChild(button);
     });
     form.appendChild(keys);
@@ -2198,8 +2233,7 @@
           if (digit === 'ok'){
             if (activeInput === quotient && quotient.value !== ''){ activeInput = rest;rest.focus(); }
             else submit();
-          } else if (digit === 'del') activeInput.value = activeInput.value.slice(0,-1);
-          else if (activeInput.value.length < 3) activeInput.value += digit;
+          } else editKeypadValue(activeInput,digit,digit==='del');
         });
         controls.push(button);choicesWrap.appendChild(button);
       });
@@ -2231,11 +2265,39 @@
     var heading=node('div','semi-heading'),layout=node('div','semi-layout');
     var context=node('div','semi-context'),entry=node('div','semi-entry'),actions=node('div','semi-actions');
     heading.appendChild(node('h2','written-title',semiModeLabel(exercise.mode)));
-    heading.appendChild(node('p','semi-problem',exercise.dividend+' : '+exercise.divisor+' = ?'));
     form.appendChild(heading);layout.appendChild(context);layout.appendChild(entry);form.appendChild(layout);
-    var progress=node('p','semi-remaining'),breakdown=node('p','semi-breakdown');progress.setAttribute('aria-live','polite');
-    context.appendChild(progress);context.appendChild(breakdown);
+    function equation(parent,dividend,answer,cls){
+      var row=node('div','semi-equation'+(cls?' '+cls:''));
+      [String(dividend),' : ',String(exercise.divisor),' = ',String(answer)].forEach(function(value){row.appendChild(node('span','',value));});
+      parent.appendChild(row);return row;
+    }
+    context.setAttribute('aria-label','Rechenweg untereinander');
+    var original=equation(context,exercise.dividend,'','semi-original'),resultSlots=node('span','semi-result-slots');
+    var digits=[];['Hunderter','Zehner','Einer'].forEach(function(label){
+      var digit=node('span','semi-result-slot','_');digit.setAttribute('title',label);resultSlots.appendChild(digit);digits.push(digit);
+    });
+    original.children[4].appendChild(resultSlots);
+    context.appendChild(node('p','semi-result-note','Bisher errechnet · Hunderter / Zehner / Einer'));
     var history=node('ol','semi-steps');history.setAttribute('aria-label','Bisherige Teilrechnungen');history.tabIndex=0;context.appendChild(history);
+    var progress=node('div','semi-remaining');progress.setAttribute('aria-live','polite');context.appendChild(progress);
+    var stepTitle=node('h3','semi-step-title'),breakdown=node('p','semi-instruction');entry.appendChild(stepTitle);entry.appendChild(breakdown);
+    function showRemaining(){
+      var sum=quotients.reduce(function(value,q){return value+q;},0),written=('00'+sum).slice(-3);
+      var complete=parts.length>0&&remaining<exercise.divisor,leading=3-String(sum).length;
+      digits.forEach(function(digit,index){
+        digit.textContent=!parts.length||index<leading||written[index]==='0'&&!complete?'_':written[index];
+      });
+      resultSlots.setAttribute('aria-label',parts.length?'Bisher errechnet: '+sum:'Noch kein Teilergebnis');
+      progress.textContent='';progress.hidden=parts.length===0;
+      if(phase==='parts'){
+        progress.appendChild(node('span','semi-next-label','Jetzt weiterteilen'));
+        equation(progress,remaining,'?','semi-next-equation');
+      }else{
+        progress.appendChild(node('strong','',remaining?'Rest: '+remaining:'Alles aufgeteilt'));
+        if(remaining)progress.appendChild(node('span','semi-rest-note',' – kleiner als '+exercise.divisor));
+      }
+      form.dataset.phase=phase;
+    }
     var work=node('div','semi-work'),chunk=field('Teil zum Dividieren','semiChunk'),result=field('Teilergebnis','semiPartResult');
     work.appendChild(chunk.wrapper);work.appendChild(node('span','semi-operator',': '+exercise.divisor+' ='));work.appendChild(result.wrapper);entry.appendChild(work);
     chunk.input.readOnly=exercise.mode==='semi';
@@ -2243,33 +2305,36 @@
     var tipText=node('p','semi-tip');tipText.setAttribute('role','status');
     tip.addEventListener('click',function(){
       if(!live())return;
-      var part=semiSuggestedPart(remaining,exercise.divisor);
-      tipText.textContent=phase==='parts'?'Ein möglicher Teil ist '+part+'. Nutze die passende Einmaleins-Aufgabe und die Stellenwerte. Andere passende Teile sind auch richtig.':phase==='total'?'Addiere deine Teilergebnisse: '+quotients.join(' + ')+'. Ein Rest ist kleiner als '+exercise.divisor+'.':'Multipliziere das Ergebnis mit '+exercise.divisor+' und addiere gegebenenfalls den Rest. Du erhältst die Zahl aus der Aufgabe.';
+      var allowed=semiAllowedParts(remaining,exercise.divisor);
+      tipText.textContent=phase==='parts'?'Passende Stellenwertanteile: '+allowed.map(function(part){return part+' ('+semiPartUnit(part)+')';}).join(' oder ')+'. Nutze die passende Einmaleins-Aufgabe.':'Addiere deine Teilergebnisse: '+quotients.join(' + ')+'. Ein Rest ist kleiner als '+exercise.divisor+'.';
     });
     var final=node('div','semi-final'),total=field('Summe deiner Teilergebnisse','semiTotal'),rest=field('Rest','semiRest');
     final.hidden=true;final.appendChild(node('p','','Addiere jetzt deine Teilergebnisse.'));
     final.appendChild(total.wrapper);if(exercise.mode==='semiRest')final.appendChild(rest.wrapper);entry.appendChild(final);
-    var proof=node('div','semi-proof'),probe=field('Ergebnis der Probe','semiProbe'),proofEquation=node('p','semi-breakdown');
-    proof.hidden=true;proof.appendChild(proofEquation);proof.appendChild(probe.wrapper);entry.appendChild(proof);
     var check=node('button','secondary-btn','Teilrechnung prüfen');check.type='submit';actions.appendChild(check);actions.appendChild(tip);entry.appendChild(actions);entry.appendChild(tipText);
     function update(){
-      progress.textContent='Noch aufzuteilen: '+remaining;
-      breakdown.textContent=parts.length?'Zerlegt: '+parts.join(' + ')+(remaining?' + '+remaining:'')+' = '+exercise.dividend:'Zerlege die '+exercise.dividend+' in Teile, die durch '+exercise.divisor+' teilbar sind. Die '+exercise.divisor+' bleibt immer gleich.';
+      showRemaining();
+      stepTitle.textContent='Schritt '+(parts.length+1)+': '+remaining+(parts.length?' weiter aufteilen':' aufteilen');
+      var options=semiAllowedParts(remaining,exercise.divisor);
+      breakdown.textContent=exercise.mode==='semi'?'Rechne den vorgegebenen Teil aus.':options.length>1?'Nimm den großen Hunderteranteil oder fasse Hunderter und Zehner zusammen.':'Nimm den größten passenden '+semiPartUnit(options[0])+'anteil.';
       chunk.input.value=exercise.mode==='semi'?String(semiSuggestedPart(remaining,exercise.divisor)):'';result.input.value='';tipText.textContent='';
       focus(exercise.mode==='semi'?result.input:chunk.input);
     }
     form.onsubmit=function(event){
       event.preventDefault();if(!live())return;
+      var fields=phase==='parts'?[chunk.input,result.input]:(exercise.mode==='semiRest'?[total.input,rest.input]:[total.input]);
+      var missing=fields.filter(function(input){return !input.readOnly&&!input.disabled&&input.value==='';})[0];
+      if(missing){focus(missing);return;}
       if(phase==='parts'){
         var error=checkSemiPart(exercise,remaining,chunk.input.value,result.input.value);
         if(error){say(error,true);return;}
         var part=Number(chunk.input.value),q=Number(result.input.value);
         parts.push(part);quotients.push(q);remaining-=part;
-        history.appendChild(node('li','',part+' : '+exercise.divisor+' = '+q));
-        if(remaining>=exercise.divisor){update();say('Das stimmt! Wähle den nächsten passenden Teil.');return;}
+        var line=node('li','');equation(line,part,q);history.appendChild(line);
+        if(history.scrollHeight)history.scrollTop=history.scrollHeight;
+        if(remaining>=exercise.divisor){update();say('Das stimmt! Teile jetzt die '+remaining+' weiter auf.');return;}
         phase='total';work.hidden=true;final.hidden=false;check.textContent='Ergebnis prüfen';tipText.textContent='';
-        progress.textContent=remaining?'Es bleiben '+remaining+' übrig. Das ist kleiner als '+exercise.divisor+'.':'Alles verteilt – es bleibt kein Rest.';
-        breakdown.textContent=parts.join(' + ')+(remaining?' + '+remaining:'')+' = '+exercise.dividend;
+        showRemaining();stepTitle.textContent='Schritt '+(parts.length+1)+': Ergebnisse addieren';breakdown.textContent='';
         say('Gut zerlegt! Addiere jetzt '+quotients.join(' + ')+'.');focus(total.input);return;
       }
       if(phase==='total'){
@@ -2283,15 +2348,11 @@
           questionExplanation='Addiere deine Teilergebnisse: '+quotients.join(' + ')+' = '+exercise.correct+(exercise.rest?'. Rest: '+exercise.rest:'')+'.';
           onAnswer(key,chosen,correct,null,true,exercise.dividend+' : '+exercise.divisor+' = '+correct);return;
         }
-        phase='proof';final.hidden=true;proof.hidden=false;check.textContent='Probe prüfen';tipText.textContent='';
-        proofEquation.textContent='Probe: '+exercise.correct+' · '+exercise.divisor+(exercise.rest?' + '+exercise.rest:'')+' = ?';
-        say('Das Ergebnis stimmt. Prüfe es jetzt mit der Umkehraufgabe.');focus(probe.input);return;
+        check.disabled=true;total.input.disabled=true;rest.input.disabled=true;
+        var answer=String(exercise.correct)+(exercise.mode==='semiRest'?' Rest '+exercise.rest:'');
+        questionExplanation='Dein Rechenweg passt: '+quotients.join(' + ')+' = '+exercise.correct+(exercise.rest?'. Rest: '+exercise.rest:'')+'.';
+        onAnswer(key,answer,answer,null,true,exercise.dividend+' : '+exercise.divisor+' = '+answer);
       }
-      if(!/^[0-9]{1,4}$/.test(probe.input.value)||Number(probe.input.value)!==exercise.dividend){say('Prüfe die Multiplikation'+(exercise.rest?' und addiere den Rest':'')+' noch einmal.',true);focus(probe.input);return;}
-      check.disabled=true;probe.input.disabled=true;
-      var answer=String(exercise.correct)+(exercise.mode==='semiRest'?' Rest '+exercise.rest:'');
-      questionExplanation='Dein Rechenweg passt: '+quotients.join(' + ')+' = '+exercise.correct+'. Probe: '+exercise.correct+' · '+exercise.divisor+(exercise.rest?' + '+exercise.rest:'')+' = '+exercise.dividend+'.';
-      onAnswer(key,answer,answer,null,true,exercise.dividend+' : '+exercise.divisor+' = '+answer);
     };
     update();
   }

@@ -106,7 +106,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'renderMathText:renderMathText,',
   'writtenDivisionQuestion:writtenDivisionQuestion, renderWrittenDivision:renderWrittenDivision,',
   'remainderDivisionQuestion:remainderDivisionQuestion, renderRemainderDivision:renderRemainderDivision,',
-  'semiDivisionQuestion:semiDivisionQuestion, semiSuggestedPart:semiSuggestedPart, checkSemiPart:checkSemiPart, renderSemiDivision:renderSemiDivision,',
+  'semiDivisionQuestion:semiDivisionQuestion, semiSuggestedPart:semiSuggestedPart, semiAllowedParts:semiAllowedParts, checkSemiPart:checkSemiPart, renderSemiDivision:renderSemiDivision,',
   'correctAnswersForProfile:correctAnswersForProfile, startSession:startSession,',
   'renderQuestion:renderQuestion, onAnswer:onAnswer, finishSession:finishSession,',
   'refreshDailySessionIfNeeded:refreshDailySessionIfNeeded, repeatRoundLabel:repeatRoundLabel,',
@@ -678,7 +678,7 @@ assert.strictEqual(regressionProfile.history[regressionProfile.today.date].wrong
 context.Math.random = Math.random;
 console.log('Written division: one/two/three rows, 848:8 regression, focus, validation and rewards OK');
 
-// Semi-written division: three scaffolding levels, flexible chunks and a proof.
+// Semi-written division: three scaffolding levels and flexible chunks.
 var semiProfile=api.normalizeProfile(api.defaultProfile());semiProfile.config.sound=false;semiProfile.config.rewardEvery=1;
 api.setState(semiProfile);api.ensureFactPool();
 ['semi','semiFree','semiRest'].forEach(function(mode){
@@ -729,12 +729,11 @@ assert.strictEqual(api.correctAnswersForProfile(semiProfile),0);
 elements.semiStartBtn.events.click();assert.strictEqual(semiProfile.today.mode,'semi');
 assert(!semiForm.hidden&&elements.writtenDivisionForm.hidden&&elements.choicesWrap.hidden);
 semiExercise('semi',276,4);
-assert.strictEqual(semiFind('semiChunk').value,'240');assert(semiFind('semiChunk').readOnly);
+assert.strictEqual(semiFind('semiChunk').value,'200');assert(semiFind('semiChunk').readOnly);
 assert.strictEqual(context.document.activeElement,semiFind('semiPartResult'));
-semiPart(240,60);assert.strictEqual(semiFind('semiChunk').value,'36');
-semiPart(36,9);semiFind('semiTotal').value='69';semiSubmit();
-assert.strictEqual(api.correctAnswersForProfile(semiProfile),0,'Only completion including proof earns credit');
-semiFind('semiProbe').value='276';semiSubmit();
+semiPart(200,50);assert.strictEqual(semiFind('semiChunk').value,'60');
+semiPart(60,15);semiPart(16,4);semiFind('semiTotal').value='69';semiSubmit();
+assert.strictEqual(semiFind('semiProbe'),null,'No counter-calculation after the total');
 assert.strictEqual(api.correctAnswersForProfile(semiProfile),1);assert.strictEqual(semiProfile.reward.availablePlays,1);
 semiSubmit();assert.strictEqual(api.correctAnswersForProfile(semiProfile),1,'No duplicate submit reward');
 api.finishSession();assert(elements.doneSubtitle.textContent.indexOf('Halbschriftlich')!==-1);
@@ -748,37 +747,33 @@ semiPart(300,75);assert(elements.feedbackText.textContent.indexOf('größer')!==
 semiPart(201,50);assert(elements.feedbackText.textContent.indexOf('Vielfaches')!==-1);
 semiPart(0,0);assert(elements.feedbackText.textContent.indexOf('größer als 0')!==-1);
 semiPart('2e2',50);assert(elements.feedbackText.textContent.indexOf('ganze Zahl')!==-1);
-semiPart(200,50);semiPart(76,19);
+semiPart(200,50);semiPart(60,15);semiPart(16,4);
 semiFind('semiTotal').value='69';semiSubmit();
-semiFind('semiProbe').value='275';semiSubmit();assert(elements.feedbackText.textContent.indexOf('noch einmal')!==-1);
-assert.strictEqual(api.correctAnswersForProfile(semiProfile),1);
-semiFind('semiProbe').value='276';semiSubmit();
 assert.strictEqual(semiProfile.semiSkills[semiKey].correctCount,1);
 assert.strictEqual(semiProfile.history[semiProfile.today.date].byOperation.semiDivide.correct,2);
-// Rest must be small, is never divided as a separate chunk, and is part of the proof.
-semiExercise('semiRest',278,4);semiPart(240,60);semiPart(36,9);
-assert(semiForm.textContent.indexOf('Es bleiben 2')!==-1);
+// Rest must be small and is never divided as a separate chunk.
+semiExercise('semiRest',278,4);semiPart(200,50);semiPart(60,15);semiPart(16,4);
+assert(semiForm.textContent.indexOf('Rest: 2')!==-1);
 semiFind('semiTotal').value='69';semiFind('semiRest').value='4';semiSubmit();
 assert(elements.feedbackText.textContent.indexOf('kleiner')!==-1);
-semiFind('semiRest').value='2';semiSubmit();assert(semiForm.textContent.indexOf('69 · 4 + 2')!==-1);
-semiFind('semiProbe').value='278';semiSubmit();
+semiFind('semiRest').value='2';semiSubmit();assert.strictEqual(semiFind('semiProbe'),null);
 assert.strictEqual(api.correctAnswersForProfile(semiProfile),3);
 assert.strictEqual(semiProfile.reward.availablePlays,3);
 var savedSemi=api.normalizeProfile(JSON.parse(JSON.stringify(semiProfile)));
 assert.strictEqual(savedSemi.today.mode,'semiRest');assert.strictEqual(api.correctAnswersForProfile(savedSemi),3);
 api.finishSession();elements.doneBonusBtn.events.click();assert.strictEqual(semiProfile.today.mode,'semiRest');
 // Wrong totals enter the standard retry path. Aborting preserves only completed work.
-semiKey=semiExercise('semiFree',276,4);semiPart(276,69);semiFind('semiTotal').value='68';semiSubmit();
+semiKey=semiExercise('semiFree',276,4);semiPart(200,50);semiPart(60,15);semiPart(16,4);semiFind('semiTotal').value='68';semiSubmit();
 assert.strictEqual(semiProfile.semiSkills[semiKey].wrongCount,1);
 assert.strictEqual(semiProfile.today.requeueCounts[semiKey],1);
-semiExercise('semiRest',278,4);semiPart(240,60);var staleSubmit=semiForm.onsubmit;
+semiExercise('semiRest',278,4);semiPart(200,50);var staleSubmit=semiForm.onsubmit;
 elements.abortSessionBtn.events.click();var afterAbort=JSON.stringify(semiProfile.history);
 staleSubmit({preventDefault:function(){}});assert.strictEqual(JSON.stringify(semiProfile.history),afterAbort);
 assert.strictEqual(api.correctAnswersForProfile(semiProfile),3);assert.strictEqual(semiProfile.reward.availablePlays,3);
 assert.strictEqual(semiProfile.today.mode,'mixed');
 var legacySemi=api.defaultProfile();delete legacySemi.semiSkills;api.normalizeProfile(legacySemi);
 assert.strictEqual(Object.keys(legacySemi.semiSkills).length,24);
-console.log('Semi-written: staged generation, flexible paths, validation, rest/proof, one-time rewards, retries, migration and abort OK');
+console.log('Semi-written: staged generation, ordered chunks, validation, rest, one-time rewards, retries, migration and abort OK');
 // All twelve games keep the same reward contract and active-time/pause rules.
 var gameProfile = api.normalizeProfile(api.defaultProfile());
 gameProfile.config.sound = false;
@@ -2005,36 +2000,153 @@ function semiDone(id,options){
   Object.assign(event,options||{});semiFind(id).events.keydown(event);return prevented;
 }
 ['semi','semiFree','semiRest'].forEach(function(mode){
-  var dividend=mode==='semiRest'?278:276,key=semiExercise(mode,dividend,4);
-  ['semiChunk','semiPartResult','semiTotal','semiProbe'].concat(mode==='semiRest'?['semiRest']:[]).forEach(function(id){
+  var dividend=mode==='semiRest'?434:432,key=semiExercise(mode,dividend,8);
+  ['semiChunk','semiPartResult','semiTotal'].concat(mode==='semiRest'?['semiRest']:[]).forEach(function(id){
     var input=semiFind(id);assert.strictEqual(input.type,'number');assert(!input.inputMode,'No numeric pad override without an Enter key');
     assert(!input.pattern,'No numeric pattern forcing the iOS number pad');assert.strictEqual(input.getAttribute('enterkeyhint'),'done');
   });
   assert.strictEqual(semiForm.noValidate,true,'App validation remains the single submission path');
-  semiFind('semiPartResult').value='60';
-  if(mode!=='semi')semiFind('semiChunk').value='240';
-  assert.strictEqual(semiDone('semiPartResult',{repeat:true}),1);assert(!semiForm.textContent.includes('240 : 4 = 60'),'Held Enter does not submit twice');
-  semiDone('semiPartResult',{isComposing:true});assert(!semiForm.textContent.includes('240 : 4 = 60'));
-  semiDone('semiPartResult');assert(semiForm.textContent.includes('240 : 4 = 60'));
-  if(mode!=='semi')semiFind('semiChunk').value='36';semiFind('semiPartResult').value='9';
+  semiFind('semiPartResult').value='50';
+  if(mode!=='semi')semiFind('semiChunk').value='400';
+  assert.strictEqual(semiDone('semiPartResult',{repeat:true}),1);assert(!semiForm.textContent.includes('400 : 8 = 50'),'Held Enter does not submit twice');
+  semiDone('semiPartResult',{isComposing:true});assert(!semiForm.textContent.includes('400 : 8 = 50'));
+  semiDone('semiPartResult');assert(semiForm.textContent.includes('400 : 8 = 50'));
+  if(mode!=='semi')semiFind('semiChunk').value='32';semiFind('semiPartResult').value='4';
   semiDone(mode==='semi'?'semiPartResult':'semiChunk');
   assert.strictEqual(context.document.activeElement,semiFind('semiTotal'));
   var completedBefore=api.correctAnswersForProfile(semiProfile);
   semiDone('semiTotal');assert.strictEqual(api.correctAnswersForProfile(semiProfile),completedBefore,'Empty fields stay editable');
-  semiFind('semiTotal').value='69';
+  semiFind('semiTotal').value='54';
   if(mode==='semiRest'){
-    semiDone('semiTotal');assert.strictEqual(context.document.activeElement,semiFind('semiTotal'),'Missing rest must not submit an answer');
+    semiDone('semiTotal');assert.strictEqual(context.document.activeElement,semiFind('semiRest'),'Done moves to the missing rest field');
     semiFind('semiRest').value='2';semiDone('semiRest');
   }else semiDone('semiTotal');
-  assert.strictEqual(context.document.activeElement,semiFind('semiProbe'));
-  semiFind('semiProbe').value=String(dividend);semiDone('semiProbe');
-  assert.strictEqual(semiProfile.semiSkills[key].correctCount,1);semiDone('semiProbe');
+  assert.strictEqual(semiFind('semiProbe'),null);
+  assert.strictEqual(semiProfile.semiSkills[key].correctCount,1);semiDone('semiTotal');
   assert.strictEqual(semiProfile.semiSkills[key].correctCount,1,'Repeated Done after completion earns no duplicate');
 });
 semiExercise('semiFree',276,4);
 semiFind('semiChunk').value='1234';semiFind('semiChunk').events.input();assert.strictEqual(semiFind('semiChunk').value,'123');
 semiFind('semiChunk').value='-4';semiFind('semiChunk').events.input();assert.strictEqual(semiFind('semiChunk').value,'-4','Do not silently turn negative numbers into positive ones');
-semiDone('semiChunk');assert(elements.feedbackText.textContent.includes('ganze Zahl'));
+semiFind('semiPartResult').value='1';semiDone('semiChunk');assert(elements.feedbackText.textContent.includes('ganze Zahl'));
 var lateEnter=semiFind('semiChunk').events.keydown;elements.abortSessionBtn.click();var beforeLateEnter=JSON.stringify(semiProfile.history);
 lateEnter({key:'Enter',preventDefault:function(){}});assert.strictEqual(JSON.stringify(semiProfile.history),beforeLateEnter);
 console.log('Semi Done keyboard: return-capable number fields, all phases/modes, validation, focus, repeats/composition and stale-submit guards OK');
+
+
+// Regression: Done at 400 jumps to 50 before validating; residual 32 stays
+// directly below the completed 400:8=50 in a vertical calculation.
+semiProfile=api.normalizeProfile(api.defaultProfile());semiProfile.config.sound=false;semiProfile.config.rewardEvery=1;
+api.setState(semiProfile);api.ensureFactPool();
+var verticalKey=semiExercise('semiFree',432,8),verticalBefore=JSON.stringify(semiProfile.history);
+assert(semiForm.textContent.includes('432 : 8 = ___'));
+semiFind('semiChunk').value='400';semiDone('semiChunk');
+assert.strictEqual(context.document.activeElement,semiFind('semiPartResult'));
+assert.strictEqual(semiForm.dataset.phase,'parts');assert.strictEqual(JSON.stringify(semiProfile.history),verticalBefore);
+assert(!semiForm.textContent.includes('400 : 8 = 50'));
+semiFind('semiPartResult').value='50';semiDone('semiPartResult');
+assert.strictEqual(semiForm.dataset.phase,'parts');
+assert(semiForm.textContent.indexOf('432 : 8 = _5_')<semiForm.textContent.indexOf('400 : 8 = 50'));
+assert(semiForm.textContent.indexOf('400 : 8 = 50')<semiForm.textContent.lastIndexOf('32 : 8 = ?'));
+assert(semiForm.textContent.includes('Schritt 2: 32 weiter aufteilen'));
+assert(!semiForm.textContent.includes('Noch aufzuteilen'));
+assert.strictEqual(api.correctAnswersForProfile(semiProfile),0);
+semiFind('semiChunk').value='32';semiDone('semiChunk');assert.strictEqual(context.document.activeElement,semiFind('semiPartResult'));
+semiFind('semiPartResult').value='4';semiDone('semiPartResult');assert.strictEqual(semiForm.dataset.phase,'total');
+assert(!semiForm.textContent.includes('0 : 8 = ?'),'No pointless zero division');
+semiFind('semiTotal').value='54';semiDone('semiTotal');assert.strictEqual(semiProfile.semiSkills[verticalKey].correctCount,1);
+assert.strictEqual(semiFind('semiProbe'),null);assert(!elements.feedbackText.textContent.includes('Probe:'));
+semiDone('semiTotal');assert.strictEqual(semiProfile.reward.availablePlays,1);
+// Missing first field is also found when Done is pressed in the second field.
+semiExercise('semiFree',432,8);semiFind('semiPartResult').value='50';semiDone('semiPartResult');
+assert.strictEqual(context.document.activeElement,semiFind('semiChunk'));
+// Zero rest is a filled value, and final errors still use normal retries.
+var zeroRestKey=semiExercise('semiRest',432,8);semiPart(400,50);semiPart(32,4);semiFind('semiTotal').value='54';semiDone('semiTotal');
+assert.strictEqual(context.document.activeElement,semiFind('semiRest'));
+semiFind('semiRest').value='0';semiDone('semiRest');assert.strictEqual(semiProfile.semiSkills[zeroRestKey].correctCount,1);
+var badTotalKey=semiExercise('semiFree',432,8);semiPart(400,50);semiPart(32,4);semiFind('semiTotal').value='55';semiDone('semiTotal');
+assert.strictEqual(semiProfile.semiSkills[badTotalKey].wrongCount,1);assert.strictEqual(semiProfile.today.requeueCounts[badTotalKey],1);
+console.log('Semi vertical steps: 432/400/32 alignment and next step, Done visits missing fields, total completes without proof, zero rest and normal retries OK');
+
+// The three result places show accumulated partial quotients, including genuine
+// zero digits once the division is complete. No leading zero is invented.
+semiExercise('semi',848,8);assert(semiForm.textContent.includes('848 : 8 = ___'));
+semiPart(800,100);assert(semiForm.textContent.includes('848 : 8 = 1__'));
+semiPart(40,5);assert(semiForm.textContent.includes('848 : 8 = 1_5'));semiPart(8,1);assert(semiForm.textContent.includes('848 : 8 = 106'));
+semiExercise('semiFree',432,8);semiPart(200,25);assert(elements.feedbackText.textContent.includes('Hunderter'));assert(semiForm.textContent.includes('432 : 8 = ___'));
+semiPart(400,50);semiPart(32,4);assert(semiForm.textContent.includes('432 : 8 = _54'));
+semiExercise('semiRest',403,8);semiPart(400,50);assert(semiForm.textContent.includes('403 : 8 = _50'));
+console.log('Semi result slots: H/T/U partial sums, required chunks, leading blanks and final zero digits OK');
+
+// Required place-value order: largest divisible hundreds, then tens, then units.
+assert.strictEqual(api.semiSuggestedPart(843,3),600);
+assert.strictEqual(api.semiSuggestedPart(243,3),240);
+assert.strictEqual(api.semiSuggestedPart(3,3),3);
+assert.strictEqual(api.semiSuggestedPart(432,8),400);
+assert.strictEqual(api.semiSuggestedPart(64,8),40,'Use a divisible tens amount before the remaining units');
+assert.strictEqual(api.semiSuggestedPart(24,8),24,'Skip tens when none is divisible');
+assert.strictEqual(api.semiSuggestedPart(2,3),0);
+semiProfile=api.normalizeProfile(api.defaultProfile());semiProfile.config.sound=false;api.setState(semiProfile);api.ensureFactPool();
+['semi','semiFree','semiRest'].forEach(function(mode){
+  var dividend=mode==='semiRest'?845:843,key=semiExercise(mode,dividend,3),before=JSON.stringify(semiProfile.history);
+  semiPart(300,100);assert(elements.feedbackText.textContent.includes('Hunderter'));assert(elements.feedbackText.textContent.includes('600'));
+  assert(!semiForm.textContent.includes('300 : 3 = 100'));assert.strictEqual(JSON.stringify(semiProfile.history),before);
+  semiPart(600,200);assert(semiForm.textContent.includes(dividend+' : 3 = 2__'));
+  semiPart(210,70);assert(elements.feedbackText.textContent.includes('Zehner'));assert(elements.feedbackText.textContent.includes('240'));
+  semiPart(240,80);assert(semiForm.textContent.includes(dividend+' : 3 = 28_'));
+  semiPart(3,1);assert.strictEqual(semiForm.dataset.phase,'total');assert(semiForm.textContent.includes(dividend+' : 3 = 281'));
+  semiFind('semiTotal').value='281';if(mode==='semiRest')semiFind('semiRest').value='2';semiDone('semiTotal');
+  assert.strictEqual(semiProfile.semiSkills[key].correctCount,1);assert.strictEqual(semiProfile.semiSkills[key].wrongCount,0,'Chunk correction is not a wrong final answer');
+});
+console.log('Semi place order: 843 = 600 + 240 + 3, max hundreds/tens before units, enforced in all stages, correction preserves learning records OK');
+
+
+// Large place-value shortcuts: either 600 + 240 + 3 or 840 + 3 is valid.
+assert.strictEqual(JSON.stringify(api.semiAllowedParts(843,3)),'[600,840]');
+assert.strictEqual(JSON.stringify(api.semiAllowedParts(243,3)),'[240]');
+assert.strictEqual(JSON.stringify(api.semiAllowedParts(864,8)),'[800,840]');
+assert.strictEqual(JSON.stringify(api.semiAllowedParts(432,8)),'[400]');
+assert.strictEqual(JSON.stringify(api.semiAllowedParts(32,8)),'[32]');
+[300,30,3,810,843].forEach(function(part){assert(api.checkSemiPart({divisor:3},843,part,part/3),'Reject arbitrary chunks or premature unit shortcut');});
+assert.strictEqual(api.checkSemiPart({divisor:3},843,840,280),'');
+assert(api.checkSemiPart({divisor:3},843,840,281).includes('Welche Zahl'));
+['semiFree','semiRest'].forEach(function(mode){
+  var dividend=mode==='semiRest'?845:843,key=semiExercise(mode,dividend,3);
+  semiFind('semiChunk').value='840';semiDone('semiChunk');assert.strictEqual(context.document.activeElement,semiFind('semiPartResult'));
+  semiFind('semiPartResult').value='280';semiDone('semiPartResult');assert(semiForm.textContent.includes(dividend+' : 3 = 28_'));
+  assert(semiForm.textContent.includes((dividend-840)+' : 3 = ?'));
+  semiPart(3,1);semiFind('semiTotal').value='281';if(mode==='semiRest')semiFind('semiRest').value='2';semiDone('semiTotal');
+  assert.strictEqual(semiProfile.semiSkills[key].correctCount,2,'Shortcut retains normal completion and rewards');
+});
+console.log('Semi shortcuts: maximal hundreds or tens allowed (600/840); arbitrary chunks and premature units rejected, exact sums/rest and Done flow OK');
+
+// App keypads edit at the caret, replace a selection and backspace locally.
+var caretProfile=api.normalizeProfile(api.defaultProfile());caretProfile.config.sound=false;
+api.setState(caretProfile);api.ensureFactPool();api.startSession(false,null,'roman');
+api.renderRomanQuestion('roman:toRoman',api.romanQuestion('toRoman',2026));
+var caretForm=elements.choicesWrap.children[0],caretInput=caretForm.children[0],caretKeys=caretForm.children[1];
+function romanKey(label){caretKeys.children.find(function(button){return button.textContent===label;}).click();}
+caretInput.value='MMVI';caretInput.setSelectionRange(2,2);romanKey('X');
+assert.strictEqual(caretInput.value,'MMXVI');assert.strictEqual(caretInput.selectionStart,3);assert.strictEqual(caretInput.selectionEnd,3);
+romanKey('X');assert.strictEqual(caretInput.value,'MMXXVI');
+caretInput.setSelectionRange(2,4);romanKey('L');assert.strictEqual(caretInput.value,'MMLVI');assert.strictEqual(caretInput.selectionStart,3);
+romanKey('⌫');assert.strictEqual(caretInput.value,'MMVI');assert.strictEqual(caretInput.selectionStart,2);
+caretInput.setSelectionRange(1,3);romanKey('⌫');assert.strictEqual(caretInput.value,'MI');assert.strictEqual(caretInput.selectionStart,1);
+caretInput.setSelectionRange(0,0);romanKey('⌫');assert.strictEqual(caretInput.value,'MI');assert.strictEqual(caretInput.selectionStart,0);
+caretInput.value='M'.repeat(15);caretInput.setSelectionRange(5,5);romanKey('X');assert.strictEqual(caretInput.value,'M'.repeat(15));assert.strictEqual(caretInput.selectionStart,5);
+caretInput.setSelectionRange(5,7);romanKey('X');assert.strictEqual(caretInput.value,'MMMMMXMMMMMMMM');assert.strictEqual(caretInput.selectionStart,6);
+caretInput.value='mi?vi';caretInput.setSelectionRange(1,4);caretInput.events.input();
+assert.strictEqual(caretInput.value,'MIVI');assert.strictEqual(caretInput.selectionStart,1);assert.strictEqual(caretInput.selectionEnd,3);
+var caretPrevented=0;caretKeys.children[0].events.pointerdown({preventDefault:function(){caretPrevented++;}});assert.strictEqual(caretPrevented,1,'Keep field focus/selection when pressing keypad');
+api.renderRomanQuestion('roman:toArabic',api.romanQuestion('toArabic',2026));caretForm=elements.choicesWrap.children[0];caretInput=caretForm.children[0];caretKeys=caretForm.children[1];
+caretInput.value='206';caretInput.setSelectionRange(2,2);romanKey('2');assert.strictEqual(caretInput.value,'2026');assert.strictEqual(caretInput.selectionStart,3);
+caretInput.setSelectionRange(1,3);romanKey('9');assert.strictEqual(caretInput.value,'296');assert.strictEqual(caretInput.selectionStart,2);
+romanKey('⌫');assert.strictEqual(caretInput.value,'26');assert.strictEqual(caretInput.selectionStart,1);
+var staleCaretKeys=caretKeys,staleCaretValue=caretInput.value;elements.abortSessionBtn.click();staleCaretKeys.children[0].click();assert.strictEqual(caretInput.value,staleCaretValue);
+// The other native text fields with an app keypad share the same cursor rule.
+caretProfile.config.answerMode='input';api.startSession(false,null,'remainder');
+var caretQuotient=remainderFind('remainderQuotient');caretQuotient.value='13';caretQuotient.setSelectionRange(1,1);remainderKey('2');
+assert.strictEqual(caretQuotient.value,'123');assert.strictEqual(caretQuotient.selectionStart,2);
+caretQuotient.setSelectionRange(1,2);remainderKey('9');assert.strictEqual(caretQuotient.value,'193');
+remainderKey('⌫');assert.strictEqual(caretQuotient.value,'13');assert.strictEqual(caretQuotient.selectionStart,1);
+console.log('App keypads: caret insert, range replacement, local backspace, length limit, normalization, focus protection and stale handlers OK for Roman/numeric/remainder fields');
