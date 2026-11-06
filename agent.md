@@ -397,3 +397,28 @@ advance touch to prevent a synthetic click answering the next question.
 Invalidate answerFeedbackToken on every renderQuestion, retaining sessionRevision
 guards; an old skipped timer must never regenerate the next task or close a
 later wrong solution. Intermediate correctable form errors stay in the form.
+
+
+## Semi-written Done keyboard (2026-11-06)
+
+Semi inputs use type=number and enterkeyhint=done, WITHOUT numeric inputmode or
+numeric pattern (those select the iOS number pad without a return key). Each
+field's Enter submits the current phase through the existing onsubmit handler,
+not just next-field navigation. Prevent implicit duplicate submit; ignore key
+repeat/composition and keep revision/answering guards. App validation stays in
+charge via noValidate. Preserve three-digit input limits, reject malformed number
+notation, and never call setSelectionRange on a number input. Hide desktop
+spinners without replacing the native keyboard. Check all three semi modes and
+part/total/rest/proof phases; desktop Enter cannot verify the native iPhone UI.
+
+
+## Semi-written tablet landscape layout (2026-11-06)
+
+At min-width 760px in landscape, semi-mode uses a shared heading plus two
+columns: context/remainders/history and current inputs/actions. Keep input and
+button targets >=48px, total/rest side by side, and the source equation visible.
+Preserve stacking on narrow/portrait views, natural field order and normal zoom.
+Only long completed-work lists get an independently scrollable, keyboard-focusable
+area with an accessible name and height based on --app-height. Never discard
+steps to fit the view. tests/layout-preview.html?layout=tablet shows 1024x400 and
+1194x470 visible-area approximations; this is not a native iPad keyboard test.

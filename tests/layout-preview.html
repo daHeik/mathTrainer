@@ -9,13 +9,21 @@
   a {margin-right:16px;}
 </style>
 <h1>Layoutprüfung ohne Änderung der Browserfenster</h1>
-<p><a href="?">Lernen</a><a href="?game=gravity">Gravity Run</a><a href="?game=brick">Bricks</a><a href="?game=snake">Cleo</a><a href="?game=snow">Schneefahrt</a><a href="?game=runner">Metro Run</a><a href="?game=doodle">Doodle Jump</a><a href="?game=tiles">2048</a><a href="?game=maze">Pac-Man</a><a href="?game=asteroid">Asteroids</a><a href="?game=frog">Frog Punch</a></p>
+<p><a href="?">Lernen</a><a href="?layout=tablet">iPad mit Tastatur · sichtbarer Bereich</a><a href="?game=gravity">Gravity Run</a><a href="?game=brick">Bricks</a><a href="?game=snake">Cleo</a><a href="?game=snow">Schneefahrt</a><a href="?game=runner">Metro Run</a><a href="?game=doodle">Doodle Jump</a><a href="?game=tiles">2048</a><a href="?game=maze">Pac-Man</a><a href="?game=asteroid">Asteroids</a><a href="?game=frog">Frog Punch</a></p>
 <main>
   <section><h2>Hochformat · 390 × 844</h2><iframe id="portrait" width="390" height="844" title="Schmale Hochformatansicht"></iframe></section>
   <section><h2>Querformat · 844 × 390</h2><iframe id="landscape" width="844" height="390" title="Flache Querformatansicht"></iframe></section>
 </main>
 <script>
-var game = new URLSearchParams(location.search).get('game');
+var previewParams = new URLSearchParams(location.search);
+var game = previewParams.get('game');
+if (previewParams.get('layout') === 'tablet'){
+  [['portrait',1024,400],['landscape',1194,470]].forEach(function(spec){
+    var frame=document.getElementById(spec[0]);frame.width=spec[1];frame.height=spec[2];
+    frame.title='iPad Querformat · sichtbarer Bereich '+spec[1]+' × '+spec[2];
+    frame.parentElement.querySelector('h2').textContent=frame.title;
+  });
+}
 var url = '../index.html' + (['gravity','brick','snake','snow','runner','doodle','tiles','maze','asteroid','frog'].indexOf(game) !== -1 ? '?demo=' + game : '');
 document.querySelectorAll('iframe').forEach(function(frame){ frame.src = url; });
 </script>

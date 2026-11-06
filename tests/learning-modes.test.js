@@ -1995,3 +1995,46 @@ api.onAnswer(feedbackProfile.today.queue[feedbackProfile.today.index],'yes','yes
 var regularAdvance=timers.splice(0);regularAdvance.forEach(function(callback){callback();});
 assert.notStrictEqual(elements.choicesWrap.children[0],onceAdvanced,'Correct feedback still advances automatically without a gesture');
 console.log('Feedback: wrong waits indefinitely for touch/click; correct supports immediate skip or normal timer; stale timers, double gestures and navigation guards OK');
+
+
+// Native Done/Enter submits each semi-written phase without hiding the keyboard.
+semiProfile=api.normalizeProfile(api.defaultProfile());semiProfile.config.sound=false;semiProfile.config.rewardEvery=1;
+api.setState(semiProfile);api.ensureFactPool();
+function semiDone(id,options){
+  var prevented=0,event={key:'Enter',preventDefault:function(){prevented++;}};
+  Object.assign(event,options||{});semiFind(id).events.keydown(event);return prevented;
+}
+['semi','semiFree','semiRest'].forEach(function(mode){
+  var dividend=mode==='semiRest'?278:276,key=semiExercise(mode,dividend,4);
+  ['semiChunk','semiPartResult','semiTotal','semiProbe'].concat(mode==='semiRest'?['semiRest']:[]).forEach(function(id){
+    var input=semiFind(id);assert.strictEqual(input.type,'number');assert(!input.inputMode,'No numeric pad override without an Enter key');
+    assert(!input.pattern,'No numeric pattern forcing the iOS number pad');assert.strictEqual(input.getAttribute('enterkeyhint'),'done');
+  });
+  assert.strictEqual(semiForm.noValidate,true,'App validation remains the single submission path');
+  semiFind('semiPartResult').value='60';
+  if(mode!=='semi')semiFind('semiChunk').value='240';
+  assert.strictEqual(semiDone('semiPartResult',{repeat:true}),1);assert(!semiForm.textContent.includes('240 : 4 = 60'),'Held Enter does not submit twice');
+  semiDone('semiPartResult',{isComposing:true});assert(!semiForm.textContent.includes('240 : 4 = 60'));
+  semiDone('semiPartResult');assert(semiForm.textContent.includes('240 : 4 = 60'));
+  if(mode!=='semi')semiFind('semiChunk').value='36';semiFind('semiPartResult').value='9';
+  semiDone(mode==='semi'?'semiPartResult':'semiChunk');
+  assert.strictEqual(context.document.activeElement,semiFind('semiTotal'));
+  var completedBefore=api.correctAnswersForProfile(semiProfile);
+  semiDone('semiTotal');assert.strictEqual(api.correctAnswersForProfile(semiProfile),completedBefore,'Empty fields stay editable');
+  semiFind('semiTotal').value='69';
+  if(mode==='semiRest'){
+    semiDone('semiTotal');assert.strictEqual(context.document.activeElement,semiFind('semiTotal'),'Missing rest must not submit an answer');
+    semiFind('semiRest').value='2';semiDone('semiRest');
+  }else semiDone('semiTotal');
+  assert.strictEqual(context.document.activeElement,semiFind('semiProbe'));
+  semiFind('semiProbe').value=String(dividend);semiDone('semiProbe');
+  assert.strictEqual(semiProfile.semiSkills[key].correctCount,1);semiDone('semiProbe');
+  assert.strictEqual(semiProfile.semiSkills[key].correctCount,1,'Repeated Done after completion earns no duplicate');
+});
+semiExercise('semiFree',276,4);
+semiFind('semiChunk').value='1234';semiFind('semiChunk').events.input();assert.strictEqual(semiFind('semiChunk').value,'123');
+semiFind('semiChunk').value='-4';semiFind('semiChunk').events.input();assert.strictEqual(semiFind('semiChunk').value,'-4','Do not silently turn negative numbers into positive ones');
+semiDone('semiChunk');assert(elements.feedbackText.textContent.includes('ganze Zahl'));
+var lateEnter=semiFind('semiChunk').events.keydown;elements.abortSessionBtn.click();var beforeLateEnter=JSON.stringify(semiProfile.history);
+lateEnter({key:'Enter',preventDefault:function(){}});assert.strictEqual(JSON.stringify(semiProfile.history),beforeLateEnter);
+console.log('Semi Done keyboard: return-capable number fields, all phases/modes, validation, focus, repeats/composition and stale-submit guards OK');

@@ -2003,6 +2003,7 @@
       return;
     }
     screenQuestion.classList.toggle('roman-mode',skill.kind === 'roman');
+    screenQuestion.classList.toggle('semi-mode',skill.kind === 'semi');
     var f = skill.fact;
     var gapTask = false;
     var gen, fmt, placeholder;
@@ -2208,27 +2209,38 @@
 
   function renderSemiDivision(key,exercise){
     var form=el('semiDivisionForm'),revision=sessionRevision,remaining=exercise.dividend,parts=[],quotients=[],phase='parts';
-    form.innerHTML='';
+    form.innerHTML='';form.noValidate=true;
     function node(tag,cls,value){var n=document.createElement(tag);n.className=cls||'';if(value!==undefined)n.textContent=value;return n;}
     function field(label,id){
       var wrapper=node('label','semi-field',label),input=node('input','semi-input');
-      input.id=id;input.type='text';input.inputMode='numeric';input.pattern='[0-9]*';input.maxLength=3;input.value='';input.placeholder='?';input.autocomplete='off';
-      input.setAttribute('aria-label',label);input.setAttribute('enterkeyhint','next');wrapper.appendChild(input);return {wrapper:wrapper,input:input};
+      // iOS numberPad (inputmode=numeric or a numeric pattern) has no return
+      // key. A plain number input uses numbers-and-punctuation with Done.
+      input.id=id;input.type='number';input.min='0';input.max='999';input.step='1';input.value='';input.placeholder='?';input.autocomplete='off';
+      input.setAttribute('aria-label',label);input.setAttribute('enterkeyhint','done');
+      input.addEventListener('input',function(){if(/^[0-9]+$/.test(input.value))input.value=input.value.slice(0,3);});
+      input.addEventListener('keydown',function(event){
+        if(event.key!=='Enter'||event.isComposing)return;
+        event.preventDefault();
+        if(!event.repeat&&live())form.onsubmit(event);
+      });
+      wrapper.appendChild(input);return {wrapper:wrapper,input:input};
     }
-    function focus(input){input.focus();if(input.setSelectionRange)input.setSelectionRange(0,(input.value||'').length);}
+    function focus(input){input.focus();}
     function live(){return answering&&revision===sessionRevision;}
     function say(message,bad){feedbackText.className='feedback '+(bad?'bad':'good');feedbackText.textContent=message;}
-    form.appendChild(node('h2','written-title',semiModeLabel(exercise.mode)));
-    form.appendChild(node('p','semi-problem',exercise.dividend+' : '+exercise.divisor+' = ?'));
+    var heading=node('div','semi-heading'),layout=node('div','semi-layout');
+    var context=node('div','semi-context'),entry=node('div','semi-entry'),actions=node('div','semi-actions');
+    heading.appendChild(node('h2','written-title',semiModeLabel(exercise.mode)));
+    heading.appendChild(node('p','semi-problem',exercise.dividend+' : '+exercise.divisor+' = ?'));
+    form.appendChild(heading);layout.appendChild(context);layout.appendChild(entry);form.appendChild(layout);
     var progress=node('p','semi-remaining'),breakdown=node('p','semi-breakdown');progress.setAttribute('aria-live','polite');
-    form.appendChild(progress);form.appendChild(breakdown);
-    var history=node('ol','semi-steps');form.appendChild(history);
+    context.appendChild(progress);context.appendChild(breakdown);
+    var history=node('ol','semi-steps');history.setAttribute('aria-label','Bisherige Teilrechnungen');history.tabIndex=0;context.appendChild(history);
     var work=node('div','semi-work'),chunk=field('Teil zum Dividieren','semiChunk'),result=field('Teilergebnis','semiPartResult');
-    work.appendChild(chunk.wrapper);work.appendChild(node('span','semi-operator',': '+exercise.divisor+' ='));work.appendChild(result.wrapper);form.appendChild(work);
+    work.appendChild(chunk.wrapper);work.appendChild(node('span','semi-operator',': '+exercise.divisor+' ='));work.appendChild(result.wrapper);entry.appendChild(work);
     chunk.input.readOnly=exercise.mode==='semi';
-    chunk.input.addEventListener('keydown',function(event){if(event.key==='Enter'&&live()){event.preventDefault();focus(result.input);}});
-    var tip=node('button','secondary-btn','Tipp anzeigen');tip.type='button';form.appendChild(tip);
-    var tipText=node('p','semi-tip');tipText.setAttribute('role','status');form.appendChild(tipText);
+    var tip=node('button','secondary-btn','Tipp anzeigen');tip.type='button';
+    var tipText=node('p','semi-tip');tipText.setAttribute('role','status');
     tip.addEventListener('click',function(){
       if(!live())return;
       var part=semiSuggestedPart(remaining,exercise.divisor);
@@ -2236,11 +2248,10 @@
     });
     var final=node('div','semi-final'),total=field('Summe deiner Teilergebnisse','semiTotal'),rest=field('Rest','semiRest');
     final.hidden=true;final.appendChild(node('p','','Addiere jetzt deine Teilergebnisse.'));
-    final.appendChild(total.wrapper);if(exercise.mode==='semiRest')final.appendChild(rest.wrapper);form.appendChild(final);
-    total.input.addEventListener('keydown',function(event){if(event.key==='Enter'&&exercise.mode==='semiRest'&&live()){event.preventDefault();focus(rest.input);}});
+    final.appendChild(total.wrapper);if(exercise.mode==='semiRest')final.appendChild(rest.wrapper);entry.appendChild(final);
     var proof=node('div','semi-proof'),probe=field('Ergebnis der Probe','semiProbe'),proofEquation=node('p','semi-breakdown');
-    proof.hidden=true;proof.appendChild(proofEquation);proof.appendChild(probe.wrapper);form.appendChild(proof);
-    var check=node('button','secondary-btn','Teilrechnung prüfen');check.type='submit';form.appendChild(check);
+    proof.hidden=true;proof.appendChild(proofEquation);proof.appendChild(probe.wrapper);entry.appendChild(proof);
+    var check=node('button','secondary-btn','Teilrechnung prüfen');check.type='submit';actions.appendChild(check);actions.appendChild(tip);entry.appendChild(actions);entry.appendChild(tipText);
     function update(){
       progress.textContent='Noch aufzuteilen: '+remaining;
       breakdown.textContent=parts.length?'Zerlegt: '+parts.join(' + ')+(remaining?' + '+remaining:'')+' = '+exercise.dividend:'Zerlege die '+exercise.dividend+' in Teile, die durch '+exercise.divisor+' teilbar sind. Die '+exercise.divisor+' bleibt immer gleich.';
