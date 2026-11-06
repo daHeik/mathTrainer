@@ -3,7 +3,7 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `1c6b370` mit lokaler Begrenzung der Schneefahrt-Verfolgung, animiertem Schluchtsturz und kompakter Statusleiste; PWA-Cache `1x1-trainer-v57`, keine separate semantische App-Version |
+| Version | Basis `3a57637` mit lokal angepasster Schneefahrt-Kamera und prozentualen Sichtbarkeitsgrenzen; PWA-Cache `1x1-trainer-v58`, keine separate semantische App-Version |
 | Letzte Quellcodeänderung | 2026-11-06 |
 | Letzte Projekt-/README-Änderung | 2026-11-06 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
@@ -265,7 +265,7 @@ Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben un
 
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v57`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v58`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 
@@ -569,8 +569,18 @@ Bilder oder Videos werden eingebunden.
   Keine bildschirmfüllenden Lichtblitze; bei reduzierter Bewegung bleiben
   diese Wettereffekte statisch und die Blitze aus. Cleo sammelt leuchtend
   orange Kürbisse statt Obst; Bomben behalten eine deutlich helle Kontur.
-- Schneefahrt: Die Kamera folgt vorausschauend dem Gelände am rechten Bildschirmrand
-  und hält tiefe Stellen im sichtbaren Abschnitt frühzeitig im Bild.
+- Schneefahrt: Die Kamera folgt weiterhin vorausschauend dem Gelände am rechten
+  Bildschirmrand, begrenzt diese Ausrichtung aber zugunsten des Snowboarders:
+  Bei Bodenfahrt und Grinds bleiben Kopf und Board zwischen 20 und 80 % der
+  sichtbaren Spielfeldhöhe. Im Sprung reicht die untere Grenze bis 90 %;
+  die obere bleibt bei 20 %. Damit verschwindet die Figur bei steilen Abfahrten
+  nicht am oberen Bildrand. Tiefe Geländestellen werden berücksichtigt, soweit
+  diese Grenzen es erlauben; die Sichtbarkeit der Figur hat Vorrang.
+  `updateSnowCamera()` begrenzt Zielposition und geglättete Kameraposition anhand
+  der aktuellen Canvas-Höhe. `resizeSnowCanvas()` wendet die Grenzen sofort auch
+  nach Größen- und Orientierungswechseln an. Die Kamerabewegung verändert weder
+  Weltpositionen noch Kollisionen oder Sprungphysik. Regressionstests prüfen
+  Geländeausblick, obere Grenze, 80-/90-%-Grenzen, Grinds und mehrere Bildhöhen.
   Jeder erfolgreich gelandete Backflip bringt +20 Prozentpunkte
   Tempo (Doppelsalto +40), maximal 200 % des aktuellen Grundtempos. Pro voller
   aktiver Sekunde sinkt es um einen Prozentpunkt bis mindestens 100 %;

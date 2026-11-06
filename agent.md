@@ -465,3 +465,12 @@ and length limits, then collapse selection after the edit. Prevent pointerdown
 focus changes on keypad buttons. Roman cleaning preserves/map selection positions
 and must not rewrite unchanged values. Keep live/revision guards. This helper is
 for type=text fields; never apply setSelectionRange to the semi number inputs.
+
+
+## Snow camera rider bounds (2026-11-06)
+
+Keep right-edge terrain lookahead, but prioritize the rider: visible head
+(p.y - 12) >= 20% of view height; board (p.y + p.h) <= 80% grounded or
+grinding, <= 90% airborne. Bounds apply after smoothing and immediately on
+resize. Deep terrain framing must yield to rider bounds. Use snowViewHeight,
+not fixed landscape pixels; preserve world coordinates and physics.

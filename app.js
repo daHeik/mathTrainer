@@ -5099,22 +5099,25 @@
   function snowViewHeight(){return el('snowCanvas').viewHeight||360;}
   function updateSnowCamera(g,dt){
     var height=snowViewHeight(),scale=height/360,p=g.player;
-    // Lead with the terrain entering at the right edge, not the rider's feet.
+    // Keep right-edge lookahead, but give the rider's visible band priority.
     var ahead=snowSurface(g,g.distance+640),deepest=ahead;
     for(var sx=160;sx<640;sx+=16)deepest=Math.max(deepest,snowSurface(g,g.distance+sx));
-    var lower=Math.max(p.y-280*scale,deepest-height+48*scale),upper=p.y-60*scale;
-    lower=Math.min(lower,upper);
+    var top=p.y-12,feet=p.y+p.h;
+    var lower=feet-height*(p.grounded||p.grinding ? .8 : .9),upper=top-height*.2;
+    var terrainLower=deepest-height+48*scale;
+    lower=Math.max(lower,Math.min(upper,terrainLower));
     var target=Math.max(lower,Math.min(upper,ahead-245*scale));
     g.cameraY+=(target-g.cameraY)*(1-Math.exp(-dt*8));
-    // Smoothing must not hide an approaching bank below the viewport.
+    // Apply visibility bounds after smoothing, including during jumps/resizes.
     g.cameraY=Math.max(lower,Math.min(upper,g.cameraY));
   }
+
   function resizeSnowCanvas(){
     if(!arcadeGames.snow)return;
     var canvas=el('snowCanvas'),bounds=el('snowWrap').getBoundingClientRect();
     if(!bounds.width||!bounds.height)return;
     var height=Math.max(360,Math.min(1400,Math.round(640*bounds.height/bounds.width)));
-    canvas.renderBounds=null;var old=snowViewHeight();if(old!==height)arcadeGames.snow.cameraY-=(height-old)*245/360;canvas.viewHeight=height;drawSnowGame();
+    canvas.renderBounds=null;var old=snowViewHeight();if(old!==height)arcadeGames.snow.cameraY-=(height-old)*245/360;canvas.viewHeight=height;updateSnowCamera(arcadeGames.snow,0);drawSnowGame();
   }
   function snowRopeSlope(rope,x){return Math.atan((snowRopeY(rope,x+1)-snowRopeY(rope,x-1))/2);}
   function snowLandingAngle(rotation,slope){
