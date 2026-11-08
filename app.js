@@ -478,11 +478,12 @@
     if (typeof p.reward.bestFlappyScore !== 'number' || p.reward.bestFlappyScore < 0){
       p.reward.bestFlappyScore = 0;
     }
-    ['bestGravityScore','bestBrickScore','bestSnakeScore','bestSnowScore','bestRunnerScore','bestDoodleScore','bestTilesScore','bestMazeScore','bestAsteroidScore','bestFrogScore','bestChickenScore','gamesPlayed'].forEach(function(key){
+    ['bestGravityScore','bestBrickScore','bestSnakeScore','bestSnowScore','bestRunnerScore','bestDoodleScore','bestTilesScore','bestMazeScore','bestAsteroidScore','bestFrogScore','gamesPlayed'].forEach(function(key){
       if (!Number.isFinite(p.reward[key]) || p.reward[key] < 0) p.reward[key] = 0;
     });
     p.reward.frogLeaderboard=FrogPunch.topFive(p.reward.frogLeaderboard);
     p.reward.chickenLeaderboard=ChickenShooter.topFive(p.reward.chickenLeaderboard);
+    if(!Number.isSafeInteger(p.reward.bestChickenScore))p.reward.bestChickenScore=p.reward.chickenLeaderboard.length?p.reward.chickenLeaderboard[0].score:0;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(p.reward.gamesTrackedSince || '')) p.reward.gamesTrackedSince = todayStr();
     if (typeof p.reward.bestTowerScore !== 'number' || p.reward.bestTowerScore < 0){
       p.reward.bestTowerScore = 0;
@@ -5420,14 +5421,14 @@
   function chickenStep(now){
     var g=chickenGame;if(!g)return;var dt=Math.max(0,(now-g.lastFrame)/1000);g.lastFrame=now;
     if(ChickenShooter.advance(g,dt)){
-      if(!g.isDemo){var at=Date.now();g.leaderboardId='chicken-'+at+'-'+(++chickenSerial);state.reward.chickenLeaderboard=ChickenShooter.topFive([{id:g.leaderboardId,at:at,score:g.score}].concat(state.reward.chickenLeaderboard));state.reward.bestChickenScore=Math.max(state.reward.bestChickenScore,g.score);saveState();}
+      if(!g.isDemo){var hadResult=state.reward.chickenLeaderboard.length>0||state.reward.bestChickenScore!==0,at=Date.now();g.leaderboardId='chicken-'+at+'-'+(++chickenSerial);state.reward.chickenLeaderboard=ChickenShooter.topFive([{id:g.leaderboardId,at:at,score:g.score}].concat(state.reward.chickenLeaderboard));state.reward.bestChickenScore=hadResult?Math.max(state.reward.bestChickenScore,g.score):g.score;saveState();}
       text('chickenTitle','Gack-tastisch!');text('chickenIntro',g.score+' Punkte gesammelt! Alle Hühner fliegen fröhlich weiter.');el('chickenStartBtn').hidden=true;el('chickenAgainBtn').hidden=false;el('chickenOverlay').hidden=false;chickenLeaders();el('chickenAgainBtn').focus();
     }
   }
   function runChickenGame(now){if(!chickenGame||!chickenGame.active)return;chickenStep(now);chickenDraw();chickenGame.frame=requestAnimationFrame(runChickenGame);}
   function startChickenGame(demo){
     if(!demo&&state.reward.availablePlays<1)return;stopChickenGame();chickenGame=ChickenShooter.create();chickenGame.isDemo=demo===true;chickenGame.lastFrame=performance.now();chickenGame.aimX=180;chickenGame.aimY=200;
-    text('chickenTitle','Bereit für Chicken Shooter?');text('chickenIntro','Tippe die Hühner an: Konfetti und ein fröhliches Gack! Kleine und schnelle Hühner geben mehr Punkte. Sechs Schüsse, eine Sekunde nachladen. Du hast 90 Sekunden.');el('chickenOverlay').hidden=false;el('chickenStartBtn').hidden=false;el('chickenAgainBtn').hidden=true;showScreen(el('screen-chicken'));chickenLeaders();chickenDraw();el('chickenStartBtn').focus();chickenGame.frame=requestAnimationFrame(runChickenGame);
+    text('chickenTitle','Bereit für Chicken Shooter?');text('chickenIntro','Tippe die Hühner an: Konfetti und ein fröhliches Gack! Kleine und schnelle Hühner geben mehr Punkte. Jeder Fehlschuss kostet 100 Punkte. Sechs Schüsse, eine Sekunde nachladen. Du hast 90 Sekunden.');el('chickenOverlay').hidden=false;el('chickenStartBtn').hidden=false;el('chickenAgainBtn').hidden=true;showScreen(el('screen-chicken'));chickenLeaders();chickenDraw();el('chickenStartBtn').focus();chickenGame.frame=requestAnimationFrame(runChickenGame);
   }
   el('chooseChickenBtn').addEventListener('click',function(){startChickenGame(false);});
   el('chickenStartBtn').addEventListener('click',function(){var g=chickenGame;if(!g||g.running||g.elapsed||g.pausedAt!==null)return;if(!g.isDemo&&!consumeRewardPlay(g))return;g.running=true;g.lastFrame=performance.now();el('chickenOverlay').hidden=true;el('chickenCanvas').focus();});

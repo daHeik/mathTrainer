@@ -538,3 +538,9 @@ random barn door, clipped in world coordinates to that door, 55 points. Ignore o
 their own barn as cover; keep all foreground cover. Pond guests render/hit in
 layer 3, in front of the bank. Advance expires visitors before hits, pause freezes
 them, no incomplete visits near the game deadline. Keep visitor count in paintKey.
+
+Chicken miss penalty: every fired miss deducts 100, with a signed score and minus
+feedback (no confetti on a miss). Prestart/paused/reload/empty inputs never charge.
+Allow signed safe integers in chicken topFive and bestChickenScore normalization;
+first completed negative game sets the record, later games only improve it.
+Keep negative leaderboard/record values through save and backup import.

@@ -8,7 +8,7 @@ assert.strictEqual(api.easter(2026).getDate(),5);assert.strictEqual(api.easter(2
 [-8,-7,0,7,8].forEach(function(offset){assert.strictEqual(api.theme(new Date(2026,3,5+offset)).holiday,Math.abs(offset)<=7?'easter':null);});
 var g=api.create(function(){return .5;});assert(!api.shoot(g,0,0));g.running=true;api.advance(g,2);assert.strictEqual(g.targets.length,2);
 var target={born:0,layer:2,r:30,size:30,speed:100,direction:1,baseY:180,phase:0,maneuver:false,points:55};g.targets=[target];var p=api.position(g,target);
-assert(api.shoot(g,p.x,p.y));assert.strictEqual(g.score,55);assert.strictEqual(g.targets.length,0);assert(!api.shoot(g,p.x,p.y));assert.strictEqual(g.score,55);
+assert(api.shoot(g,p.x,p.y));assert.strictEqual(g.score,55);assert.strictEqual(g.targets.length,0);assert(!api.shoot(g,p.x,p.y));assert.strictEqual(g.score,-45);
 g.pausedAt=1;var frozen=g.elapsed,ammo=g.ammo;api.advance(g,50);assert(!api.shoot(g,0,0));assert(!api.reload(g));assert.strictEqual(g.elapsed,frozen);assert.strictEqual(g.ammo,ammo);g.pausedAt=null;
 assert(api.reload(g));assert(!api.shoot(g,0,0));api.advance(g,.99);assert(g.reloadUntil);api.advance(g,.02);assert.strictEqual(g.ammo,6);assert.strictEqual(g.reloadUntil,0);
 var o=api.obstacles(g,0)[0];target.layer=0;assert(api.covered(g,target,o.x,o.y-o.r));target.layer=2;assert(!api.covered(g,target,o.x,o.y-o.r));
@@ -18,7 +18,7 @@ g.targets=[target];target.born=g.elapsed-(o.x+100)/target.speed;target.baseY=o.y
 for(var n=0;n<6;n++)api.shoot(g,0,0);assert.strictEqual(g.ammo,0);assert(g.reloadUntil);api.advance(g,1.01);assert.strictEqual(g.ammo,6);
 assert(api.advance(g,200));assert.strictEqual(g.elapsed,90);assert(!g.running);assert(!api.shoot(g,100,100));assert(!api.advance(g,1));
 var entries=[];for(var i=0;i<8;i++)entries.push({id:'chicken-'+i,at:i,score:i*10});assert.strictEqual(api.topFive(entries).length,5);assert.strictEqual(api.topFive(entries)[0].score,70);assert.strictEqual(api.topFive([{id:'chicken-new',at:7,score:70}].concat(entries))[0].id,'chicken-new');
-assert.strictEqual(api.topFive([{id:'bad',at:0,score:1},{id:'chicken-x',at:Infinity,score:3},{id:'chicken-y',at:0,score:-1}]).length,0);assert.strictEqual(api.topFive([entries[0],entries[0]]).length,1);
+assert.strictEqual(api.topFive([{id:'bad',at:0,score:1},{id:'chicken-x',at:Infinity,score:3},{id:'chicken-y',at:0,score:1.5}]).length,0);assert.strictEqual(api.topFive([entries[0],entries[0]]).length,1);
 var seed=123;g=api.create(function(){seed=(seed*16807)%2147483647;return seed/2147483647;});g.running=true;var vehicles={},layers={},sizes={},speeds={},man=false;
 for(i=0;i<800;i++){api.advance(g,.1);g.targets.forEach(function(t){vehicles[t.vehicle]=true;layers[t.layer]=true;sizes[Math.round(t.r)]=true;speeds[Math.round(t.speed)]=true;man=man||t.maneuver;});}
 assert(vehicles.plane&&vehicles.balloon&&vehicles.glider);assert.strictEqual(Object.keys(layers).length,3);assert(Object.keys(sizes).length>6);assert(Object.keys(speeds).length>10);assert(man);
@@ -70,3 +70,10 @@ console.log('Farm visitors: two-second diver, underwater clipping/expiry, winter
 ['summer','winter'].forEach(function(season){var scene=api.create(function(){return .5;},season==='winter'?new Date(2026,0,4):new Date(2026,6,4));scene.running=true;api.advance(scene,7.5);var guest=scene.visitors.find(function(v){return v.layer===3;});assert.strictEqual(guest.duration,season==='winter'?6:2);var pose=api.position(scene,guest),face=pose.direction||guest.direction;assert(api.shoot(scene,pose.x+25*.7*face,pose.y-24*.7));assert.strictEqual(scene.score,season==='winter'?60:65);assert(!scene.visitors.includes(guest));});
 var lateGuest=api.create(function(){return .5;},new Date(2026,0,4));lateGuest.elapsed=89;lateGuest.running=true;lateGuest.nextPond=89;lateGuest.nextPeek=89;lateGuest.nextSpawn=1000;api.advance(lateGuest,.1);assert.strictEqual(lateGuest.visitors.length,0,'No truncated guest window is started near the deadline');
 console.log('Pond scoring: diver/skater hits award 65/60 once; late partial visits are rejected OK');
+
+var misses=api.create();assert(!api.shoot(misses,900,50));assert.strictEqual(misses.score,0);misses.running=true;
+assert(!api.shoot(misses,900,50));assert.strictEqual(misses.score,-100);assert.strictEqual(misses.effects[0].points,-100);
+misses.pausedAt=1;api.shoot(misses,900,50);assert.strictEqual(misses.score,-100);misses.pausedAt=null;api.reload(misses);api.shoot(misses,900,50);assert.strictEqual(misses.score,-100);
+api.advance(misses,1.1);misses.ammo=1;api.shoot(misses,900,50);assert.strictEqual(misses.score,-200);api.shoot(misses,900,50);assert.strictEqual(misses.score,-200,'Empty/reloading shots cost no points');
+assert.strictEqual(api.topFive([{id:'chicken-low',at:1,score:-300},{id:'chicken-high',at:2,score:-100}])[0].score,-100,'Negative scores rank numerically');
+console.log('Miss penalty: minus 100 per fired miss, signed leaderboard, no charge before start/during pause/reload/empty ammo OK');
