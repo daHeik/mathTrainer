@@ -260,6 +260,8 @@
         bestTilesScore: 0,
         bestMazeScore: 0,
         bestAsteroidScore: 0,
+        bestChickenScore: 0,
+        chickenLeaderboard: [],
         bestFrogScore: 0,
         frogLeaderboard: [],
         gamesPlayed: 0,
@@ -476,10 +478,11 @@
     if (typeof p.reward.bestFlappyScore !== 'number' || p.reward.bestFlappyScore < 0){
       p.reward.bestFlappyScore = 0;
     }
-    ['bestGravityScore','bestBrickScore','bestSnakeScore','bestSnowScore','bestRunnerScore','bestDoodleScore','bestTilesScore','bestMazeScore','bestAsteroidScore','bestFrogScore','gamesPlayed'].forEach(function(key){
+    ['bestGravityScore','bestBrickScore','bestSnakeScore','bestSnowScore','bestRunnerScore','bestDoodleScore','bestTilesScore','bestMazeScore','bestAsteroidScore','bestFrogScore','bestChickenScore','gamesPlayed'].forEach(function(key){
       if (!Number.isFinite(p.reward[key]) || p.reward[key] < 0) p.reward[key] = 0;
     });
     p.reward.frogLeaderboard=FrogPunch.topFive(p.reward.frogLeaderboard);
+    p.reward.chickenLeaderboard=ChickenShooter.topFive(p.reward.chickenLeaderboard);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(p.reward.gamesTrackedSince || '')) p.reward.gamesTrackedSince = todayStr();
     if (typeof p.reward.bestTowerScore !== 'number' || p.reward.bestTowerScore < 0){
       p.reward.bestTowerScore = 0;
@@ -1795,11 +1798,12 @@
 
   function showScreen(screen){
     if(frogGame&&screen!==el('screen-frog'))stopFrogGame();
+    if(chickenGame&&screen!==el('screen-chicken'))stopChickenGame();
     el('screen-semi-intro').classList.toggle('active',screen===el('screen-semi-intro'));
     if (screen !== screenDone) clearConfetti();
     if(fullscreenScreen && fullscreenScreen!==screen)exitGameFullscreen();
-    ['screen-home','screen-question','screen-table-practice','screen-done','screen-stickers','screen-statistics','screen-achievements','screen-game-choice','screen-game','screen-flappy','screen-tower','screen-gravity','screen-brick','screen-snake','screen-snow','screen-runner','screen-doodle','screen-tiles','screen-maze','screen-asteroid','screen-frog'].map(el).forEach(function(s){s.classList.toggle('active',s===screen);});
-    var game=[screenGame,screenFlappy,screenTower,el('screen-gravity'),el('screen-brick'),el('screen-snake'),el('screen-snow'),el('screen-runner'),el('screen-doodle'),el('screen-tiles'),el('screen-maze'),el('screen-asteroid'),el('screen-frog')].indexOf(screen)!==-1;
+    ['screen-home','screen-question','screen-table-practice','screen-done','screen-stickers','screen-statistics','screen-achievements','screen-game-choice','screen-game','screen-flappy','screen-tower','screen-gravity','screen-brick','screen-snake','screen-snow','screen-runner','screen-doodle','screen-tiles','screen-maze','screen-asteroid','screen-frog','screen-chicken'].map(el).forEach(function(s){s.classList.toggle('active',s===screen);});
+    var game=[screenGame,screenFlappy,screenTower,el('screen-gravity'),el('screen-brick'),el('screen-snake'),el('screen-snow'),el('screen-runner'),el('screen-doodle'),el('screen-tiles'),el('screen-maze'),el('screen-asteroid'),el('screen-frog'),el('screen-chicken')].indexOf(screen)!==-1;
     gearBtn.style.display=game || screen===screenQuestion?'none':'';
     profileBtn.style.display=game || screen===screenQuestion?'none':'';
     abortSessionBtn.style.display=!game && screen!==screenHome?'':'none';
@@ -1829,7 +1833,7 @@
   }
   function renderGameAvailability(){
     var plays=state.reward.availablePlays; text('gameAvailability',plays?plays+(plays===1?' Spiel freigeschaltet':' Spiele freigeschaltet'):'Verdiene dein nächstes Spiel mit einer Lernrunde.');
-    ['Dino','Flappy','Tower','Gravity','Brick','Snake','Snow','Runner','Doodle','Tiles','Maze','Asteroid','Frog'].forEach(function(name){el('choose'+name+'Btn').disabled=plays<1;});
+    ['Dino','Flappy','Tower','Gravity','Brick','Snake','Snow','Runner','Doodle','Tiles','Maze','Asteroid','Frog','Chicken'].forEach(function(name){el('choose'+name+'Btn').disabled=plays<1;});
   }
   el('navLearn').addEventListener('click',renderHome);
   el('navGames').addEventListener('click',function(){rewardGameChoiceOrigin=screenHome;showScreen(screenGameChoice);});
@@ -5076,7 +5080,7 @@
   function updateSnowChaser(g,dt){
     if(g.pausedAt!=null)return;
     if(g.chaserFall){g.chaserFall.age+=dt;if(g.chaserFall.age>=1.2)g.chaserFall=null;}
-    if(!g.chaser&&g.elapsed>=g.nextChaseAt)g.chaser={gap:180,startFlips:g.flips,speed:snowSpeed(g)+16,age:0};
+    if(!g.chaser&&g.elapsed>=g.nextChaseAt)g.chaser={gap:180,startFlips:g.flips,speed:Math.min(snowSpeed(g)+16,snowBaseSpeed()*1.4),age:0};
     if(!g.chaser)return;
     var chaser=g.chaser,oldGap=chaser.gap;chaser.age=(chaser.age||0)+dt;
     chaser.gap=Math.max(0,chaser.gap+(snowSpeed(g)-chaser.speed)*dt);
@@ -5190,7 +5194,7 @@
         var ramp=g.ramps.find(function(r){return !r.used&&oldX<=r.x+r.w&&x>=r.x+r.w;});if(ramp){ramp.used=true;p.y=snowGround(ramp.x+ramp.w)-24-p.h;p.grounded=false;p.vy=-ramp.launch*snowPhysicsScale(g);}
         if(g.ice.some(function(ice){return x>=ice.x&&x<=ice.x+ice.w;})){g.speedPercent=Math.max(150,snowSpeedPercent(g));}
       }else{
-        p.grounded=false;p.vy+=720*snowPhysicsScale(g)*dt;p.y+=p.vy*dt;if(g.held)p.rotation-=4.34*dt;
+        p.grounded=false;p.vy+=720*snowPhysicsScale(g)*dt;p.y+=p.vy*dt;if(g.held)p.rotation-=5*dt;
         else{var upright=Math.round(p.rotation/(Math.PI*2))*Math.PI*2;p.rotation+=(upright-p.rotation)*(1-Math.exp(-dt*10));if(Math.abs(upright-p.rotation)<.01)p.rotation=upright;}
         var landingAngle=snowLandingAngle(p.rotation,0),rope=g.ropes.find(function(r){return x>=r.x&&x<=r.x+r.w&&oldFeet<=snowRopeY(r,oldX)+.01&&p.y+p.h>=snowRopeY(r,x);});
         if(rope)landingAngle=snowLandingAngle(p.rotation,snowRopeSlope(rope,x));
@@ -5397,10 +5401,46 @@
   el('frogHomeBtn').addEventListener('click',function(){exitGameFullscreen();stopFrogGame();renderHome();});
   el('frogAgainBtn').addEventListener('click',function(){var demo=frogGame&&frogGame.isDemo;exitGameFullscreen();stopFrogGame();if(demo)startFrogGame(true);else openRewardGameChoice();});
 
+  var chickenGame=null,chickenSerial=0;
+  function stopChickenGame(){if(chickenGame){chickenGame.active=false;cancelAnimationFrame(chickenGame.frame);chickenGame=null;}}
+  function chickenLeaders(){
+    var list=el('chickenLeaders');list.textContent='';
+    for(var i=0;i<5;i++){var entry=state.reward.chickenLeaderboard[i],li=document.createElement('li'),value=document.createElement('strong');
+      if(entry){var d=new Date(entry.at);li.textContent=(i+1)+'. · '+String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0');value.textContent=String(entry.score);if(chickenGame&&entry.id===chickenGame.leaderboardId){li.classList.add('frog-current');li.setAttribute('aria-current','true');}}
+      else{li.textContent=(i+1)+'. · –';value.textContent='–';}li.appendChild(value);list.appendChild(li);
+    }
+  }
+  function chickenDraw(){
+    var g=chickenGame;if(!g)return;var canvas=el('chickenCanvas'),rect=canvas.getBoundingClientRect();
+    if(rect.width&&rect.height){var width=Math.max(360,Math.round(600*rect.width/rect.height));ChickenShooter.resize(g,width);var density=Math.min(2,window.devicePixelRatio||1),pixelWidth=Math.round(g.width*density),pixelHeight=Math.round(600*density);if(canvas.width!==pixelWidth)canvas.width=pixelWidth;if(canvas.height!==pixelHeight)canvas.height=pixelHeight;g.minRadius=Math.max(22,22*600/rect.height,22*g.width/rect.width);}
+    var ctx=canvas.getContext('2d');g.reduced=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);var paintKey=[g.elapsed,g.width,canvas.width,canvas.height,g.score,g.ammo,g.effects.length,g.targets.length,g.visitors.length,g.keyboard,g.aimX,g.aimY,g.reduced].join(':');if(paintKey===g.paintKey)return;g.paintKey=paintKey;ctx.setTransform(canvas.width/g.width,0,0,canvas.height/600,0,0);ChickenShooter.draw(ctx,g,g.reduced);
+    if(g.keyboard){ctx.strokeStyle='#233b50';ctx.lineWidth=3;ctx.beginPath();ctx.arc(g.aimX,g.aimY,15,0,7);ctx.moveTo(g.aimX-23,g.aimY);ctx.lineTo(g.aimX+23,g.aimY);ctx.moveTo(g.aimX,g.aimY-23);ctx.lineTo(g.aimX,g.aimY+23);ctx.stroke();}
+    text('chickenTime',formatGameTime((90-g.elapsed)*1000));text('chickenScore','Punkte: '+g.score);text('chickenBest','Rekord: '+state.reward.bestChickenScore);text('chickenReloadBtn',g.reloadUntil?'Lädt nach …':'Nachladen · '+g.ammo+'/6');
+  }
+  function chickenStep(now){
+    var g=chickenGame;if(!g)return;var dt=Math.max(0,(now-g.lastFrame)/1000);g.lastFrame=now;
+    if(ChickenShooter.advance(g,dt)){
+      if(!g.isDemo){var at=Date.now();g.leaderboardId='chicken-'+at+'-'+(++chickenSerial);state.reward.chickenLeaderboard=ChickenShooter.topFive([{id:g.leaderboardId,at:at,score:g.score}].concat(state.reward.chickenLeaderboard));state.reward.bestChickenScore=Math.max(state.reward.bestChickenScore,g.score);saveState();}
+      text('chickenTitle','Gack-tastisch!');text('chickenIntro',g.score+' Punkte gesammelt! Alle Hühner fliegen fröhlich weiter.');el('chickenStartBtn').hidden=true;el('chickenAgainBtn').hidden=false;el('chickenOverlay').hidden=false;chickenLeaders();el('chickenAgainBtn').focus();
+    }
+  }
+  function runChickenGame(now){if(!chickenGame||!chickenGame.active)return;chickenStep(now);chickenDraw();chickenGame.frame=requestAnimationFrame(runChickenGame);}
+  function startChickenGame(demo){
+    if(!demo&&state.reward.availablePlays<1)return;stopChickenGame();chickenGame=ChickenShooter.create();chickenGame.isDemo=demo===true;chickenGame.lastFrame=performance.now();chickenGame.aimX=180;chickenGame.aimY=200;
+    text('chickenTitle','Bereit für Chicken Shooter?');text('chickenIntro','Tippe die Hühner an: Konfetti und ein fröhliches Gack! Kleine und schnelle Hühner geben mehr Punkte. Sechs Schüsse, eine Sekunde nachladen. Du hast 90 Sekunden.');el('chickenOverlay').hidden=false;el('chickenStartBtn').hidden=false;el('chickenAgainBtn').hidden=true;showScreen(el('screen-chicken'));chickenLeaders();chickenDraw();el('chickenStartBtn').focus();chickenGame.frame=requestAnimationFrame(runChickenGame);
+  }
+  el('chooseChickenBtn').addEventListener('click',function(){startChickenGame(false);});
+  el('chickenStartBtn').addEventListener('click',function(){var g=chickenGame;if(!g||g.running||g.elapsed||g.pausedAt!==null)return;if(!g.isDemo&&!consumeRewardPlay(g))return;g.running=true;g.lastFrame=performance.now();el('chickenOverlay').hidden=true;el('chickenCanvas').focus();});
+  el('chickenHomeBtn').addEventListener('click',function(){exitGameFullscreen();stopChickenGame();renderHome();});
+  el('chickenAgainBtn').addEventListener('click',function(){var demo=chickenGame&&chickenGame.isDemo;exitGameFullscreen();stopChickenGame();if(demo)startChickenGame(true);else openRewardGameChoice();});
+  el('chickenReloadBtn').addEventListener('click',function(){chickenStep(performance.now());if(chickenGame)ChickenShooter.reload(chickenGame);chickenDraw();el('chickenCanvas').focus();});
+  el('chickenCanvas').addEventListener('pointerdown',function(e){if(e.button!==0)return;var g=chickenGame;if(!g)return;chickenStep(performance.now());var r=this.getBoundingClientRect();g.keyboard=false;ChickenShooter.shoot(g,(e.clientX-r.left)*g.width/r.width,(e.clientY-r.top)*600/r.height);chickenDraw();});
+  el('chickenCanvas').addEventListener('keydown',function(e){var g=chickenGame;if(!g||!g.running||g.pausedAt!==null)return;if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' ','r','R'].indexOf(e.key)<0)return;e.preventDefault();chickenStep(performance.now());g.keyboard=true;if(e.key==='ArrowLeft')g.aimX-=18;if(e.key==='ArrowRight')g.aimX+=18;if(e.key==='ArrowUp')g.aimY-=18;if(e.key==='ArrowDown')g.aimY+=18;g.aimX=Math.max(0,Math.min(g.width,g.aimX));g.aimY=Math.max(0,Math.min(600,g.aimY));if(e.key===' '&&!e.repeat)ChickenShooter.shoot(g,g.aimX,g.aimY);if(e.key.toLowerCase()==='r')ChickenShooter.reload(g);chickenDraw();});
+
   // Layout immersion works without native fullscreen on iPhone/iPad.
   var fullscreenScreen=null;
   function gameControlKey(e){return e.target&&e.target.closest&&e.target.closest('.game-immersive button');}
-  function gameForScreen(screen){var kind=screen.id.replace('screen-','');return kind==='frog'?frogGame:kind==='game'?rewardGame:kind==='flappy'?flappyGame:kind==='tower'?towerGame:kind==='gravity'?gravityGame:arcadeGames[kind];}
+  function gameForScreen(screen){var kind=screen.id.replace('screen-','');return kind==='chicken'?chickenGame:kind==='frog'?frogGame:kind==='game'?rewardGame:kind==='flappy'?flappyGame:kind==='tower'?towerGame:kind==='gravity'?gravityGame:arcadeGames[kind];}
   function enterGameFullscreen(screen){
     fullscreenScreen=screen;screen.classList.add('game-immersive');document.body.classList.add('game-immersive-open');
     if(arcadeGames.brick)arcadeGames.brick.inputRect=null;
@@ -5422,7 +5462,7 @@
     if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(function(){});
     if(arcadeGames.brick)arcadeGames.brick.inputRect=null;
   }
-  ['game','flappy','tower','gravity','brick','snake','snow','runner','doodle','tiles','maze','asteroid','frog'].forEach(function(kind){
+  ['game','flappy','tower','gravity','brick','snake','snow','runner','doodle','tiles','maze','asteroid','frog','chicken'].forEach(function(kind){
     var screen=el('screen-'+kind),button=el(kind+'FullscreenBtn');
     button.setAttribute('aria-label','Browser-Vollbild umschalten');
     el(kind+'PauseBtn').addEventListener('click',function(){pauseGame(screen);});
@@ -6196,8 +6236,8 @@
   renderHome();
   settleViewport();
 
-  var demoMatch=location.search.match(/[?&]demo=(flappy|tower|gravity|brick|snake|snow|runner|doodle|tiles|maze|asteroid|frog)(?:&|$)/);
-  if(demoMatch){if(demoMatch[1]==='frog')startFrogGame(true);else if(demoMatch[1]==='flappy')startFlappyGame(true);else if(demoMatch[1]==='gravity')startGravityGame(true);else if(demoMatch[1]==='brick'||demoMatch[1]==='snake'||demoMatch[1]==='snow'||demoMatch[1]==='runner'||extraArcade.definitions[demoMatch[1]])startArcadeGame(demoMatch[1],true);else startTowerGame(true);}
+  var demoMatch=location.search.match(/[?&]demo=(flappy|tower|gravity|brick|snake|snow|runner|doodle|tiles|maze|asteroid|frog|chicken)(?:&|$)/);
+  if(demoMatch){if(demoMatch[1]==='chicken')startChickenGame(true);else if(demoMatch[1]==='frog')startFrogGame(true);else if(demoMatch[1]==='flappy')startFlappyGame(true);else if(demoMatch[1]==='gravity')startGravityGame(true);else if(demoMatch[1]==='brick'||demoMatch[1]==='snake'||demoMatch[1]==='snow'||demoMatch[1]==='runner'||extraArcade.definitions[demoMatch[1]])startArcadeGame(demoMatch[1],true);else startTowerGame(true);}
 
   if(!demoMatch&&!state.config.childName.trim())openPlayerEditor();
 

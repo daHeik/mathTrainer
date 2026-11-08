@@ -237,7 +237,8 @@ edge copies to avoid seam jumps. Pause freezes interpolation; recovery resets it
 Snow uses `speedPercent` (100..200): +20 points per landed flip, -1 point per
 full active second. Pause/waiting freeze decay; only a new game resets speed.
 Base speed is a constant 286 px/s, never elapsed-time dependent. Each chaser
-locks `speed` to the rider's actual speed at chase start plus 16 px/s; later
+locks `speed` to min(rider speed at chase start + 16 px/s, base * 1.4),
+i.e. at most 400.4 px/s (two landed flips from 100%); later
 boosts/decay affect only the rider. No extra chaser-speed escalation per escape.
 After at least 20 active chase seconds, fall at the next existing ravine edge
 crossed by the chaser; do not create gaps or allow flips/lead to bypass the
@@ -501,3 +502,39 @@ ramp/ravine pair (25px from takeoff to gap, already visible at takeoff). Reserve
 after constructing the pair, not before its own gap. Include double ramps and
 village ropes. Do not clear the reserve when old features are pruned or during
 recovery; only reset on a new game. Other scenery need not be spaced out.
+
+
+## Snow flip rotation (2026-11-06)
+
+Held airborne rotation uses 5 rad/s (formerly 4.34), about 15% faster. Keep
+jump impulse, gravity, release auto-alignment and landing-angle checks unchanged.
+
+
+## Chicken Shooter (2026-11-08)
+
+Fourteenth reward: chicken-shooter.js before app.js, chicken.html demo launcher,
+screen-chicken canvas view. One 90-second active game per credit, consumed on Start.
+Own bestChickenScore/chickenLeaderboard; validated topFive, complete games only,
+newest tie first, backup defaults and demo isolation. Shared pause/visibility/fullscreen.
+At most 5 flying targets below world width 600, otherwise 7; spawn 0.9–1.5s apart.
+All spawned base speeds use a 1.8 multiplier after vehicle-specific speed selection.
+Independent flight modes, pulse/frequency/phase/hover/flap and occasional vehicles.
+Use birdHit with inverse pose transform: crest, bow, beak, tail, seasonal hats and
+vehicles count. Reduced-motion drawing and hit rotation must match. Keep actual
+cover geometry shared; decorative cows/forest/fences are background, not cover.
+Season switch Sept 15; Halloween Oct 20–31, Christmas Dec 1–27, Easter ±7 calendar
+days around Gregorian Easter. Draw seasonal storybook farm with active-time clouds,
+windmill, walking cows and leaf/snow drift. cowPose shares the path and direction;
+cows must face the derivative of their own x movement, including after turns.
+resize preserves age and relative x.
+Run node tests/chicken-shooter.test.js plus learning-modes, offline, frog and arcade
+suites. tests/chicken-preview.html previews six themes and a narrow embedded demo.
+
+Chicken visitors: separate transient visitors array, one pond guest and one stall
+peeker at a time. Summer/spring/autumn diver: two active seconds, waterline clips
+both rendering and hits, 65 points. Winter: frozen pond/skater, six active seconds,
+pose direction follows its sliding derivative, 60 points. Peekers: 2.6–3.4s in a
+random barn door, clipped in world coordinates to that door, 55 points. Ignore only
+their own barn as cover; keep all foreground cover. Pond guests render/hit in
+layer 3, in front of the bank. Advance expires visitors before hits, pause freezes
+them, no incomplete visits near the game deadline. Keep visitor count in paintKey.

@@ -3,9 +3,9 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `1001a15` mit lokal geschützten Landebereichen vor nachfolgenden Schneefahrt-Schluchten; PWA-Cache `1x1-trainer-v60`, keine separate semantische App-Version |
-| Letzte Quellcodeänderung | 2026-11-06 |
-| Letzte Projekt-/README-Änderung | 2026-11-06 |
+| Version | Basis `9277d57` mit lokalen Änderungen einschließlich Chicken Shooter mit schnellerem Flugtempo und besonderen Hühnern an Teich und Ställen; PWA-Cache `1x1-trainer-v62`, keine separate semantische App-Version |
+| Letzte Quellcodeänderung | 2026-11-08 |
+| Letzte Projekt-/README-Änderung | 2026-11-08 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
 
 ## TL;DR – so funktioniert mathTrainer
@@ -26,9 +26,9 @@ Die App kommt ohne Werbung, Benutzerkonto, Tracker oder Telemetrie aus. Sie
 überträgt selbst keine Lernstände oder Profildaten an einen Server.
 
 Die Oberfläche liegt in `index.html`, das Styling in `styles.css` und die
-Anwendungs- und Spiellogik in `app.js`, `arcade-extra.js` und `frog-punch.js`. `flappy.html`, `tower.html`,
+Anwendungs- und Spiellogik in `app.js`, `arcade-extra.js` sowie `frog-punch.js` und `chicken-shooter.js`. `flappy.html`, `tower.html`,
 `gravity.html`, `brick.html`, `snake.html`, `snow.html`, `runner.html`,
-`doodle.html`, `tiles.html`, `maze.html`, `asteroid.html` und `frog.html` sind
+`doodle.html`, `tiles.html`, `maze.html`, `asteroid.html`, `frog.html` und `chicken.html` sind
 kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 öffnen. Dadurch gibt es keine doppelte Spiellogik.
 
@@ -41,7 +41,7 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 5. Im Statistikbereich Tages-/Wochenwerte und Lernstände prüfen. Vor Browserwechsel oder Löschen lokaler Daten im Elternbereich eine JSON-Sicherung exportieren. Import ersetzt den geprüften lokalen Bestand; vorherige Sicherung behalten.
 6. Verdiente Spiele in „Spiele“ auswählen. Erst die erste Spielaktion verbraucht ein Kontingent. Pause und ausgeblendete Ansichten verbrauchen keine aktive Spielzeit.
 
-Normale Spiele laufen bis zu drei aktive Minuten pro Kontingent; **Bricks und 2048 bis zu fünf Minuten**. Diese Ausnahme ist in `gameDurationMs()` implementiert. Beim Zeitende endet der Durchlauf; mit weiterem Kontingent kann ein neues Belohnungsspiel gestartet werden. Drei verbrauchte Versuche beenden früher; **2048 bietet nur einen Versuch pro Kontingent** und endet bei einem vollständig belegten Feld ohne mögliche Verschmelzung. **Frog Punch hat stattdessen drei vollständige Runden à 40 Sekunden pro Kontingent**; verpasste Frösche kosten keine Versuche. Demo-Starter wie `snow.html` öffnen dieselbe Spielimplementierung ohne Lernbelohnung.
+Normale Spiele laufen bis zu drei aktive Minuten pro Kontingent; **Bricks und 2048 bis zu fünf Minuten**. Diese Ausnahme ist in `gameDurationMs()` implementiert. Beim Zeitende endet der Durchlauf; mit weiterem Kontingent kann ein neues Belohnungsspiel gestartet werden. Drei verbrauchte Versuche beenden früher; **2048 bietet nur einen Versuch pro Kontingent** und endet bei einem vollständig belegten Feld ohne mögliche Verschmelzung. **Chicken Shooter bietet eine Runde mit 90 aktiven Sekunden pro Kontingent**. **Frog Punch hat stattdessen drei vollständige Runden à 40 Sekunden pro Kontingent**; verpasste Frösche kosten keine Versuche. Demo-Starter wie `snow.html` öffnen dieselbe Spielimplementierung ohne Lernbelohnung.
 
 ## Lernplan pro Kind – einfache Auswahl statt Ausweichen auf leichte Aufgaben
 
@@ -228,7 +228,7 @@ Backups sind lokal erzeugte JSON-Dateien und werden vor Übernahme geprüft. Neu
 
 ## Technischer Deep-Dive – Belohnungen, Canvas und Spielphysik
 
-Die zwölf Canvas-Spiele teilen Lebenszyklus, Pause, erste-Spielaktion-Buchung, Profilrekorde und Touchabbildung. Das dreizehnte Spiel, Frog Punch, verwendet SVG-/DOM-Ziele und drei Zeitrunden; es ist in dieselbe Auswahl, Pause und Kontingentbuchung integriert. Die ursprünglichen Spiele liegen in `app.js`, Doodle/2048/Pac-Man/Asteroids in `arcade-extra.js` mit `VocabArcade.create()` als Schnittstelle. Ein Spiel auf der Auswahlseite zu öffnen bucht noch nichts ab. Aktive Spielzeit und Versuchszahl werden unabhängig vom Öffnen der Spielauswahl geführt. Eine Verlängerung derselben Welt wie in Vocabulator ist hier nicht implementiert.
+Die ursprünglichen zwölf Canvas-Spiele teilen Lebenszyklus, Pause, erste-Spielaktion-Buchung, Profilrekorde und Touchabbildung. Das dreizehnte Spiel, Frog Punch, verwendet SVG-/DOM-Ziele und drei Zeitrunden; es ist in dieselbe Auswahl, Pause und Kontingentbuchung integriert. Als vierzehntes Spiel ergänzt Chicken Shooter eine eigenständige 90-Sekunden-Partie mit saisonalem Hühnerhof und eigener Top-5-Liste. Die ursprünglichen Spiele liegen in `app.js`, Doodle/2048/Pac-Man/Asteroids in `arcade-extra.js` mit `VocabArcade.create()` als Schnittstelle. Ein Spiel auf der Auswahlseite zu öffnen bucht noch nichts ab. Aktive Spielzeit und Versuchszahl werden unabhängig vom Öffnen der Spielauswahl geführt. Eine Verlängerung derselben Welt wie in Vocabulator ist hier nicht implementiert.
 
 ### 2048: Start, ein Versuch und endgültiges Spielende
 
@@ -290,7 +290,7 @@ Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben un
 
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v60`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v62`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 
@@ -522,15 +522,15 @@ Bilder oder Videos werden eingebunden.
   bleiben in Lernstand und Statistik, freigeschaltete Belohnungsspiele bleiben
   verfügbar. Ein Abbruch zählt nicht als Rundenabschluss für Sticker und Serie;
   die nächste Runde beginnt neu.
-- Dreizehn Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel, Turmbauer,
+- Vierzehn Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel, Turmbauer,
   Gravity Run, Bricks, Cleo, Schneefahrt, Metro Run, Doodle Jump, 2048,
-  Pac-Man, Asteroids und Frog Punch. Die benötigte
+  Pac-Man, Asteroids, Frog Punch und Chicken Shooter. Die benötigte
   Anzahl richtiger Antworten pro Spiel ist im Eltern-Bereich konfigurierbar
   (Standard: 10); die Startseite zeigt, wie viele richtige Antworten bis zum
   nächsten Spiel fehlen. Bricks und 2048 enden nach höchstens fünf aktiven Minuten,
-  die anderen Canvas-Spiele nach drei. Frog Punch bietet stattdessen drei Runden à 40 Sekunden;
+  Chicken Shooter nach 90 Sekunden, die übrigen Canvas-Spiele nach drei Minuten. Frog Punch bietet stattdessen drei Runden à 40 Sekunden;
   Pausen, Wartezeit vor Versuchen und ausgeblendete Ansichten zählen nicht mit.
-  Bei den Canvas-Spielen beenden drei Fehlversuche das Spiel (Dino kann einen Bonusversuch sammeln); 2048 hat nur einen Versuch und endet endgültig bei vollem, blockiertem Feld.
+  Bei den übrigen Canvas-Spielen beenden drei Fehlversuche das Spiel (Dino kann einen Bonusversuch sammeln); 2048 hat nur einen Versuch und endet endgültig bei vollem, blockiertem Feld.
   Beim Dino sorgen riskant platzierte Sterne, Combo-Multiplikatoren, fünf Sekunden
   Super-Dino nach jeweils drei Sternen, seltene Bonus-Versuch-Eier und ein
   persönlicher Punkterekord sorgen für Abwechslung; das Spiel wird in sechs
@@ -607,6 +607,9 @@ Bilder oder Videos werden eingebunden.
   nach Größen- und Orientierungswechseln an. Die Kamerabewegung verändert weder
   Weltpositionen noch Kollisionen oder Sprungphysik. Regressionstests prüfen
   Geländeausblick, obere Grenze, 80-/90-%-Grenzen, Grinds und mehrere Bildhöhen.
+  Gedrückthalten im Flug dreht den Salto mit 5 statt bisher 4,34 Radiant pro
+  Sekunde (rund 15 % schneller). Eine volle Drehung dauert etwa 1,26 Sekunden;
+  Sprunghöhe, Schwerkraft und die Ausrichtung nach Loslassen bleiben gleich.
   Jeder erfolgreich gelandete Backflip bringt +20 Prozentpunkte
   Tempo (Doppelsalto +40), maximal 200 % des aktuellen Grundtempos. Pro voller
   aktiver Sekunde sinkt es um einen Prozentpunkt bis mindestens 100 %;
@@ -640,7 +643,12 @@ Bilder oder Videos werden eingebunden.
 
   Das Grundtempo bleibt konstant bei 286 Pixeln/Sekunde (+30 %), ohne zeitabhängigen
   Anstieg. Der Verfolger startet mit dem dann aktuellen Fahrtempo plus
-  16 Pixeln/Sekunde und behält dieses Tempo während der Verfolgung bei.
+  16 Pixeln/Sekunde, begrenzt auf 140 % des Grundtempos (400,4 Pixel/Sekunde).
+  Das entspricht dem Tempo nach zwei gelandeten Saltos ausgehend von 100 %.
+  Er behält dieses festgelegte Tempo während der Verfolgung bei; spätere Boosts
+  erhöhen es nicht. Unterhalb dieser Grenze kann er weiterhin aufholen, bei
+  höherem Fahrtempo kann die Spielfigur Abstand gewinnen. Der aktive Tempoabbau
+  der Spielfigur bleibt bestehen.
   Nach mindestens 20 aktiven Verfolgungssekunden stürzt er an der nächsten
   vorhandenen Schlucht ab, deren Anfang er erreicht. Es entsteht keine zusätzliche
   Schlucht. Saltos und großer Abstand verkürzen diese Mindestzeit nicht mehr.
@@ -848,3 +856,56 @@ python3 -m venv /private/tmp/project-docs-venv
 Die Markdown-Abhängigkeit ist nur für die Dokumentation nötig. Die fertige HTML-Datei funktioniert ohne Installation und ohne externe Ressourcen. `--check` schreibt nichts und vergleicht die gesamte Ausgabe einschließlich eines SHA-256-Fingerabdrucks der relevanten Quell- und Dokumentationsdateien. Ausgenommen sind unter anderem private `data/`, Laufzeitdaten, Build-Ausgaben und virtuelle Umgebungen. Die Prüfung erkennt einen geänderten Quellstand, ersetzt aber keine inhaltliche Prüfung der README. Änderungen durch beliebige Editoren lösen keinen Hintergrundjob aus; Codex erhält die Pflegepflicht über `AGENTS.md` und den Skill `project-documentation`.
 
 Die Dokumentation wird hier lokal gepflegt. Eine Bereitstellung auf dem Pi oder einer öffentlichen Website ist ein eigener Deployment-Schritt; bestehende App-Builds und deren Dateifreigaben werden dadurch nicht erweitert. Der CI-Job erzeugt die zentrale Ausgabe in einer isolierten Testablage und prüft ihre Reproduzierbarkeit; die persönliche zentrale HTML-Datei wird dort nicht vorausgesetzt.
+
+
+## Chicken Shooter – Konfetti auf dem Hühnerhof
+
+**Bedienung:** In der Spielübersicht „Chicken Shooter“ wählen und „Spiel starten“ drücken. Erst der Start verbraucht genau ein verdientes Spiel; die Auswahl bleibt kostenlos. Eine Partie dauert 90 aktive Sekunden ohne Verlust von Versuchen. Ein Huhn anklicken oder antippen: Es verschwindet in buntem Konfetti mit der Anzeige „Gack!“. Es gibt weder Blut noch tote Tiere. Kleine und schnelle Hühner bringen mehr Punkte; verpasste Schüsse kosten keine Punkte. Sechs Konfettischüsse stehen bereit, danach wird automatisch eine aktive Sekunde nachgeladen. Die Taste „Nachladen“ oder R bei fokussiertem Spielfeld lädt auch vorzeitig nach. Währenddessen sind keine Treffer möglich. Tastatur: Pfeile bewegen das sichtbare Fadenkreuz, Leertaste gibt einen einzelnen Schuss ab. Mit Tab lässt sich das Spielfeld erreichen. Pinch-Zoom bleibt verfügbar.
+
+Die hügelige Landschaft besitzt drei farblich gestaffelte Tiefenebenen mit jeweils Baum und Scheune. Ein drehendes Windrad, ein kleiner Wald, ein geschwungener Feldweg mit Fahrspuren, Ackerfurchen, ein Teich mit Schilf, Zaun, Blumen, vorbeiziehende mehrteilige Wolken und drei kleine laufende Kühe beleben den Hof. Die Kühe drehen sich am Wendepunkt passend zu ihrer tatsächlichen Laufrichtung um. Schnee beziehungsweise fallendes Herbstlaub und eine saisonale Farbpalette passen die Umgebung an. Diese Hintergrunddetails sind keine zusätzlichen Deckungen. Hühner fliegen in unterschiedlichen Größen, Richtungen und Geschwindigkeiten, schlagen gelegentlich einen Looping oder fahren mit Flugzeug, Heißluftballon und Paraglider. Im schmalen Feld (Weltbreite unter 600) sind höchstens fünf fliegende Hühner gleichzeitig aktiv, sonst sieben; alle 0,9–1,5 aktiven Sekunden kann eines hinzukommen, sofern Platz ist. Jedes Huhn erhält unabhängig Flugstil, Tempo, Beschleunigungsschwankung, Frequenz, Amplitude und Startphase. Es gibt ruhiges Fliegen, weite Bögen, unregelmäßiges Flattern, Zickzack, kurzes Schweben sowie langsame Ballon- und Paragliderbahnen. Flugzeuge sind schneller; Ballons deutlich langsamer. Besondere Fahrzeuge wechseln in gelegentlichen Auftritten durch alle drei Varianten. Niedrige Flugbahnen führen hinter Deckungen vorbei. Nur freie Stellen eines Huhns sind treffbar; ein vorderer Baum oder eine Scheune schützt auch Hühner dahinter. Die ganze Figur zählt als Treffer: Körper, Kopf, Kamm, Schnabel, Füße, Schwanzfedern, Schleife, Schal und Feiertagskopfschmuck. Bei Fahrzeugen zählen auch Flugzeug, Ballonhülle/-korb und Paraglider-Kappe; die dünnen Leinen sind keine eigene Trefferfläche. Die Trefferprüfung dreht und spiegelt die Eingabe mit derselben Pose wie die Zeichnung. Sechs unterschiedlich gefärbte Charaktere tragen unter anderem Schleife, Blume, Fliegerbrille, Schal oder Weste; mehrteilige Schwanzfedern, Gefiederdetails, Lichtverläufe und eigene Flügelschlagfrequenzen unterscheiden sie. Dunkle Konturen und ein heller Saum halten die Hühner auch vor Schnee und dunklem Laub erkennbar. Touch-Trefferflächen sind mindestens 44 CSS-Pixel breit, während die sichtbaren Hühner ihre verschiedenen Größen behalten.
+
+| Landschaft | Lokaler Kalenderzeitraum, einschließlich |
+| --- | --- |
+| Winter | 1. Dezember–31. März |
+| Frühling | 1. April–30. Juni |
+| Sommer | 1. Juli–14. September |
+| Herbst | 15. September–30. November |
+| Halloween-Dekoration | 20.–31. Oktober, entsprechend den bestehenden Spielen |
+| Weihnachtsdekoration | 1.–27. Dezember, entsprechend den bestehenden Spielen |
+| Osterdekoration | 7 Tage vor bis 7 Tage nach dem berechneten gregorianischen Ostersonntag |
+
+Halloween bringt Kürbisse, Hexenhüte und einen dunkleren Himmel; Weihnachten Geschenke und Weihnachtsmützen; Ostern Eier und Hasenohren. Der Osterzeitraum ist neu, da die vorhandenen Spiele bislang keinen definierten Osterzeitraum besitzen. Jahreszeit und Feiertag werden bei jeder neuen Partie nach dem lokalen Datum bestimmt. Die Feiertagsdekoration ändert weder Trefferpunkte noch Deckungsgeometrie. Bei reduzierter Bewegung entfallen zusätzliche Vogelrotation, Flügelschlag, Windradrotation, Kuhgang und Wolkendrift; die für das Spiel nötigen Flugbahnen bleiben bestehen.
+
+**Bestenliste:** Analog zur vorhandenen Frosch-Bestenliste zeigt „Top 5“ pro Kinderprofil die fünf besten vollständig beendeten Partien mit Datum und Punkten. Höhere Punktzahl gewinnt, bei Gleichstand das neuere Datum, bei exakt gleichem Zeitpunkt der neu eingefügte Eintrag. Das aktuelle Ergebnis wird hervorgehoben, sofern es in den Top 5 bleibt. Teilspiele beim Verlassen oder Neuladen werden nicht eingetragen und nicht fortgesetzt. `reward.bestChickenScore` und `reward.chickenLeaderboard` werden lokal gespeichert und im normalen JSON-Backup mitgeführt. Der Rekord wird bei vollständigem Spielabschluss aktualisiert. Der Direktstarter `chicken.html` beziehungsweise `index.html?demo=chicken` spielt ohne Belohnungsverbrauch und verändert weder Rekord noch Bestenliste.
+
+### Besondere Hühner am Teich und in den Ställen
+
+Zusätzlich zu den fliegenden Hühnern erscheinen gelegentlich bis zu zwei ortsgebundene Ziele: eines am Teich und eines in einer Stalltür. Im Frühling, Sommer und Herbst schaut ein Huhn mit türkisfarbener Taucherbrille und Schnorchel aus dem Wasser. Es taucht innerhalb eines insgesamt **zwei aktive Sekunden** langen Auftritts auf und wieder unter. Wasserlinie und Auftauchhöhe begrenzen die Trefferfläche; bereits untergetauchte Teile sind nicht treffbar. Ein Treffer bringt **65 Punkte**.
+
+Im **Winter ist der Teich zugefroren** und zeigt helle Eisspuren. Statt des Taucherhuhns läuft dort für **sechs aktive Sekunden** ein Huhn mit Schal und Schlittschuhen hin und her. Seine Blickrichtung folgt der tatsächlichen Gleitrichtung. Ein Treffer bringt **60 Punkte**. Die jahreszeitliche Variante richtet sich nach der beim Spielstart bestimmten Landschaft; Winter-Weihnachtsschmuck bleibt erhalten.
+
+Etwa alle **9–16 aktiven Sekunden** öffnet sich eine zufällig ausgewählte Stalltür. Ein neugieriges Huhn schaut **2,6–3,4 Sekunden** heraus und zieht sich wieder zurück. Nur die im Türfenster sichtbaren Teile zählen; Wände und andere vorgelagerte Deckungen bleiben geschützt. Ein Treffer bringt **55 Punkte**. Der erste Stallbesuch ist nach etwa vier Sekunden, der erste Teichbesuch nach etwa sieben Sekunden vorgesehen. Nach jedem vorgesehenen Teichauftritt liegt eine Pause von 8–15 aktiven Sekunden bis zum nächsten Besuch. Ein früher Treffer zieht diesen Termin nicht vor. Direkt vor Spielende startet kein Besuch mehr, dessen vollständige Dauer nicht in die verbleibende Spielzeit passt.
+
+Alle Auftritte verwenden ausschließlich aktive Spielzeit: Pause friert Erscheinung und Rückzug ein. Treffer lösen dieselbe kindgerechte Konfetti-Anzeige aus. Verpasste Besuche kosten keine Punkte oder Versuche. Die Gäste werden als flüchtige `visitors` separat von den Flugzielen verwaltet und verschwinden beim Verlassen der Partie. `position()` und `birdHit()` verwenden dieselbe Auftauch-/Türgeometrie; der Stallbesuch wird im offenen Türfenster gezeichnet, das Teichhuhn vor der Uferkulisse und oberhalb der Wasserlinie. Bei reduzierter Bewegung erscheinen Taucher- und Stallhühner ohne zusätzliches Ein-/Ausblenden, bleiben aber nur für ihre festgelegte aktive Dauer sichtbar.
+
+### Chicken Shooter: Implementierung, Zustände und Prüfung
+
+`chicken-shooter.js` stellt das lokale `window.ChickenShooter` bereit und wird vor `app.js` geladen, weil die Profilnormalisierung `topFive()` benötigt. Das Modul enthält Kalender-/Osterberechnung, Simulation, gemeinsame Deckungsgeometrie, Trefferprüfung und die selbst gezeichnete Canvas-Grafik. Es lädt keine externen Bilder, Schriften oder Dienste. Die Grafiken wurden für dieses Spiel im Code erstellt; es wurden keine Moorhuhn-Grafiken übernommen.
+
+`create()` erzeugt eine wartende Partie. Der Host in `app.js` verwaltet Belohnung, Start/Ende, Animation, Fokus, HUD, Bestenliste und vorhandene Vollbild-/Pausensteuerung. `advance()` verarbeitet ausschließlich aktive Sekunden in maximal 50-ms-Simulationsschritten, erzeugt Ziele und beendet einmalig bei 90 Sekunden. Vor jedem Schuss aktualisiert der Host zuerst die Zeit, damit bereits abgelaufene Spiele keine Treffer mehr annehmen. `shoot()` prüft Vordergrund vor Hintergrund und dieselben Baum-/Scheunenflächen, die der Renderer zeichnet. Ein Treffer entfernt genau ein Ziel und addiert dessen ganzzahlige Punkte. Für fliegende Hühner ergeben sich die Punkte gerundet in Fünferschritten aus `18 + (39 − Größe) · 1,5 + Geschwindigkeit · 0,18`; die Größenbasis liegt zwischen 24 und 39, die Grundgeschwindigkeit normaler Hühner zwischen 90 und 351 Weltpixeln pro Sekunde. Alle Grundgeschwindigkeiten wurden um 80 % erhöht. Ballons fliegen mit 61,2–104,4, Paraglider mit 108–180, Flugzeuge mit 225–342; individuelle Temposchwankungen und Schwebephasen kommen hinzu. Die Tiefenebene skaliert zusätzlich die sichtbare Größe. Die Szene passt ihre Weltbreite an die verfügbare Fläche an; `resize()` erhält dabei Zielalter, Manöver und relative horizontale Positionen. Die Canvas-Auflösung berücksichtigt bis zu zweifache Pixeldichte.
+
+Simulationszustand: `elapsed`, `running`, `pausedAt`, `targets`, `visitors`, `nextPond`, `nextPeek`, `effects`, `ammo`, `reloadUntil`, `score` und zufällige Spawnparameter. Zeit und Nachladen stehen bei Pause still, und Treffer werden abgewiesen. Das Verbergen der Seite aktiviert die gemeinsame Pause. Ziel-/Effektzustände existieren nur im Arbeitsspeicher. Persistiert werden nur abgeschlossene Ergebnisse `{id, at, score}` und der Rekord. `topFive()` validiert IDs mit Präfix `chicken-`, endliche Zeitstempel und nichtnegative sichere ganzzahlige Punkte, entfernt doppelte IDs und begrenzt auf fünf Einträge. Fehlende Altprofilfelder erhalten 0 beziehungsweise eine leere Liste; andere Lern-/Profildaten bleiben bestehen. Alle Dateien und der Direktstarter sind im PWA-App-Cache enthalten (Cache-/UI-Kennung 62).
+
+Prüfung aus dem Projektordner:
+
+```sh
+node tests/chicken-shooter.test.js
+node tests/learning-modes.test.js
+node tests/frog-punch.test.js
+node tests/arcade-extra.test.js
+node tests/offline.test.js
+```
+
+Der neue Modultest prüft Saison-/Feiertagsgrenzen einschließlich des beweglichen Osterfests, verschiedene Fahrzeuge und Tiefen, vollständige Trefferflächen einschließlich Schleife/Kamm/Schwanz bei Drehung und Spiegelung, begrenzte Zieldichte, stabile Größenänderungen, Treffer/Deckung, Nachladen, Pause, Spielende und ungültige Bestenlisteneinträge. Die Integration prüft Belohnungsverbrauch, Spielabschluss, aktuellen Top-5-Eintrag, Backup-Normalisierung, Teilspielabbruch und Demo-Isolation. DOM-Stand-ins ersetzen keine Prüfung auf einem echten iPhone/iPad; die reale Touch-Bedienung und installierte Offline-PWA sind separat auf dem Zielgerät zu prüfen.
+
+Für die visuelle Kontrolle mit lokalem HTTP-Server öffnet `tests/chicken-preview.html` sechs reproduzierbare Ansichten (vier Jahreszeiten, Halloween und Ostern) und eine eingebettete 390 × 760-Spielansicht. Die Beispielansichten sind eine lokale Testhilfe und werden nicht im PWA-App-Dateisatz vorgehalten. Die neue Gestaltung wurde in Safari breit und in der schmalen eingebetteten Ansicht geprüft; dies ersetzt keinen realen iPhone-Touch- oder Offline-Neuladetest.

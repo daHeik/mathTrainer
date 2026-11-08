@@ -1145,3 +1145,14 @@ body.learning-input-viewport {position:fixed;top:var(--app-top,0px);left:0;right
 .semi-result-slots {display:inline-grid;grid-template-columns:repeat(3,1.55ch);gap:5px;vertical-align:baseline;}
 .semi-result-slot {display:flex;align-items:center;justify-content:center;min-height:32px;border-bottom:2px solid var(--theme-border);color:var(--bg-1);}
 .semi-result-note {margin:0 0 10px;color:var(--ink-soft);font-size:.72rem;line-height:1.35;}
+
+/* Chicken Shooter shares the host's immersive, paused and fullscreen lifecycle. */
+#screen-chicken.game-immersive {background:#f3f6ed;gap:8px;}
+.chicken-scene {position:relative;flex:1 1 0;min-height:180px;width:100%;overflow:hidden;border-radius:22px;background:#bcdde4;}
+#chickenCanvas {display:block;width:100%;height:100%;position:absolute;inset:0;cursor:crosshair;touch-action:manipulation;}
+#chickenCanvas:focus-visible {outline:3px solid #d99c30;outline-offset:-4px;}
+#screen-chicken.is-paused .chicken-scene::after {content:'Pausiert';position:absolute;inset:0;z-index:5;display:grid;place-items:center;background:#f3f6ede8;color:#315546;font-size:1.4rem;}
+#chickenReloadBtn {min-height:44px;padding:5px 10px;font-size:.8rem;}
+@media(max-height:500px) and (orientation:landscape){#screen-chicken .frog-hint {display:none;}#screen-chicken .game-hud {gap:5px;}#screen-chicken .frog-leaderboard strong {font-size:.8rem;}#screen-chicken .frog-leaderboard h2 {font-size:.55rem;}#screen-chicken .frog-panel-card {padding:10px 18px;}#screen-chicken .frog-panel h2 {font-size:1.1rem;margin:0 0 4px;}#screen-chicken .frog-panel p {font-size:.75rem;margin-bottom:5px;}#screen-chicken .frog-panel-eyebrow {display:none;} .chicken-scene {min-height:100px;}}
+#screen-chicken .game-hud {align-items:center;flex-wrap:nowrap;}
+#screen-chicken #chickenReloadBtn {width:auto;margin:0;flex:0 0 auto;white-space:nowrap;background:#e4ebdc;color:#315546;border-radius:12px;}

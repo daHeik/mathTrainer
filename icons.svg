@@ -44,4 +44,16 @@
  <circle cx="44" cy="44" r="1.6" fill="#305e40"/><circle cx="56" cy="44" r="1.6" fill="#305e40"/>
  <ellipse cx="34" cy="73" rx="8" ry="5" fill="#a5d676"/><ellipse cx="66" cy="73" rx="8" ry="5" fill="#a5d676"/>
 </symbol>
+<symbol id="chicken" viewBox="0 0 100 100">
+  <path d="M27 52Q9 53 9 32Q24 35 31 46" fill="#bd9366" stroke="#41554c" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse cx="46" cy="62" rx="30" ry="23" fill="#fff1cd" stroke="#41554c" stroke-width="3"/>
+  <ellipse cx="38" cy="65" rx="18" ry="11" fill="#d6b27d" stroke="#41554c" stroke-width="2"/>
+  <path d="M28 65 34 70M37 65 43 70" stroke="#fff1cd" stroke-width="2" stroke-linecap="round"/>
+  <ellipse cx="66" cy="42" rx="19" ry="23" fill="#fff1cd" stroke="#41554c" stroke-width="3"/>
+  <path d="M53 25Q41 9 50 7Q59 4 59 21Q54 1 64 2Q73 3 69 23Q75 7 80 15Q84 23 73 28" fill="#db8b78" stroke="#41554c" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M82 39 98 46 82 51Z" fill="#edbf64" stroke="#41554c" stroke-width="2"/>
+  <ellipse cx="74" cy="37" rx="6" ry="8" fill="#fffdf0" stroke="#41554c" stroke-width="2"/>
+  <ellipse cx="76" cy="38" rx="2.5" ry="4" fill="#41554c"/><circle cx="77" cy="36" r="1" fill="#fff"/>
+  <path d="M38 82 34 93 25 94M57 83 59 93 69 94" fill="none" stroke="#c5944f" stroke-width="4" stroke-linecap="round"/>
+</symbol>
 </svg>

@@ -51,7 +51,7 @@
         </div>
       </div></div><p class="reward-note" id="rewardNote"></p></div>
       </div>
-      <p class="app-version" id="appVersion">Version 60</p>
+      <p class="app-version" id="appVersion">Version 62</p>
     </div>
 
     <div class="screen semi-intro" id="screen-semi-intro">
@@ -167,11 +167,22 @@
 <button class="game-choice" id="chooseTilesBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#tiles"/></svg></span>2048<small>Zahlen clever kombinieren</small></button>
 <button class="game-choice" id="chooseMazeBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#maze"/></svg></span>Pac-Man<small>Punkte sammeln, Geister jagen</small></button>
 <button class="game-choice" id="chooseAsteroidBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg#rocket"/></svg></span>Asteroids<small>Durchs All fliegen</small></button>
+<button class="game-choice" id="chooseChickenBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 100 100" aria-hidden="true"><use href="icons.svg#chicken"/></svg></span>Chicken Shooter<small>Konfetti-Spaß auf dem Hühnerhof</small></button>
 <button class="game-choice" id="chooseFrogBtn"><span class="game-choice-icon"><svg class="icon" viewBox="0 0 100 100" aria-hidden="true"><use href="icons.svg#frog"/></svg></span>Frog Punch<small>Flinke Frösche antippen</small></button>
       </div>
       <button class="secondary-btn" id="gameChoiceBackBtn">Zurück <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#home"/></svg></button>
     </div>
 
+    <div class="screen" id="screen-chicken">
+      <div class="game-toolbar"><button class="secondary-btn" id="chickenHomeBtn">Spiel beenden</button><h1>Chicken Shooter</h1><button class="game-pause-btn" id="chickenPauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="chickenFullscreenBtn">Vollbild</button></div>
+      <div class="game-hud"><span id="chickenTime">1:30</span><span id="chickenScore">Punkte: 0</span><span id="chickenBest">Rekord: 0</span><button class="secondary-btn" id="chickenReloadBtn">Nachladen · 6/6</button></div>
+      <div class="chicken-scene" id="chickenWrap">
+        <canvas id="chickenCanvas" width="1000" height="600" tabindex="0" role="img" aria-label="Hühnerhof: Hühner antippen. Tastatur: Pfeiltasten bewegen das Fadenkreuz, Leertaste trifft, R lädt nach."></canvas>
+        <div class="frog-panel" id="chickenOverlay"><div class="frog-panel-card"><span class="frog-panel-eyebrow">KONFETTI AUF DEM HÜHNERHOF</span><h2 id="chickenTitle">Bereit für Chicken Shooter?</h2><p id="chickenIntro">Tippe die Hühner an: Sie fliegen mit einem fröhlichen Gack in einer Konfettiwolke davon! Kleine und schnelle Hühner geben mehr Punkte. Sechs Konfettischüsse, eine Sekunde nachladen. Ein Spiel dauert 90 Sekunden.</p><button class="primary-btn" id="chickenStartBtn">Spiel starten</button><button class="secondary-btn" id="chickenAgainBtn" hidden>Zur Spielübersicht</button></div></div>
+      </div>
+      <section class="frog-leaderboard" aria-labelledby="chickenLeaderboardTitle"><h2 id="chickenLeaderboardTitle">Bestenliste · Top 5 · Punkte pro Spiel</h2><ol id="chickenLeaders"></ol></section>
+      <p class="frog-hint">Antippen oder klicken · R / Taste zum Nachladen · Pfeile + Leertaste mit Fadenkreuz · Hinter Bäumen und Scheunen sind Hühner geschützt.</p>
+    </div>
     <div class="screen" id="screen-frog">
       <div class="game-toolbar"><button class="secondary-btn" id="frogHomeBtn">Spiel beenden</button><h1>Frog Punch</h1><button class="game-pause-btn" id="frogPauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="frogFullscreenBtn">Vollbild</button></div>
       <div class="game-hud"><span id="frogTime">0:40</span><span id="frogRounds">Runde 1/3</span><span id="frogScore">Punkte: 0</span><span id="frogBest">Rekord: 0</span></div>
@@ -588,6 +599,7 @@
 
 <script src="arcade-extra.js"></script>
 <script src="frog-punch.js"></script>
+<script src="chicken-shooter.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

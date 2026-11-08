@@ -10,11 +10,11 @@ var context = { self:{ addEventListener:function(name, fn){ handlers[name] = fn;
 vm.runInNewContext(fs.readFileSync(path.join(root, 'sw.js'), 'utf8'), context);
 var assets = Array.from(context.ASSETS);
 assets.forEach(function(asset){ assert(fs.existsSync(path.join(root, asset)), 'Missing cached asset: ' + asset); });
-['gravity','brick','snake','snow','flappy','tower','runner','doodle','tiles','maze','asteroid','frog'].forEach(function(game){
+['gravity','brick','snake','snow','flappy','tower','runner','doodle','tiles','maze','asteroid','frog','chicken'].forEach(function(game){
   assert(assets.indexOf('./' + game + '.html') !== -1);
   assert(fs.readFileSync(path.join(root, game + '.html'), 'utf8').indexOf('?demo=' + game) !== -1);
 });
-['index.html','app.js','arcade-extra.js','frog-punch.js','styles.css','icons.svg','manifest.json'].forEach(function(file){ assert(assets.indexOf('./' + file) !== -1); });
+['index.html','app.js','arcade-extra.js','frog-punch.js','chicken-shooter.js','styles.css','icons.svg','manifest.json'].forEach(function(file){ assert(assets.indexOf('./' + file) !== -1); });
 var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 var home = html.slice(html.indexOf('id="screen-home"'), html.indexOf('id="screen-semi-intro"'));
 var modeOrder = ['precedenceBtn','semiBtn','writtenBtn','riddlesBtn','remainderBtn','hundredsBtn','termsBtn','tablePracticeBtn','startBtn','bonusBtn'];
@@ -45,10 +45,11 @@ assert.strictEqual('1x1-trainer-v' + appVersion[1], context.CACHE_NAME, 'Visible
 var icons = fs.readFileSync(path.join(root, 'icons.svg'), 'utf8');
 assert.strictEqual((icons.match(/<\/svg>/g)||[]).length,1,'Exactly one SVG root');
 assert(icons.lastIndexOf('</symbol>')<icons.indexOf('</svg>'),'All icons belong inside the sprite root');
-['dino','bird','tower','gravity','brick','jump','tiles','maze','rocket','frog'].forEach(function(name){
+['dino','bird','tower','gravity','brick','jump','tiles','maze','rocket','frog','chicken'].forEach(function(name){
   var symbol=icons.match(new RegExp('<symbol id="'+name+'"[\\s\\S]*?</symbol>'));
   assert(symbol&&/fill="#[\da-f]{6}"/i.test(symbol[0]),'Colored game icon: '+name);
 });
+assert(html.indexOf('<script src="chicken-shooter.js">')<html.indexOf('<script src="app.js">'),'Chicken Shooter loads before normalization');
 assert(html.indexOf('<script src="frog-punch.js">')<html.indexOf('<script src="app.js">'),'Frog Punch loads before app/profile normalization');
 assert(html.indexOf('<script src="arcade-extra.js">')<html.indexOf('<script src="app.js">'),'Arcade module loads before app');
 var divs=[],screenCount=0;
@@ -67,4 +68,4 @@ Array.from(html.matchAll(/href="icons\.svg#([^"]+)"/g)).forEach(function(match){
 });
 assert(!/vocabulator|Vokabel|trainer\.js|data\/manifest/.test(html));
 assert(handlers.install && handlers.activate && handlers.fetch);
-console.log('Offline: all thirteen games, launchers, colored SVG icons, module load order and screen structure OK');
+console.log('Offline: all fourteen games, launchers, colored SVG icons, module load order and screen structure OK');

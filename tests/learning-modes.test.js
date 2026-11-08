@@ -35,7 +35,8 @@ Element.prototype.remove = function(){ this.removed = true; };
 Element.prototype.getContext = function(){
   return new Proxy({
     measureText:function(){ return { width:1 }; },
-    createLinearGradient:function(){ return { addColorStop:function(){} }; }
+    createLinearGradient:function(){ return { addColorStop:function(){} }; },
+    createRadialGradient:function(){ return { addColorStop:function(){} }; }
   }, { get:function(target, key){ return key in target ? target[key] : function(){}; } });
 };
 Element.prototype.getBoundingClientRect = function(){ return { left:0, top:0, width:480, height:480 }; };
@@ -96,6 +97,8 @@ vm.runInContext(fs.readFileSync(path.join(__dirname,'..','arcade-extra.js'),'utf
 context.VocabArcade=context.window.VocabArcade;
 vm.runInContext(fs.readFileSync(path.join(__dirname,'..','frog-punch.js'),'utf8'),context);
 context.FrogPunch=context.window.FrogPunch;
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..','chicken-shooter.js'),'utf8'),context);
+context.ChickenShooter=context.window.ChickenShooter;
 source = source.replace(/\}\)\(\);\s*$/, [
   'globalThis.testApi = {',
   'defaultProfile:defaultProfile, normalizeProfile:normalizeProfile, ensureFactPool:ensureFactPool,',
@@ -122,6 +125,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'prepareGameCanvas:prepareGameCanvas, logicalCanvasHeight:logicalCanvasHeight,',
   'games:function(){return {dino:rewardGame,flappy:flappyGame,tower:towerGame,gravity:gravityGame,brick:arcadeGames.brick,snake:arcadeGames.snake,snow:arcadeGames.snow,runner:arcadeGames.runner,doodle:arcadeGames.doodle,tiles:arcadeGames.tiles,maze:arcadeGames.maze,asteroid:arcadeGames.asteroid};},',
   'extras:extraArcade, resizeExtraCanvases:resizeExtraCanvases,',
+  'chickenGame:function(){return chickenGame;}, startChickenGame:startChickenGame, chickenStep:chickenStep, stopChickenGame:stopChickenGame,',
   'frogGame:function(){return frogGame;}, startFrogGame:startFrogGame, frogStep:frogStep, tapFrog:tapFrog, stopFrogGame:stopFrogGame,',
   'runnerAction:runnerAction, runnerUpdate:updateRunnerGame, runnerResize:resizeRunnerCanvas,',
   'runnerProject:runnerProject, runnerDraw:drawRunnerGame, runnerSpawn:spawnRunnerRows,',
@@ -1129,19 +1133,22 @@ api.startArcadeGame('snow',true);snow=api.games().snow;
 });
 snow.elapsed=35;snow.nextChaseAt=35;snow.speedPercent=150;
 api.updateSnowChaser(snow,0);
-assert.strictEqual(snow.chaser.speed,445,'Chaser starts 16px/s faster than current 150% pace');
+assert(Math.abs(snow.chaser.speed-400.4)<1e-8,'Chaser is capped at the rider speed after two flips');
 api.updateSnowChaser(snow,1);
-assert.strictEqual(snow.chaser.gap,164,'Chaser gains ground at unchanged rider speed');
+assert(Math.abs(snow.chaser.gap-208.6)<1e-8,'A rider above the two-flip cap pulls away');
 snow.speedPercent=170;api.updateSnowChaser(snow,1);
-assert.strictEqual(snow.chaser.speed,445,'Later boosts do not accelerate the chaser');
-assert(Math.abs(snow.chaser.gap-205.2)<1e-8,'A later boost lets the rider pull away');
+assert(Math.abs(snow.chaser.speed-400.4)<1e-8,'Later boosts do not accelerate the chaser');
+assert(Math.abs(snow.chaser.gap-294.4)<1e-8,'A later boost lets the rider pull away');
 snow.speedPercent=140;api.updateSnowChaser(snow,1);
-assert(Math.abs(snow.chaser.gap-160.6)<1e-8,'Boost decay lets the chaser catch up');
+assert(Math.abs(snow.chaser.gap-294.4)<1e-8,'At two-flip pace the rider matches the capped chaser');
 snow.chaser=null;snow.nextChaseAt=snow.elapsed;snow.speedPercent=100;snow.chasesEscaped=3;
 api.updateSnowChaser(snow,0);
 assert.strictEqual(snow.chaser.speed,302,'Next chase samples its own starting rider speed');
+api.updateSnowChaser(snow,1);assert.strictEqual(snow.chaser.gap,164,'Below the cap the chaser still gains ground');
+snow.chaser=null;snow.nextChaseAt=snow.elapsed;snow.speedPercent=200;api.updateSnowChaser(snow,0);
+assert(Math.abs(snow.chaser.speed-400.4)<1e-8,'A chase starting at maximum boost is capped too');
 elements.snowHomeBtn.events.click();
-console.log('Snow pace: fixed base speed and chaser locked to starting rider speed plus 16px/s OK');
+console.log('Snow pace: fixed base speed, locked initial pace plus 16px/s capped at two-flip speed, later boost/decay and max-boost starts OK');
 // Cleo glides along locked grid segments, with only one future turn buffered.
 api.startArcadeGame('snake', true);
 var cleo = api.games().snake;
@@ -2317,3 +2324,14 @@ boostedRunway.speedPercent=200;boostedRunway.distance+=700;api.spawnSnowTerrain(
 assert(boostedRunway.gaps[0].x>=reservedLanding);
 elements.snowHomeBtn.click();
 console.log('Snow terrain: ramp/double-ramp/garland/village/ravine landing reserves at 100..200%, pruning, mid-flight boost, visible paired ravine and intervening scenery OK');
+
+// Chicken Shooter follows reward, profile, pause and complete-game ranking contracts.
+var chickenProfile=api.normalizeProfile(api.defaultProfile());chickenProfile.config.childName='Hühnerhof';chickenProfile.reward.availablePlays=1;api.setState(chickenProfile);
+api.startChickenGame(false);var chicken=api.chickenGame();assert(chicken);assert.strictEqual(chickenProfile.reward.availablePlays,1);
+elements.chickenStartBtn.click();assert.strictEqual(chickenProfile.reward.availablePlays,0);assert.strictEqual(chickenProfile.reward.gamesPlayed,1);elements.chickenStartBtn.click();assert.strictEqual(chickenProfile.reward.gamesPlayed,1);
+var chickenNow=1001;context.performance.now=function(){return chickenNow;};api.chickenStep(chickenNow);var chickenTime=chicken.elapsed;api.pauseGame(elements['screen-chicken']);chickenNow+=10000;api.chickenStep(chickenNow);assert.strictEqual(chicken.elapsed,chickenTime);api.resumeGame(elements['screen-chicken']);
+chicken.score=120;chickenNow+=90000;api.chickenStep(chickenNow);assert.strictEqual(chickenProfile.reward.chickenLeaderboard.length,1);assert.strictEqual(chickenProfile.reward.bestChickenScore,120);assert(!chicken.running);api.chickenStep(chickenNow+1000);assert.strictEqual(chickenProfile.reward.chickenLeaderboard.length,1);assert(elements.chickenLeaders.children[0].classList.contains('frog-current'));
+var chickenBackup=api.normalizeProfile(JSON.parse(storage.km_1x1_trainer_v2).profiles[api.getRoot().activeProfileId]);assert.strictEqual(chickenBackup.reward.chickenLeaderboard[0].score,120);
+api.stopChickenGame();api.startChickenGame(false);assert.strictEqual(api.chickenGame(),null);var chickenSaved=JSON.stringify(chickenProfile.reward);api.startChickenGame(true);elements.chickenStartBtn.click();chickenNow+=90000;api.chickenStep(chickenNow);assert.strictEqual(JSON.stringify(chickenProfile.reward),chickenSaved);api.stopChickenGame();
+chickenProfile.reward.availablePlays=1;api.startChickenGame(false);elements.chickenStartBtn.click();chickenNow+=1000;api.chickenStep(chickenNow);api.stopChickenGame();assert.strictEqual(chickenProfile.reward.chickenLeaderboard.length,1,'Partial games never rank');context.performance.now=originalNow;
+console.log('Chicken Shooter integration: one reward, pause, completed game ranking/current marker, backup, no credit, demo isolation and partial game exit OK');
