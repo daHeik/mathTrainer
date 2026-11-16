@@ -14,14 +14,22 @@ assets.forEach(function(asset){ assert(fs.existsSync(path.join(root, asset)), 'M
   assert(assets.indexOf('./' + game + '.html') !== -1);
   assert(fs.readFileSync(path.join(root, game + '.html'), 'utf8').indexOf('?demo=' + game) !== -1);
 });
-['index.html','app.js','arcade-extra.js','frog-punch.js','chicken-shooter.js','styles.css','icons.svg','manifest.json'].forEach(function(file){ assert(assets.indexOf('./' + file) !== -1); });
+['index.html','app.js','curriculum.js','arcade-extra.js','frog-punch.js','chicken-shooter.js','styles.css','icons.svg','manifest.json'].forEach(function(file){ assert(assets.indexOf('./' + file) !== -1); });
 var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 var home = html.slice(html.indexOf('id="screen-home"'), html.indexOf('id="screen-semi-intro"'));
-var modeOrder = ['precedenceBtn','semiBtn','writtenBtn','riddlesBtn','remainderBtn','hundredsBtn','termsBtn','tablePracticeBtn','startBtn','bonusBtn'];
-modeOrder.forEach(function(id,index){
-  assert(home.indexOf('id="'+id+'"')!==-1,'Home mode exists: '+id);
-  if(index)assert(home.indexOf('id="'+modeOrder[index-1]+'"')<home.indexOf('id="'+id+'"'),'Home modes run from advanced/new to basic');
+var homeGroups = [
+  ['Numbers',['numbers10000Btn','romanBtn','termsBtn']],
+  ['Arithmetic',['tablePracticeBtn','hundredsBtn','remainderBtn','numberTheoryBtn']],
+  ['Methods',['semiMultiplyBtn','semiBtn','writtenBtn','precedenceBtn']],
+  ['Application',['wordProblemsBtn','riddlesBtn']]
+];
+homeGroups.forEach(function(group){
+  var section=home.slice(home.indexOf('id="homeGroup'+group[0]+'"'));
+  section=section.slice(0,section.indexOf('</section>'));
+  group[1].forEach(function(id){assert(section.indexOf('id="'+id+'"')!==-1,'Topic belongs to '+group[0]+': '+id);});
 });
+assert(home.indexOf('id="exam1126Btn"')<home.indexOf('id="homeTopicGroups"'),'Test has a separate entry above topic groups');
+assert(home.indexOf('id="mixedLearning"')<home.indexOf('id="homeTopicGroups"'),'Mixed round stays directly accessible');
 var css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
 // Avatar imports must not replace the app shell, learning forms or game layout.
 [
@@ -69,3 +77,5 @@ Array.from(html.matchAll(/href="icons\.svg#([^"]+)"/g)).forEach(function(match){
 assert(!/vocabulator|Vokabel|trainer\.js|data\/manifest/.test(html));
 assert(handlers.install && handlers.activate && handlers.fetch);
 console.log('Offline: all fourteen games, launchers, colored SVG icons, module load order and screen structure OK');
+
+assert(html.indexOf('src="curriculum.js"')<html.indexOf('src="app.js"'),'Curriculum loads before the app');

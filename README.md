@@ -3,9 +3,9 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `9277d57` mit lokalen Änderungen einschließlich Chicken Shooter mit schnellerem Flugtempo und besonderen Hühnern an Teich und Ställen; PWA-Cache `1x1-trainer-v62`, keine separate semantische App-Version |
-| Letzte Quellcodeänderung | 2026-11-08 |
-| Letzte Projekt-/README-Änderung | 2026-11-08 |
+| Version | Basis `d441ab6` mit lokalen Änderungen für Test 11/26, neue Lerninhalte, Kapitelauswertung und gruppierte Startseite; PWA-Cache `1x1-trainer-v64`, keine separate semantische App-Version |
+| Letzte Quellcodeänderung | 2026-11-16 |
+| Letzte Projekt-/README-Änderung | 2026-11-16 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
 
 ## TL;DR – so funktioniert mathTrainer
@@ -43,6 +43,53 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 
 Normale Spiele laufen bis zu drei aktive Minuten pro Kontingent; **Bricks und 2048 bis zu fünf Minuten**. Diese Ausnahme ist in `gameDurationMs()` implementiert. Beim Zeitende endet der Durchlauf; mit weiterem Kontingent kann ein neues Belohnungsspiel gestartet werden. Drei verbrauchte Versuche beenden früher; **2048 bietet nur einen Versuch pro Kontingent** und endet bei einem vollständig belegten Feld ohne mögliche Verschmelzung. **Chicken Shooter bietet eine Runde mit 90 aktiven Sekunden pro Kontingent**. **Frog Punch hat stattdessen drei vollständige Runden à 40 Sekunden pro Kontingent**; verpasste Frösche kosten keine Versuche. Demo-Starter wie `snow.html` öffnen dieselbe Spielimplementierung ohne Lernbelohnung.
 
+## Startseite – Themen finden
+
+Oben stehen zwei direkte Einstiege: **Vorbereitung auf die Mathe-Probe** öffnet **Test 11/26**, **Deine 1×1-Runde** startet beziehungsweise wiederholt die normale gemischte Runde. Der Belohnungshinweis darunter gilt für alle Lernmodi. Anschließend sind die Einzelübungen thematisch geordnet:
+
+| Gruppe | Übungen |
+| --- | --- |
+| Zahlen & Begriffe | Zahlen bis 10.000, römische Zahlen, Rechenbegriffe |
+| Malnehmen & Teilen | Zahlenreihen, Rechnen mit 100ern, Division mit Rest, Teiler und Rest verstehen |
+| Rechenwege | Halbschriftlich multiplizieren, halbschriftlich dividieren, schriftlich dividieren, Punkt vor Strich |
+| Sachaufgaben & Rätsel | Sachaufgaben und Zahlenrätsel |
+
+Jede Gruppenüberschrift trägt ein lokales SVG-Symbol. Die einzelnen Themen sind einheitliche Textzeilen mit einem Pfeil; ein Dokument-Symbol an einzelnen Übungen hat keine zusätzliche Bedeutung mehr. Alle verfügbaren Themen bleiben direkt sichtbar, ohne Aufklappen oder zusätzliche Untermenüs. Auf schmalen Bildschirmen stehen die Karten untereinander; ab 700 Pixeln Ansichtsbreite in zwei Spalten. Themenzeilen sind mindestens 52 Pixel hoch, lange Namen umbrechen und Tastaturfokus ist sichtbar.
+
+Der Lernplan bleibt maßgeblich: gesperrte Buttons, leere Gruppen und nicht verfügbare direkte Einstiege werden ausgeblendet. Ist nur eine der halbschriftlichen Divisionsstufen freigegeben, bleibt ihr gemeinsamer Einstieg unter „Rechenwege“ sichtbar. Bei nur einem direkten Einstieg nimmt dessen Karte die ganze Breite ein. Alle Themenbuttons behalten ihre bisherigen IDs und starten dieselben Übungen; Fortschritt, Spielbelohnungen und Backups ändern sich durch die Gruppierung nicht.
+
+Technisch erstellt `index.html` semantisch benannte `section`-Gruppen; `renderHome()` bestimmt deren Sichtbarkeit nach der vorhandenen Modusfreigabe und fügt keine Einzelsymbole mehr in Themenbuttons ein. `styles.css` setzt die neuen Raster und gemeinsamen Zeilenstile, unabhängig von der Statistikansicht. Cache/UI-Kennung 64 sorgt für den aktualisierten Assetstand. Die Lern-/Offlinetests prüfen Gruppenzuordnung und eingeschränkte Pläne; die Darstellung wurde in Safari bei 390 und 820 Pixeln Rahmenbreite visuell geprüft. Das ist eine Browser-Layoutprüfung, kein Test auf einem physischen iPhone.
+
+## Test 11/26 – Vorbereitung auf die Mathe-Probe
+
+Auf der Startseite **Test 11/26** öffnen. In der Kapitelauswahl **Alle Kapitel** oder ein einzelnes Thema wählen und **Test starten** drücken. Der Gesamttest hat 36 Aufgaben, je sechs aus Fachbegriffen, halbschriftlicher Multiplikation, halbschriftlicher Division, Division mit Rest, Zahlenraum bis 10.000 und Sachaufgaben. Die Aufgaben werden neu erzeugt und gemischt. Ein Einzelkapitel enthält alle dort hinterlegten Aufgabenarten: Fachbegriffe 12, Multiplikation 6, Division 11, Rest 15, Zahlenraum 16 und Sachaufgaben 8. Die Zahl einer Einzelrunde ist keine Gewichtung für die Schulprobe.
+
+Kein Zeitlimit; nach jeder Antwort gibt es Rückmeldung und eine Erklärung. Anders als in normalen Übungen werden Fehler im Test nicht als Zusatzaufgaben angehängt. Mehrteilige Aufgaben zählen insgesamt einmal. Leere Felder bleiben zur Vervollständigung offen. Korrekturen in vorhandenen halbschriftlichen Teilrechnungen bleiben wie bisher möglich; ein Tipp oder ein solcher Zwischenfehler markiert die Aufgabe für die Testauswertung als „mit Hilfe“. Richtige Endantworten zählen trotzdem genau einmal für Lernstand, Tages-/Gesamtstatistik und Spiele. Bei falschen kompletten Endantworten werden keine Spiele verdient. Es gibt keine zweite Punktewährung.
+
+Nach Abschluss erscheint die Auswertung pro Kapitel mit **selbstständig richtig / geprüft**, Prozentwert und zusätzlich allen richtigen Endantworten. Ab vier geprüften Aufgaben bedeutet mindestens 80 % „Sitzt schon gut“, 50–79 % „Weiter festigen“, darunter „Hier gezielt nachholen“. Weniger als vier Aufgaben ergeben nur eine erste Einschätzung; ungeprüfte Themen bleiben offen. Ein Kapitelbutton startet gezielte weitere Aufgaben. Die Startansicht des Tests und **Statistik → Test 11/26 · Stand nach Kapiteln** zeigen jeweils den letzten abgeschlossenen Stand jedes Kapitels. Ein neuer Einzeltest überschreibt die Anzeige anderer Kapitel nicht. Bis zu 20 abgeschlossene Berichte bleiben im Profil; ältere Ergebnisse können deshalb aus dieser Übersicht verschwinden. Lernzähler bleiben erhalten. Eine einzelne Runde ist eine Momentaufnahme und keine Schulnote.
+
+**Weitere Übungen:** Halbschriftlich multiplizieren, Zahlen bis 10.000, Sachaufgaben sowie Teiler und Rest verstehen stehen auch als normale Lernrunden bereit. Letzterer Bereich enthält zusätzlich Division durch Zehnerzahlen. Rechenbegriffe enthält nun auch Operandenrollen. Für neue Aufgaben werden Zahlen über die native Tastatur eingetragen und Textantworten über ein Auswahlfeld gewählt; die globale Auswahl-/Keypad-Einstellung gilt weiter für die bestehenden Formulare. Mehrteilige Multiplikationen verlangen Teilprodukte und Summe, nicht nur das Endergebnis. Die normalen Runden verwenden die eingestellte Rundengröße und die vorhandenen Fehlerwiederholungen.
+
+Bei einem bereits eingeschränkten Lernplan die neuen Themen und **Test 11/26** unter **Admin → Lernen** aktivieren und speichern. Alte vollständig freigegebene Pläne werden einmalig um die neuen Themen erweitert; spätere bewusste Abwahlen bleiben erhalten. Der Test ist ein eigener freizugebender Modus: Seine sechs Kapitel können auch geprüft werden, wenn entsprechende normale Einzelmodi abgewählt sind. Nur den Test abwählen sperrt seinen gesamten Zugriff. Vorschlag Klasse 5 enthält weiterhin seine bisherigen sechs Themen; bei Bedarf die Prüfungsthemen ergänzen.
+
+**Abbrechen und Neuladen:** Bereits abgegebene Antworten und verdiente Spiele sind sofort gespeichert. Abbruch erzeugt keinen vollständigen Testbericht. „Test starten“ und „Noch einmal“ beginnen einen neuen Durchlauf. Unfertige Formulare/Teilrechnungen werden bei Neuladen nicht rekonstruiert; die noch nicht abgegebene Aufgabe kann neu variieren. Testberichte und Lernstände sind profilgebunden, vollständig lokal und im bestehenden JSON-Backup enthalten. Andere Profile werden nicht zusammengezählt.
+
+Die vollständige [Analyse aller 16 Buchfotos](docs/test-11-26-analyse.md) dokumentiert Ausgangslücken, Seitenzuordnung, digitale Umsetzung und Grenzen. Freie Zeichnungen, Partnergespräche und selbst formulierte Begründungen müssen weiter auf Papier oder gemeinsam geprüft werden. Die App übernimmt keine Buchbilder und keine kompletten Buchseiten.
+
+## Technischer Deep-Dive – Aufgabengeneratoren und Testberichte
+
+`curriculum.js` wird vor `app.js` geladen und stellt `window.TestCurriculum` bereit: `chapters`, `keys()`, `allKeys()`, `question(chapter,type)` und `word(number)`. Der Generator liefert einen deutschen `prompt`, beschriftete `fields` mit kanonischem Antwortwert und optionalen Auswahlwerten, `explanation` und optionale Grafikdaten. Alle Zufallsaufgaben beruhen auf mathematisch erzeugten Werten; keine Laufzeit-Auswertung von Code, keine OCR oder Netzwerkverbindung in der App. Die HEIC-Auswertung war ein lokaler Entwicklungsschritt. Stellenwertgrafiken und Zahlenstrahlen werden aus DOM/SVG erzeugt. Auswahlwerte sind eindeutig, Benutzerwerte werden über DOM-Text und Formwerte verarbeitet.
+
+Neue Übungsstände liegen unter `profile.curriculumSkills['k:<chapter>:<type>']` mit den bisherigen Lernfeldern wie `correctCount`, `wrongCount`, `box`, `dueDate` und Antwortzeiten. `practiceSkill()` verbindet diese Schlüssel mit `applyAnswerResult()`; `correctAnswersForProfile()` summiert sie für die bestehenden Belohnungsmeilensteine. Fachbegriffe und halbschriftliche Division im Test verwenden zusätzlich unverändert `t:` und `sd:` und damit denselben Übungsstand wie normale Runden. Die Tageshistorie bekommt `curriculum_<chapter>` als Operation; alte Operationen bleiben erhalten. Die Elternübersicht ergänzt Gesamtwerte aller Übungen und Kapitelzähler, während das alte 1×1-Raster weiterhin nur Mal-/Geteiltfamilien zeigt.
+
+`today.mode='exam1126'`, `today.examChapter` (`all` oder Kapitel-ID) und `today.examAnswers` steuern die Testsession. `buildExamQueue()` reserviert je sechs Plätze im Gesamttest und stellt echte mehrschrittige Multiplikation und Division sicher. Einzelkapitel enthalten jeden zugehörigen Skill einmal. Neue Zahlen werden pro Darstellung generiert; ein Gesamttest ist eine Stichprobe, vor allem bei den 16 Zahlenraumtypen. Die Zahlenreihenfilter und das normale Neuaufgabenlimit begrenzen diese Prüfung nicht. `onAnswer()` erfasst pro kompletter Aufgabe `{chapter,key,correct,independent}`; Zwischenfehler/Tipps setzen ein flüchtiges Hilfemerkmal. Leere Felder gelten nicht als falsche Lösung. `finishExamReport()` speichert `{date,chapter,answers}` in `profile.examReports`; `today.examSaved` verhindert doppelte Berichte. `sessionRevision` und `answering` schützen vor alten Formularen und doppeltem Absenden.
+
+`normalizeProfile()` ergänzt sichere Standardfelder, validiert bekannte Skills und begrenzt Berichte auf 20 und Antwortlisten auf 100. Die Root-Version und der Speicherschlüssel `km_1x1_trainer_v2` bleiben kompatibel. `config.curriculumVersion=1` kennzeichnet die einmalige Lernplanergänzung; bewusst eingeschränkte Pläne werden nicht aufgeweitet. Unbekannte/defekte Berichtseinträge werden verworfen, vorhandene Lernstände und Spielkontingente erhalten. Kein Backend, keine Authentifizierung und kein Transport; die Eltern-PIN bleibt eine lokale Bedienungssperre.
+
+Die neuen Formulare verwenden Zahlenfelder mit Done-Taste und Auswahlfelder, mindestens 48 Pixel hohe Ziele und die vorhandene Tastatur-/Viewport-Behandlung. `curriculum.js` ist im Offline-Assetgraph und Cache v64 enthalten. Auslieferung aller vier App-Bestandteile (`index.html`, `styles.css`, `app.js`, `curriculum.js`) und `sw.js` gemeinsam vornehmen; vorhandene Spiele unverändert mit ausliefern. Lokal umgesetzter Stand bedeutet keine Pi-Bereitstellung.
+
+Die erweiterten `tests/learning-modes.test.js` prüfen alle neuen Generatoren mit je 200 Varianten, ausgewählte mathematische Identitäten, 50 gemischte Testqueues mit Kapitelbalance, tatsächliche mehrteilige Formularabgabe, leere Felder, doppelte/veraltete Abgabe, Belohnungen, Historie, korrigierte Teilrechnungen, Berichte, Backup und Lernplansperren. Alle fünf bestehenden Node-Suiten weiter ausführen. Safari-Desktop-Sichtprüfung: Startseite, Testauswahl, halbschriftliche Testaufgabe und richtige native Formularantwort. Eine echte iPhone-/iPad-Tastatur wurde damit nicht geprüft.
+
 ## Lernplan pro Kind – einfache Auswahl statt Ausweichen auf leichte Aufgaben
 
 Der Elternbereich öffnet direkt den Reiter **Lernen**. Jedes Profil hat seinen eigenen Lernplan. Für die beiden Kinder jeweils ein Profil anlegen, das gewünschte Kind aktivieren und seinen Plan speichern. Namen und Avatar weiterhin über das Profil-Symbol gestalten. Zum Wechsel auf ein anderes Profil die Eltern-PIN eingeben; falsche PIN oder Abbruch ändern das aktive Kind nicht. Damit ist auch der Wechsel in das leichtere Geschwisterprofil über die normale Oberfläche geschützt.
@@ -57,9 +104,9 @@ Der Elternbereich öffnet direkt den Reiter **Lernen**. Jedes Profil hat seinen 
 | --- | --- |
 | Klasse 4 | Alle Themen außer halbschriftlicher Division mit selbst eingetragenen Anteilen und mit Rest; römischer Zahlenbereich 1–1000 |
 | Klasse 5 | Punkt vor Strich, schriftliche Division, halbschriftliche Division mit selbst eingetragenen Anteilen/mit Rest, Division mit Rest, römische Zahlen; römischer Zahlenbereich 100–3999 |
-| Alle Themen | Alle zwölf Themen; römischer Zahlenbereich 1–3999 |
+| Alle Themen | Alle 17 Themen; römischer Zahlenbereich 1–3999 |
 
-Diese Vorschläge sind **keine vollständigen Klassenlehrpläne**. Sie wählen aus den vorhandenen Aufgabenfamilien aus. Insbesondere bleiben schriftliche und halbschriftliche Aufgaben dreistellig; Bruchrechnung, Dezimalzahlen und weitere Klasse-5-Themen werden dadurch nicht ergänzt. Die Vorschläge ändern außer Themen und römischem Zahlenbereich keine bisherigen Detaileinstellungen. Passe die Auswahl an den tatsächlichen Unterricht an.
+Diese Vorschläge sind **keine vollständigen Klassenlehrpläne**. Sie wählen aus den vorhandenen Aufgabenfamilien aus. Insbesondere bleiben schriftliche und halbschriftliche Divisionsaufgaben dreistellig; Bruchrechnung, Dezimalzahlen und weitere Klasse-5-Themen werden dadurch nicht ergänzt. Die Vorschläge ändern außer Themen und römischem Zahlenbereich keine bisherigen Detaileinstellungen. Passe die Auswahl an den tatsächlichen Unterricht an.
 
 Nur aktive Themen erscheinen auf der Startseite. Ist gemischtes 1×1 ausgeschaltet, verschwindet auch dessen Startbereich. Ausgeschaltete Themen lassen sich nicht über verbliebene Schaltflächen oder Wiederholungen starten. Der Zahlenreihen-Dialog und jede halbschriftliche Stufe beachten denselben Plan. Die weiterhin freigegebenen Aufgaben verdienen wie bisher Spiele; es gibt keine zweite Belohnungswährung und keine nachträgliche Aberkennung.
 
@@ -93,7 +140,7 @@ In Gegenrichtung erscheint dieselbe Zerlegung als `MM = 2000; XX = 20; VI = 6`, 
 
 ## Technischer Deep-Dive – Lernplan und römische Zahlen
 
-Alles bleibt in `app.js`, `index.html` und `styles.css`; keine neue Laufzeitabhängigkeit oder externe Schnittstelle. `SESSION_MODES` enthält zwölf Modi einschließlich `roman`. `config.allowedModes` speichert eine validierte Liste dieser IDs pro Profil; `normalizedModes()` entfernt unbekannte Werte und Duplikate. Fehlt das Feld in alten Daten, werden alle Modi zugelassen. Eine explizit ungültige Liste erhält `['roman']`. `modeAllowed()` ist die gemeinsame Prüfung für Startseite, Übungsauswahl, Queue-Pool und Sitzungsstart; `onAnswer()` prüft ebenfalls den aktuellen Modus. `refreshDailySessionIfNeeded()` verwirft eine inzwischen gesperrte laufende Queue und erzeugt eine im ersten erlaubten Modus, auch beim Tageswechsel. Speichern und Abbrechen verwenden denselben erlaubten Standardmodus. Ausgeschaltete Lernstände bleiben gespeichert und zählen weiterhin zu historischen Belohnungssummen.
+Die Oberfläche bleibt in `app.js`, `index.html` und `styles.css`; `curriculum.js` ergänzt lokale Aufgabengeneratoren. Keine externe Laufzeitabhängigkeit oder Schnittstelle. `SESSION_MODES` enthält 17 Modi einschließlich `roman` und `exam1126`. `config.allowedModes` speichert eine validierte Liste dieser IDs pro Profil; `normalizedModes()` entfernt unbekannte Werte und Duplikate. Fehlt das Feld in alten Daten, werden alle Modi zugelassen. Eine explizit ungültige Liste erhält `['roman']`. `modeAllowed()` ist die gemeinsame Prüfung für Startseite, Übungsauswahl, Queue-Pool und Sitzungsstart; `onAnswer()` prüft ebenfalls den aktuellen Modus. `refreshDailySessionIfNeeded()` verwirft eine inzwischen gesperrte laufende Queue und erzeugt eine im ersten erlaubten Modus, auch beim Tageswechsel. Speichern und Abbrechen verwenden denselben erlaubten Standardmodus. Ausgeschaltete Lernstände bleiben gespeichert und zählen weiterhin zu historischen Belohnungssummen.
 
 Die Lernplan-Häkchen und Vorschlagsknöpfe bearbeiten nur einen Entwurf. Der Speichern-Handler verlangt mindestens ein Thema, begrenzt `romanMin`/`romanMax` auf 1–3999 und baut die Runde neu auf. Bei vertauschtem Bereich wird die Obergrenze auf die Untergrenze angehoben. Wie bestehende Einstellungen gelten Änderungen erst nach Speichern. Der Profilwechsel über `openProfileOverlay()` öffnet `openPinPrompt(callback)`; nur erfolgreiche Prüfung führt den Wechsel aus, Schließen verwirft den Callback. Der normale Admin-Aufruf nutzt denselben Dialog ohne Callback.
 
@@ -313,10 +360,7 @@ Malaufgaben verwenden den Mittelpunkt `·`, Geteiltaufgaben den Doppelpunkt
 `:` – auch in Rechenwegen und Lernstatistiken. Die Augenfarbe des Avatars lässt sich
 über einen Farbpicker frei wählen; bisherige Augenfarben bleiben erhalten.
 
-Die Startseite zeigt anspruchsvollere/neue Modi zuerst: Punkt vor Strich,
-halbschriftliche und schriftliche Division, Zahlenrätsel, Division mit Rest,
-Rechnen mit 100ern, Rechenbegriffe und Zahlenreihen. Die gemischte 1×1-Runde
-steht auf schmalen Displays darunter, auf breiten rechts daneben.
+Die Startseite bündelt die Themen in vier Gruppen; die genaue Zuordnung und das responsive Verhalten sind im Kapitel „Startseite – Themen finden“ beschrieben.
 
 ### Punkt vor Strich
 

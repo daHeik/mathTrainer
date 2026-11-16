@@ -84,11 +84,14 @@
     '🍓','🍒','🍉','🍍','🍎','🍌','🥝','🍇','🍪','🍿',
     '🏀','🎾','🏓','🎯','🪁','🎈','🎁','👑','💎','🏰'
   ];
-  var SESSION_MODES = ['mixed', 'table', 'hundreds', 'terms', 'riddles', 'written', 'semi', 'semiFree', 'semiRest', 'remainder', 'precedence', 'roman'];
+  var curriculum = window.TestCurriculum;
+  var curriculumModes = {semiMultiply:'multiply',numbers10000:'numbers',wordProblems:'stories',numberTheory:'rest',exam1126:null};
+  var questionHadHelp = false;
+  var SESSION_MODES = ['mixed', 'table', 'hundreds', 'terms', 'riddles', 'written', 'semi', 'semiFree', 'semiRest', 'remainder', 'precedence', 'roman', 'semiMultiply', 'numbers10000', 'wordProblems', 'numberTheory', 'exam1126'];
   var MODE_LABELS = {mixed:'Gemischtes 1×1',table:'Einzelne Zahlenreihen',hundreds:'Rechnen mit 100ern',
     terms:'Rechenbegriffe',riddles:'Zahlenrätsel',written:'Schriftlich dividieren',semi:'Halbschriftlich · mit Hilfe',
     semiFree:'Halbschriftlich · selbst aufteilen',semiRest:'Halbschriftlich · mit Rest',remainder:'Division mit Rest',
-    precedence:'Punkt vor Strich',roman:'Römische Zahlen'};
+    semiMultiply:'Halbschriftlich multiplizieren',numbers10000:'Zahlen bis 10.000',wordProblems:'Sachaufgaben',numberTheory:'Teiler und Rest verstehen',exam1126:'Test 11/26',precedence:'Punkt vor Strich',roman:'Römische Zahlen'};
 
   function normalizedModes(value){
     if (!Array.isArray(value)) return SESSION_MODES.slice();
@@ -214,7 +217,7 @@
         min: 1, max: 10, tasksPerDay: 5, rewardEvery: 10,
         childName: "", avatar:normalizeAvatar(), sound: true, answerMode: "adaptive", gapTasks: false,
         enabledTables: [1,2,3,4,5,6,7,8,9,10], newFactsPerRound: 2,
-        allowedModes: SESSION_MODES.slice(), romanMin:1, romanMax:3999,
+        allowedModes: SESSION_MODES.slice(), curriculumVersion:1, romanMin:1, romanMax:3999,
         autoUnlockTables: false, divisionEnabled: false, accentTheme: 'purple'
       },
       facts: {}, // key -> {a,b,box,dueDate,seen,correctCount,wrongCount,correctStreak,...}
@@ -230,6 +233,8 @@
         requeueCounts: {}, // fact key -> times re-added to this session after a wrong answer
         newFactKeys: []   // legacy field retained when loading older backups
       },
+      curriculumSkills: {},
+      examReports: [],
       termSkills: {},
       riddleSkills: {},
       romanSkills: {},
@@ -302,6 +307,7 @@
     semiSkillKeys().forEach(function(key){
       if (profile.semiSkills && profile.semiSkills[key]) total += Number(profile.semiSkills[key].correctCount) || 0;
     });
+    curriculum.allKeys().forEach(function(key){if(profile.curriculumSkills && profile.curriculumSkills[key]) total += Number(profile.curriculumSkills[key].correctCount)||0;});
     return total;
   }
 
@@ -322,6 +328,8 @@
     if (!p.config) p.config = defaultProfile().config;
     p.config.childName=String(p.config.childName||'').slice(0,80);
     p.config.avatar=normalizeAvatar(p.config.avatar);
+    if (!p.config.curriculumVersion && Array.isArray(p.config.allowedModes) && SESSION_MODES.slice(0,12).every(function(mode){return p.config.allowedModes.indexOf(mode)!==-1;})) p.config.allowedModes=SESSION_MODES.slice();
+    p.config.curriculumVersion = 1;
     p.config.allowedModes = normalizedModes(p.config.allowedModes);
     p.config.romanMin = Math.max(1, Math.min(3999, parseInt(p.config.romanMin,10) || 1));
     p.config.romanMax = Math.max(p.config.romanMin, Math.min(3999, parseInt(p.config.romanMax,10) || 3999));
@@ -390,12 +398,21 @@
       if (!p.riddleSkills[type]) p.riddleSkills[type] = learningDefaults(normalizationDate);
       normalizeLearningRecord(p.riddleSkills[type], normalizationDate);
     });
+    if (!p.curriculumSkills || typeof p.curriculumSkills !== 'object' || Array.isArray(p.curriculumSkills)) p.curriculumSkills = {};
+    curriculum.allKeys().forEach(function(key){
+      if (!p.curriculumSkills[key] || typeof p.curriculumSkills[key] !== 'object' || Array.isArray(p.curriculumSkills[key])) p.curriculumSkills[key] = learningDefaults(normalizationDate);
+      normalizeLearningRecord(p.curriculumSkills[key],normalizationDate);
+    });
+    p.examReports = normalizeExamReports(p.examReports);
     if (!p.today) p.today = defaultProfile().today;
     if (!p.writtenSkills || typeof p.writtenSkills !== 'object') p.writtenSkills = {};
     writtenSkillKeys().forEach(function(key){
       if (!p.writtenSkills[key]) p.writtenSkills[key] = learningDefaults(normalizationDate);
       normalizeLearningRecord(p.writtenSkills[key], normalizationDate);
     });
+    if (p.today.examChapter !== 'all' && !curriculum.chapters[p.today.examChapter]) p.today.examChapter = 'all';
+    p.today.examAnswers = normalizeExamAnswers(p.today.examAnswers);
+    p.today.examSaved = p.today.examSaved === true;
     if (!p.today.requeueCounts) p.today.requeueCounts = {};
     if (!p.semiSkills || typeof p.semiSkills !== 'object') p.semiSkills = {};
     semiSkillKeys().forEach(function(key){
@@ -433,7 +450,7 @@
           divide:{ attempts:0, correct:0, wrong:0, totalResponseMs:0 }
         };
       }
-      ['multiply','divide','hundredsMultiply','hundredsDivide','terms','riddles','writtenDivide','semiDivide','remainderDivide','precedence','roman'].forEach(function(operation){
+      ['multiply','divide','hundredsMultiply','hundredsDivide','terms','riddles','writtenDivide','semiDivide','remainderDivide','precedence','roman','curriculum_terms','curriculum_multiply','curriculum_divide','curriculum_rest','curriculum_numbers','curriculum_stories'].forEach(function(operation){
         var operationDay = historyDay.byOperation[operation] || {};
         operationDay.attempts = Math.max(0, Number(operationDay.attempts) || 0);
         operationDay.correct = Math.max(0, Number(operationDay.correct) || 0);
@@ -584,6 +601,9 @@
         if (state.facts[key].box >= DIVISION_UNLOCK_BOX) state.facts[key].division.unlocked = true;
       }
     }
+    if (!state.curriculumSkills) state.curriculumSkills = {};
+    curriculum.allKeys().forEach(function(key){if (!state.curriculumSkills[key]) state.curriculumSkills[key] = learningDefaults(today);});
+    if (!state.examReports) state.examReports = [];
     if (!state.romanSkills) state.romanSkills = {};
     ['toRoman','toArabic'].forEach(function(direction){
       if (!state.romanSkills[direction]) state.romanSkills[direction] = learningDefaults(today);
@@ -710,6 +730,10 @@
 
   function practiceSkill(key){
     if (typeof key !== 'string') return null;
+    if (curriculum.allKeys().indexOf(key) !== -1){
+      var parts = key.split(':');
+      return {key:key,kind:'curriculum',chapter:parts[1],type:parts[2],operation:'curriculum_'+parts[1],fact:null,record:state.curriculumSkills[key]};
+    }
     if (key === 'roman:toRoman' || key === 'roman:toArabic'){
       return {key:key,kind:'roman',operation:'roman',direction:key.slice(6),fact:null,record:state.romanSkills[key.slice(6)]};
     }
@@ -802,6 +826,7 @@
 
   function practiceSkillsInRange(focusTable, mode){
     if (!modeAllowed(mode || (focusTable ? 'table' : 'mixed'))) return [];
+    if (Object.prototype.hasOwnProperty.call(curriculumModes,mode)) return (mode === 'exam1126' ? examKeys(state.today.examChapter || 'all') : curriculum.keys(curriculumModes[mode]).concat(mode==='numberTheory'?curriculum.keys('divide'):[])).map(practiceSkill);
     if (mode === 'roman') return ['roman:toRoman','roman:toArabic'].map(practiceSkill);
     if (mode === 'precedence') return PRECEDENCE_PRACTICE_TYPES.map(function(type){return practiceSkill('p:' + type);});
     if (mode === 'remainder') return factsInRange().filter(function(fact){ return fact.b > 1; })
@@ -809,7 +834,7 @@
     if (isSemiMode(mode)) return semiSkillKeys(mode).map(practiceSkill);
     if (mode === 'written') return writtenSkillKeys().map(practiceSkill);
     if (mode === 'hundreds') return hundredsPracticeSkills();
-    if (mode === 'terms') return termPracticeSkills();
+    if (mode === 'terms') return termPracticeSkills().concat(curriculum.keys('terms').map(practiceSkill));
     if (mode === 'riddles') return RIDDLE_TYPES.map(function(type){ return practiceSkill('r:' + type); });
     var skills = [];
     var facts = focusTable ? focusedFactsForTable(focusTable) : factsInRange();
@@ -851,13 +876,14 @@
   }
 
   function buildQueue(size, focusTable, mode){
+    if (mode === 'exam1126') return buildExamQueue(state.today.examChapter || 'all');
     var today = todayStr();
     mode = SESSION_MODES.indexOf(mode) === -1 ? (focusTable ? 'table' : 'mixed') : mode;
     var pool = shuffle(practiceSkillsInRange(focusTable, mode));
     // A focused table round should cover as many different members of the
     // selected row as its configured size permits. Mixed rounds keep the
     // normal limit for newly introduced facts.
-    var broadMode = !!focusTable || mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || mode === 'precedence' || mode === 'roman' || isSemiMode(mode);
+    var broadMode = Object.prototype.hasOwnProperty.call(curriculumModes,mode) || !!focusTable || mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || mode === 'precedence' || mode === 'roman' || isSemiMode(mode);
     var newLimit = Math.min(size, broadMode ? size : state.config.newFactsPerRound);
     var dueReviews = pool.filter(function(skill){ return skill.record.seen && skill.record.dueDate <= today; });
     var newCandidates = pool.filter(function(skill){ return !skill.record.seen; });
@@ -1803,7 +1829,7 @@
     el('screen-semi-intro').classList.toggle('active',screen===el('screen-semi-intro'));
     if (screen !== screenDone) clearConfetti();
     if(fullscreenScreen && fullscreenScreen!==screen)exitGameFullscreen();
-    ['screen-home','screen-question','screen-table-practice','screen-done','screen-stickers','screen-statistics','screen-achievements','screen-game-choice','screen-game','screen-flappy','screen-tower','screen-gravity','screen-brick','screen-snake','screen-snow','screen-runner','screen-doodle','screen-tiles','screen-maze','screen-asteroid','screen-frog','screen-chicken'].map(el).forEach(function(s){s.classList.toggle('active',s===screen);});
+    ['screen-exam','screen-home','screen-question','screen-table-practice','screen-done','screen-stickers','screen-statistics','screen-achievements','screen-game-choice','screen-game','screen-flappy','screen-tower','screen-gravity','screen-brick','screen-snake','screen-snow','screen-runner','screen-doodle','screen-tiles','screen-maze','screen-asteroid','screen-frog','screen-chicken'].map(el).forEach(function(s){s.classList.toggle('active',s===screen);});
     var game=[screenGame,screenFlappy,screenTower,el('screen-gravity'),el('screen-brick'),el('screen-snake'),el('screen-snow'),el('screen-runner'),el('screen-doodle'),el('screen-tiles'),el('screen-maze'),el('screen-asteroid'),el('screen-frog'),el('screen-chicken')].indexOf(screen)!==-1;
     gearBtn.style.display=game || screen===screenQuestion?'none':'';
     profileBtn.style.display=game || screen===screenQuestion?'none':'';
@@ -1820,6 +1846,7 @@
     screen.scrollTop=0;window.scrollTo(0,0);updateViewport();
   }
   function renderStatistics(){
+    renderExamHistory(el('examPublicResults'));
     var day=todayStr(),today=state.history[day]||{correct:0,wrong:0},week=0,total=0;
     Object.keys(state.history).forEach(function(date){var h=state.history[date],count=h.correct+h.wrong;total+=count;if(date>=addDays(day,-6)&&date<=day)week+=count;});
     text('statToday',today.correct+today.wrong);text('statWeek',week);text('statTotal',total);text('statGames',state.reward.gamesPlayed||0);
@@ -1874,7 +1901,8 @@
   }
 
   function repeatRoundLabel(recoveryPending){
-    if (recoveryPending) return 'Serie retten: zweite Runde 🔥';
+    if (recoveryPending) return 'Serie retten: zweite Runde';
+    if (Object.prototype.hasOwnProperty.call(curriculumModes,state.today.mode)) return 'Noch einmal: '+MODE_LABELS[state.today.mode];
     if (state.today.mode === 'roman') return 'Noch einmal: Römische Zahlen 🔁';
     if (state.today.mode === 'precedence') return 'Noch einmal: Punkt vor Strich 🔁';
     if (state.today.mode === 'remainder') return 'Noch einmal: Division mit Rest 🔁';
@@ -1888,6 +1916,168 @@
       : 'Noch einmal 🔁';
   }
 
+  function renderCurriculumStatistics(){
+    var container=el('curriculumStatistics');container.textContent='';
+    appendText(container,'h3','','Alle Übungen und Tests');
+    var days=Object.keys(state.history).filter(function(date){return date>=addDays(todayStr(),-6)&&date<=todayStr();});
+    var attempts=0,correct=0;
+    days.forEach(function(date){attempts+=state.history[date].attempts||0;correct+=state.history[date].correct||0;});
+    appendText(container,'p','','Letzte 7 Tage: '+correct+' richtig bei '+attempts+' Antworten'+(attempts?' · '+Math.round(correct/attempts*100)+' %':'')+'.');
+    Object.keys(curriculum.chapters).forEach(function(c){
+      var good=0,bad=0;
+      examKeys(c).forEach(function(key){var skill=practiceSkill(key);if(skill){good+=skill.record.correctCount||0;bad+=skill.record.wrongCount||0;}});
+      appendText(container,'p','',curriculum.chapters[c].label+': '+good+' richtig / '+bad+' falsch (gesamter Lernstand, Übungen und Tests).');
+    });
+    appendText(container,'p','hint','Die folgende 1×1-Ansicht zeigt weiterhin die einzelnen Mal- und Geteiltfamilien. Den Teststand mit selbstständig gelösten Aufgaben findest du unter Test 11/26.');
+  }
+  function chapterForKey(key){
+    if(key.indexOf('k:')===0)return key.split(':')[1];
+    if(key.indexOf('t:')===0)return 'terms';
+    if(key.indexOf('sd:')===0)return key.indexOf('semiRest')!==-1?'rest':'divide';
+    return null;
+  }
+  function examKeys(chapter){
+    var keys=[];
+    Object.keys(curriculum.chapters).forEach(function(c){
+      if(chapter!=='all'&&c!==chapter)return;
+      keys=keys.concat(curriculum.keys(c));
+      if(c==='terms')keys=keys.concat(TERM_CONCEPTS.map(termSkillKey));
+      if(c==='divide')keys=keys.concat(semiSkillKeys('semiFree'));
+      if(c==='rest')keys=keys.concat(semiSkillKeys('semiRest'));
+    });
+    return keys;
+  }
+  function buildExamQueue(chapter){
+    if(!modeAllowed('exam1126'))return [];
+    var queue=[];
+    Object.keys(curriculum.chapters).forEach(function(c){
+      if(chapter!=='all'&&c!==chapter)return;
+      var keys=shuffle(examKeys(c));
+      if(chapter==='all'){
+        keys=keys.slice(0,6);
+        // Always assess the actual multi-step methods, not only their prerequisites.
+        if(c==='terms'&&keys.indexOf('k:terms:roles')===-1)keys[0]='k:terms:roles';
+        if(c==='multiply'&&keys.indexOf('k:multiply:split')===-1)keys[0]='k:multiply:split';
+        if(c==='divide'&&!keys.some(function(k){return k.indexOf('sd:')===0;}))keys[0]='sd:semiFree:7';
+        if(c==='rest'&&!keys.some(function(k){return k.indexOf('sd:')===0;}))keys[0]='sd:semiRest:5';
+      }
+      queue=queue.concat(keys);
+    });
+    return shuffle(queue);
+  }
+  function normalizeExamAnswers(value){
+    if(!Array.isArray(value))return [];
+    return value.filter(function(a){return a&&typeof a.key==='string'&&chapterForKey(a.key)===a.chapter&&curriculum.chapters[a.chapter]&&
+      (curriculum.allKeys().indexOf(a.key)!==-1 || /^t:/.test(a.key)&&TERM_CONCEPTS.indexOf(a.key.slice(2))!==-1 || semiSkillKeys().indexOf(a.key)!==-1);})
+      .slice(0,100).map(function(a){return {chapter:a.chapter,key:a.key,correct:a.correct===true,independent:a.correct===true&&a.independent===true};});
+  }
+  function normalizeExamReports(value){
+    if(!Array.isArray(value))return [];
+    return value.filter(function(r){return r&&typeof r.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(r.date);}).slice(-20).map(function(r){
+      return {date:r.date,chapter:curriculum.chapters[r.chapter]?r.chapter:'all',answers:normalizeExamAnswers(r.answers)};
+    });
+  }
+  function finishExamReport(){
+    if(state.today.mode!=='exam1126'||state.today.examSaved)return;
+    state.examReports=state.examReports||[];
+    state.examReports.push({date:todayStr(),chapter:state.today.examChapter||'all',answers:normalizeExamAnswers(state.today.examAnswers)});
+    state.examReports=state.examReports.slice(-20);state.today.examSaved=true;
+  }
+  function appendText(parent,tag,cls,value){var node=document.createElement(tag);node.className=cls||'';node.textContent=value;parent.appendChild(node);return node;}
+  function renderExamSummary(parent,answers){
+    parent.textContent='';answers=normalizeExamAnswers(answers);
+    Object.keys(curriculum.chapters).forEach(function(chapter){
+      var rows=answers.filter(function(a){return a.chapter===chapter;}),independent=rows.filter(function(a){return a.independent;}).length;
+      var correct=rows.filter(function(a){return a.correct;}).length,percent=rows.length?Math.round(independent/rows.length*100):0;
+      var status=!rows.length?'Noch nicht geprüft':rows.length<4?'Erste Einschätzung':percent>=80?'Sitzt schon gut':percent>=50?'Weiter festigen':'Hier gezielt nachholen';
+      var box=appendText(parent,'div','exam-topic','');
+      appendText(box,'h3','',curriculum.chapters[chapter].label);
+      appendText(box,'p','',status+(rows.length?' · '+independent+'/'+rows.length+' selbstständig ('+percent+' %) · '+correct+' richtig insgesamt':''));
+      var bar=document.createElement('progress');bar.max=100;bar.value=percent;bar.setAttribute('aria-label',curriculum.chapters[chapter].label+': '+percent+' Prozent selbstständig');box.appendChild(bar);
+      if(rows.length&&percent<80){
+        var button=appendText(box,'button','secondary-btn','Dieses Kapitel üben');button.type='button';
+        button.addEventListener('click',function(){if(!modeAllowed('exam1126'))return;state.today.examChapter=chapter;startSession(true,null,'exam1126');});
+      }
+    });
+    appendText(parent,'p','hint','Selbstständig = richtig ohne Tipp oder korrigierte Teilrechnung. Eine einzelne Runde ist eine Momentaufnahme. Nicht geprüfte Themen bleiben offen.');
+  }
+  function renderExamHistory(parent){
+    parent=parent||el('examHistory');parent.textContent='';
+    var reports=state.examReports||[];
+    if(!reports.length){appendText(parent,'p','hint','Noch kein Test abgeschlossen.');return;}
+    // Latest completed result per chapter, so single-chapter tests do not erase the others.
+    var latest={},answers=[];
+    reports.forEach(function(report){
+      Object.keys(curriculum.chapters).forEach(function(chapter){
+        var subset=report.answers.filter(function(a){return a.chapter===chapter;});if(subset.length)latest[chapter]=subset;
+      });
+    });
+    Object.keys(latest).forEach(function(c){answers=answers.concat(latest[c]);});
+    appendText(parent,'p','hint','Letzter Abschluss: '+reports[reports.length-1].date+' · jeweils letzter Teststand pro Kapitel');
+    renderExamSummary(parent,answers);
+  }
+  function openExam(){
+    if(!modeAllowed('exam1126'))return;
+    var select=el('examChapter');select.textContent='';
+    appendText(select,'option','','Alle Kapitel · 36 Aufgaben').value='all';
+    Object.keys(curriculum.chapters).forEach(function(c){appendText(select,'option','',curriculum.chapters[c].label+' · '+examKeys(c).length+' Aufgaben').value=c;});
+    select.value=state.today.examChapter||'all';renderExamHistory();showScreen(el('screen-exam'));
+  }
+  function renderCurriculumVisual(parent,visual){
+    if(!visual)return;
+    if(visual.kind==='counters'||visual.kind==='blocks'){
+      var table=document.createElement('table');table.className='curriculum-places';var head=document.createElement('tr'),row=document.createElement('tr');
+      ['T','H','Z','E'].forEach(function(label,i){
+        appendText(head,'th','',label);var cell=appendText(row,'td','','');
+        cell.setAttribute('aria-label',visual.digits[i]+' '+label);
+        for(var j=0;j<visual.digits[i];j++)appendText(cell,'span',visual.kind==='blocks'?'place-block place-block-'+i:'place-counter',visual.kind==='blocks'?['▦','▤','┃','▪'][i]:'●');
+      });table.appendChild(head);table.appendChild(row);parent.appendChild(table);return;
+    }
+    var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox',visual.kind==='line'?'0 0 600 110':'0 0 300 235');svg.classList.add('curriculum-visual');svg.setAttribute('role','img');
+    function shape(tag,attrs,text){var n=document.createElementNS('http://www.w3.org/2000/svg',tag);Object.keys(attrs).forEach(function(k){n.setAttribute(k,attrs[k]);});if(text!==undefined)n.textContent=text;svg.appendChild(n);return n;}
+    if(visual.kind==='line'){
+      svg.setAttribute('aria-label','Zahlenstrahl von '+visual.start+' bis '+(visual.start+10*visual.step)+' mit zehn gleichen Abschnitten; Pfeil nach '+visual.index+' Abschnitten.');
+      shape('line',{x1:35,y1:55,x2:565,y2:55,stroke:'currentColor','stroke-width':2});
+      for(var i=0;i<=10;i++){
+        var x=35+53*i;shape('line',{x1:x,y1:45,x2:x,y2:65,stroke:'currentColor'});
+        if(i===0||i===10)shape('text',{x:x,y:90,'text-anchor':'middle','font-size':20},String(visual.start+i*visual.step));
+      }
+      shape('text',{x:35+53*visual.index,y:35,'text-anchor':'middle','font-size':30},'↓');
+    }else{
+      svg.setAttribute('aria-label','Rechenstern: innen '+visual.a+', '+visual.b+', '+visual.c+'. Außen '+(visual.c==='?'?visual.ab+', '+visual.bc+', '+visual.ac:'drei gesuchte Produkte')+'.');
+      shape('polygon',{points:'150,10 275,210 25,210',fill:'none',stroke:'#be514e','stroke-width':3});
+      shape('polygon',{points:'25,65 275,65 150,225',fill:'var(--surface, #f4f3ff)',stroke:'#28679a','stroke-width':3});
+      [[100,105,visual.a],[200,105,visual.b],[150,180,visual.c],[150,50,visual.c==='?'?visual.ab:'?'],[230,197,visual.c==='?'?visual.bc:'?'],[70,197,visual.c==='?'?visual.ac:'?']].forEach(function(v){shape('text',{x:v[0],y:v[1],'text-anchor':'middle','font-size':22,fill:'currentColor'},String(v[2]));});
+    }
+    parent.appendChild(svg);
+  }
+  function renderCurriculumQuestion(key,exercise){
+    var form=el('curriculumForm'),revision=sessionRevision,controls=[],inputs=[];
+    form.textContent='';form.noValidate=true;setQuestionText(exercise.prompt);questionExplanation=exercise.explanation;
+    renderCurriculumVisual(form,exercise.visual);
+    exercise.fields.forEach(function(field){
+      var label=appendText(form,'label','curriculum-field',field.label),input;
+      if(field.options){
+        input=document.createElement('select');appendText(input,'option','','Bitte auswählen').value='';
+        shuffle(field.options.filter(function(v,i,a){return a.indexOf(v)===i;}).slice()).forEach(function(v){appendText(input,'option','',v).value=v;});
+      }else{
+        input=document.createElement('input');input.type='number';input.min='0';input.max='10000';input.step='1';input.autocomplete='off';input.setAttribute('enterkeyhint','done');
+      }
+      input.value='';input.setAttribute('aria-label',field.label);label.appendChild(input);inputs.push(input);controls.push(input);
+      input.addEventListener('keydown',function(event){if(event.key==='Enter'&&!event.isComposing){event.preventDefault();if(!event.repeat)form.onsubmit(event);}});
+    });
+    var check=appendText(form,'button','primary-btn','Antwort prüfen');check.type='submit';controls.push(check);
+    form.onsubmit=function(event){
+      event.preventDefault();if(!answering||revision!==sessionRevision)return;
+      for(var i=0;i<inputs.length;i++)if(inputs[i].value===''){feedbackText.textContent='Fülle bitte noch „'+exercise.fields[i].label+'“ aus.';inputs[i].focus();return;}
+      var good=inputs.every(function(input,i){var field=exercise.fields[i];return field.options?input.value===field.value:/^[0-9]+$/.test(input.value)&&Number(input.value)===Number(field.value);});
+      controls.forEach(function(c){c.disabled=true;});
+      var solution=exercise.fields.map(function(f){return f.label+': '+f.value;}).join('; ');
+      onAnswer(key,good?solution:'Deine Antwort',solution,null,true,solution);
+    };
+    if(inputs.length)inputs[0].focus();
+  }
+
   function renderHome(){
     // Restore the active profile's colors after leaving a reward game and
     // release the previously tapped button. Mobile Safari can otherwise keep
@@ -1897,6 +2087,7 @@
       document.activeElement.blur();
     }
     refreshDailySessionIfNeeded();
+    renderExamHistory();
     var newlyGranted = syncRewardMilestones();
     if (newlyGranted) saveState();
     var name = state.config.childName;
@@ -1928,20 +2119,17 @@
       startBtn.style.display = 'none';
       bonusBtn.style.display = 'block';
       bonusBtn.textContent = recoveryPending
-        ? 'Serie retten: zweite Runde 🔥'
-        : 'Gemischte Runde spielen 🚀';
+        ? 'Serie retten: zweite Runde'
+        : 'Gemischte Runde spielen';
     } else {
       startBtn.style.display = 'block';
       bonusBtn.style.display = 'none';
       startBtn.textContent = state.today.index > 0
-        ? "Weiter üben! 🚀"
-        : (recoveryPending ? "Erste Rettungsrunde starten 🔥" : "Los geht's! 🚀");
+        ? "Weiter üben!"
+        : (recoveryPending ? "Erste Rettungsrunde starten" : "Los geht's!");
     }
     el('remainderBtn').disabled = practiceSkillsInRange(null, 'remainder').length === 0;
     el('remainderBtn').title = el('remainderBtn').disabled ? 'Wähle in den Einstellungen auch Zahlen größer als 1 aus.' : '';
-    [[startBtn,'play'],[bonusBtn,'play'],[tablePracticeBtn,'cards'],[hundredsBtn,'cards'],[termsBtn,'chat'],[riddlesBtn,'cards'],[writtenBtn,'cards'],[el('semiBtn'),'cards'],[el('remainderBtn'),'cards'],[el('precedenceBtn'),'cards'],[el('romanBtn'),'cards']].forEach(function(item){
-      iconLabel(item[0],item[0].textContent.replace(/ (🚀|🔥|🔢|💬|🧩)/g,''),item[1]);
-    });
     SESSION_MODES.forEach(function(mode){
       if (mode === 'semiFree' || mode === 'semiRest') return;
       var button = el(mode === 'mixed' ? 'startBtn' : mode === 'table' ? 'tablePracticeBtn' : mode + 'Btn');
@@ -1950,6 +2138,23 @@
     el('semiBtn').hidden = !['semi','semiFree','semiRest'].some(modeAllowed);
     ['semi','semiFree','semiRest'].forEach(function(mode){el(mode+'StartBtn').hidden = !modeAllowed(mode);});
     el('mixedLearning').hidden = !modeAllowed('mixed');
+    el('mixedHomeDescription').textContent = state.config.divisionEnabled ? 'Mal- und Geteiltaufgaben aus deinem Lernplan.' : 'Malaufgaben aus deinem Lernplan.';
+    el('examLearning').hidden = !modeAllowed('exam1126');
+    el('homeFeatured').hidden = el('mixedLearning').hidden && el('examLearning').hidden;
+    el('homeFeatured').classList.toggle('single-feature',el('mixedLearning').hidden !== el('examLearning').hidden);
+    var visibleGroups = 0;
+    [
+      ['homeGroupNumbers',['numbers10000Btn','romanBtn','termsBtn']],
+      ['homeGroupArithmetic',['tablePracticeBtn','hundredsBtn','remainderBtn','numberTheoryBtn']],
+      ['homeGroupMethods',['semiMultiplyBtn','semiBtn','writtenBtn','precedenceBtn']],
+      ['homeGroupApplication',['wordProblemsBtn','riddlesBtn']]
+    ].forEach(function(group){
+      var visible = group[1].some(function(id){return !el(id).hidden;});
+      el(group[0]).hidden = !visible;
+      if(visible)visibleGroups++;
+    });
+    el('homeTopicGroups').hidden = visibleGroups === 0;
+
     el('homeSubtitle').textContent = 'Dein Lernplan · ' + normalizedModes(state.config.allowedModes).length + ' Themen zum Üben';
     showScreen(screenHome);
   }
@@ -1961,10 +2166,11 @@
     sessionRewardUnlocks = 0;
     var selectedTable = parseInt(focusTable, 10);
     var focused = configuredTables().indexOf(selectedTable) !== -1;
-    var specialMode = mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || mode === 'precedence' || mode === 'roman' || isSemiMode(mode);
+    var specialMode = Object.prototype.hasOwnProperty.call(curriculumModes,mode) || mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || mode === 'precedence' || mode === 'roman' || isSemiMode(mode);
     if (bonus || focused || specialMode || state.today.mode !== requestedMode){
       state.today.focusTable = focused ? selectedTable : null;
       state.today.mode = specialMode ? mode : (focused ? 'table' : 'mixed');
+      if (mode === 'exam1126'){state.today.examAnswers=[];state.today.examSaved=false;}
       state.today.queue = buildQueue(state.config.tasksPerDay, state.today.focusTable, state.today.mode);
       state.today.index = 0;
       state.today.correct = 0;
@@ -2027,7 +2233,7 @@
   }
 
   function renderQuestion(){
-    answerFeedbackToken++;awaitTap=false;
+    answerFeedbackToken++;awaitTap=false;questionHadHelp=false;
     if (state.today.index >= state.today.queue.length){
       finishSession();
       return;
@@ -2048,12 +2254,20 @@
     var gapTask = false;
     var gen, fmt, placeholder;
     questionExplanation = '';
+    el('curriculumForm').hidden = skill.kind !== 'curriculum';
+    el('examQuestionLabel').hidden = state.today.mode !== 'exam1126';
+    el('examQuestionLabel').textContent = 'Test 11/26 · '+(curriculum.chapters[chapterForKey(key)] || {label:''}).label+' · Aufgabe '+(state.today.index+1)+' / '+state.today.queue.length;
     el('precedenceHint').hidden = skill.kind !== 'precedence';
     writtenForm.hidden = skill.kind !== 'written';
     el('semiDivisionForm').hidden = skill.kind !== 'semi';
     el('remainderDivisionForm').hidden = skill.kind !== 'remainder';
     questionText.hidden = skill.kind === 'written' || skill.kind === 'semi';
     choicesWrap.hidden = skill.kind === 'written' || skill.kind === 'semi';
+    if (skill.kind === 'curriculum'){
+      choicesWrap.hidden=true;questionText.hidden=false;questionText.classList.add('word-question');
+      feedbackText.textContent='';feedbackText.className='feedback';choicesWrap.innerHTML='';
+      questionStartTime=Date.now();renderCurriculumQuestion(key,curriculum.question(skill.chapter,skill.type));return;
+    }
     if (skill.kind === 'roman'){renderRomanQuestion(key, romanQuestion(skill.direction));return;}
     if (skill.kind === 'remainder'){
       feedbackText.textContent = '';feedbackText.className = 'feedback';awaitTap = false;
@@ -2266,7 +2480,7 @@
     }
     function focus(input){input.focus();}
     function live(){return answering&&revision===sessionRevision;}
-    function say(message,bad){feedbackText.className='feedback '+(bad?'bad':'good');feedbackText.textContent=message;}
+    function say(message,bad){if(bad)questionHadHelp=true;feedbackText.className='feedback '+(bad?'bad':'good');feedbackText.textContent=message;}
     var heading=node('div','semi-heading'),layout=node('div','semi-layout');
     var context=node('div','semi-context'),entry=node('div','semi-entry'),actions=node('div','semi-actions');
     heading.appendChild(node('h2','written-title',semiModeLabel(exercise.mode)));
@@ -2310,6 +2524,7 @@
     var tipText=node('p','semi-tip');tipText.setAttribute('role','status');
     tip.addEventListener('click',function(){
       if(!live())return;
+      questionHadHelp=true;
       var allowed=semiAllowedParts(remaining,exercise.divisor);
       tipText.textContent=phase==='parts'?'Passende Stellenwertanteile: '+allowed.map(function(part){return part+' ('+semiPartUnit(part)+')';}).join(' oder ')+'. Nutze die passende Einmaleins-Aufgabe.':'Addiere deine Teilergebnisse: '+quotients.join(' + ')+'. Ein Rest ist kleiner als '+exercise.divisor+'.';
     });
@@ -2559,6 +2774,10 @@
     var elapsed = Date.now() - questionStartTime;
     var learningElapsed = wasTyped ? Math.max(0, elapsed - INPUT_TIME_COMPENSATION_MS) : elapsed;
     var isCorrect = chosen === correct;
+    if(state.today.mode === 'exam1126'){
+      state.today.examAnswers = state.today.examAnswers || [];
+      state.today.examAnswers.push({chapter:chapterForKey(key),key:key,correct:isCorrect,independent:isCorrect&&!questionHadHelp});
+    }
 
     choicesWrap.querySelectorAll('.choice-btn').forEach(function(b){
       b.classList.add('locked');
@@ -2596,7 +2815,7 @@
       // Missed facts come back later in the same session, capped so a hard
       // fact can't stretch the session endlessly.
       var rq = state.today.requeueCounts = state.today.requeueCounts || {};
-      if ((rq[key] || 0) < 2){
+      if (state.today.mode !== 'exam1126' && (rq[key] || 0) < 2){
         rq[key] = (rq[key] || 0) + 1;
         enqueueRetry(key);
       }
@@ -2649,6 +2868,7 @@
   }
 
   function finishSession(){
+    finishExamReport();
     var wasBonus = state.today.bonus;
     var focusedTable = state.today.focusTable;
     var newSticker = null;
@@ -2711,6 +2931,8 @@
       doneSubtitle.textContent = { roman:'Römische Zahlen geübt! 🌟', precedence:'Punkt vor Strich geübt! 🌟', remainder:'Division mit Rest geübt! 🌟', hundreds:'Rechnen mit 100ern geschafft! 🌟',
         terms:'Rechenbegriffe geübt! 🌟', riddles:'Zahlenrätsel gelöst! 🌟', written:'Schriftlich dividiert! 🌟',semi:'Halbschriftlich dividiert! 🌟',semiFree:'Deinen eigenen Rechenweg gefunden! 🌟',semiRest:'Mit Rest dividiert! 🌟' }[state.today.mode];
     }
+    el('examDoneResults').hidden = state.today.mode !== 'exam1126';
+    if(state.today.mode === 'exam1126'){doneSubtitle.textContent='Test 11/26 abgeschlossen!';renderExamSummary(el('examDoneResults'),state.today.examAnswers);}
     doneCorrectVal.textContent = state.today.correct + "/" + state.today.queue.length;
     doneRewardGameBtn.style.display = state.reward.availablePlays > 0 ? 'block' : 'none';
     doneRewardGameBtn.style.marginBottom = state.reward.availablePlays > 0 ? '12px' : '';
@@ -2775,6 +2997,10 @@
   document.addEventListener('touchcancel',function(){edgeBackTouch=null;},{passive:true});
 
   bonusBtn.addEventListener('click', function(){ startSession(true, null); });
+  el('exam1126Btn').addEventListener('click',openExam);
+  el('examStartBtn').addEventListener('click',function(){state.today.examChapter=el('examChapter').value;startSession(state.today.completed,null,'exam1126');});
+  el('examBackBtn').addEventListener('click',renderHome);
+  ['semiMultiply','numbers10000','wordProblems','numberTheory'].forEach(function(mode){el(mode+'Btn').addEventListener('click',function(){startSession(state.today.completed,null,mode);});});
   doneBonusBtn.addEventListener('click', function(){ startSession(true, state.today.focusTable, state.today.mode); });
   hundredsBtn.addEventListener('click', function(){ startSession(state.today.completed, null, 'hundreds'); });
   termsBtn.addEventListener('click', function(){ startSession(state.today.completed, null, 'terms'); });
@@ -5765,6 +5991,7 @@
   }
 
   function renderLearningDashboard(){
+    renderCurriculumStatistics();
     var today = todayStr();
     var pool = factsInRange().map(function(f){
       return practiceSkill(dashboardOperation === 'divide' ? divisionSkillKey(f.a, f.b) : factKey(f.a, f.b));

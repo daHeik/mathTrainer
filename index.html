@@ -30,28 +30,62 @@
       <p class="subtitle" id="homeSubtitle">Übe dein kleines Einmaleins!</p>
       </div></div>
 
-      <div class="home-columns">
-      <div><h2 class="section-label">Gezielt üben</h2><div class="home-actions">
-        <button class="primary-btn extra-round-btn" id="romanBtn">Römische Zahlen</button>
-        <button class="primary-btn extra-round-btn" id="precedenceBtn">Punkt vor Strich</button>
-        <button class="primary-btn extra-round-btn" id="semiBtn">Halbschriftlich dividieren</button>
-        <button class="primary-btn extra-round-btn" id="writtenBtn">Schriftlich dividieren</button>
-        <button class="primary-btn extra-round-btn" id="riddlesBtn">Zahlenrätsel lösen</button>
-        <button class="primary-btn extra-round-btn" id="remainderBtn">Division mit Rest</button>
-        <button class="primary-btn extra-round-btn" id="hundredsBtn">Rechnen mit 100ern</button>
-        <button class="primary-btn extra-round-btn" id="termsBtn">Rechenbegriffe lernen</button>
-        <button class="secondary-btn" id="tablePracticeBtn">Zahlenreihe auswählen</button>
-      </div></div>
-      <div><div id="mixedLearning"><h2 class="section-label">Gemischtes 1×1</h2><div class="learn-hero">
-        <button class="primary-btn" id="startBtn">Los geht's!</button>
-        <button class="primary-btn" id="bonusBtn" style="display:none;">Gemischte Runde spielen</button>
-        <div class="stats-row">
-          <div class="stat-pill"><div class="val" id="streakVal">0</div><div class="lbl">Tage Serie</div></div>
-          <div class="stat-pill"><div class="val" id="todayVal">0/5</div><div class="lbl">Heute</div></div>
-        </div>
-      </div></div><p class="reward-note" id="rewardNote"></p></div>
+      <div class="home-featured" id="homeFeatured">
+        <section class="home-feature home-exam" id="examLearning" aria-labelledby="examHomeTitle">
+          <h2 id="examHomeTitle"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#check"/></svg> Vorbereitung auf die Mathe-Probe</h2>
+          <p>Alle sechs Kapitel prüfen oder ein Thema gezielt üben.</p>
+          <button class="primary-btn" id="exam1126Btn">Test 11/26 öffnen</button>
+        </section>
+        <section class="home-feature" id="mixedLearning" aria-labelledby="mixedHomeTitle">
+          <h2 id="mixedHomeTitle"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#play"/></svg> Deine 1×1-Runde</h2>
+          <p id="mixedHomeDescription">Malaufgaben aus deinem Lernplan.</p>
+          <div class="learn-hero">
+            <button class="primary-btn" id="startBtn">Los geht's!</button>
+            <button class="primary-btn" id="bonusBtn" style="display:none;">Gemischte Runde spielen</button>
+            <div class="stats-row">
+              <div class="stat-pill"><div class="val" id="streakVal">0</div><div class="lbl">Tage Serie</div></div>
+              <div class="stat-pill"><div class="val" id="todayVal">0/5</div><div class="lbl">Heute</div></div>
+            </div>
+          </div>
+        </section>
       </div>
-      <p class="app-version" id="appVersion">Version 62</p>
+      <p class="reward-note" id="rewardNote"></p>
+      <div class="home-topic-groups" id="homeTopicGroups">
+        <section class="home-topic-group" id="homeGroupNumbers" aria-labelledby="homeTitleNumbers">
+          <h2 id="homeTitleNumbers"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#book"/></svg> Zahlen & Begriffe</h2>
+          <div class="home-actions">
+            <button class="secondary-btn" id="numbers10000Btn">Zahlen bis 10.000</button>
+            <button class="secondary-btn" id="romanBtn">Römische Zahlen</button>
+            <button class="secondary-btn" id="termsBtn">Rechenbegriffe lernen</button>
+          </div>
+        </section>
+        <section class="home-topic-group" id="homeGroupArithmetic" aria-labelledby="homeTitleArithmetic">
+          <h2 id="homeTitleArithmetic"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#cards"/></svg> Malnehmen & Teilen</h2>
+          <div class="home-actions">
+            <button class="secondary-btn" id="tablePracticeBtn">Zahlenreihe auswählen</button>
+            <button class="secondary-btn" id="hundredsBtn">Rechnen mit 100ern</button>
+            <button class="secondary-btn" id="remainderBtn">Division mit Rest</button>
+            <button class="secondary-btn" id="numberTheoryBtn">Teiler und Rest verstehen</button>
+          </div>
+        </section>
+        <section class="home-topic-group" id="homeGroupMethods" aria-labelledby="homeTitleMethods">
+          <h2 id="homeTitleMethods"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#retry"/></svg> Rechenwege</h2>
+          <div class="home-actions">
+            <button class="secondary-btn" id="semiMultiplyBtn">Halbschriftlich multiplizieren</button>
+            <button class="secondary-btn" id="semiBtn">Halbschriftlich dividieren</button>
+            <button class="secondary-btn" id="writtenBtn">Schriftlich dividieren</button>
+            <button class="secondary-btn" id="precedenceBtn">Punkt vor Strich</button>
+          </div>
+        </section>
+        <section class="home-topic-group" id="homeGroupApplication" aria-labelledby="homeTitleApplication">
+          <h2 id="homeTitleApplication"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#chat"/></svg> Sachaufgaben & Rätsel</h2>
+          <div class="home-actions">
+            <button class="secondary-btn" id="wordProblemsBtn">Sachaufgaben</button>
+            <button class="secondary-btn" id="riddlesBtn">Zahlenrätsel lösen</button>
+          </div>
+        </section>
+      </div>
+      <p class="app-version" id="appVersion">Version 64</p>
     </div>
 
     <div class="screen semi-intro" id="screen-semi-intro">
@@ -86,9 +120,12 @@
 
     <!-- QUESTION SCREEN -->
     <div class="screen" id="screen-question">
+      <p class="hint" id="examQuestionLabel" hidden></p>
+
       <div class="progress-dots" id="progressDots"></div>
       <p class="written-hint" id="precedenceHint" hidden>Klammer vor Punkt vor Strich. Bei gleichem Rang rechnest du von links nach rechts.</p>
       <div class="question" id="questionText">7 · 8</div>
+      <form id="curriculumForm" class="curriculum-form" hidden></form>
       <form id="remainderDivisionForm" class="remainder-division" autocomplete="off" hidden aria-label="Ergebnis und Rest eintragen" novalidate></form>
       <div class="choices" id="choicesWrap"></div>
       <form id="writtenDivisionForm" class="written-division" autocomplete="off" hidden aria-label="Schriftlich dividieren mit Teilrechnungen"></form>
@@ -97,7 +134,8 @@
     </div>
 
 <div class="screen" id="screen-statistics">
-<h1>Statistik</h1><p class="subtitle">Dein Rechnen wird mit jeder Runde sicherer.</p>
+<h1>Statistik</h1>
+      <details><summary>Test 11/26 · Stand nach Kapiteln</summary><div id="examPublicResults"></div></details><p class="subtitle">Dein Rechnen wird mit jeder Runde sicherer.</p>
 <div class="statistics-layout"><div><dl class="statistics-grid">
 <div class="statistic"><dt>Aufgaben heute</dt><dd id="statToday">0</dd></div>
 <div class="statistic"><dt>Aufgaben · letzte 7 Tage</dt><dd id="statWeek">0</dd></div>
@@ -112,6 +150,16 @@
 
 
     <!-- SESSION COMPLETE SCREEN -->
+    <div class="screen" id="screen-exam">
+      <h1>Test 11/26</h1>
+      <p class="subtitle">Mach dich fit für die Mathe-Probe. Alle sechs Kapitel oder eines gezielt üben.</p>
+      <label class="curriculum-field">Was möchtest du prüfen?<select id="examChapter"></select></label>
+      <p class="hint">Alle Kapitel: 36 Aufgaben. Einzelkapitel: alle Aufgabenarten dieses Kapitels. Kein Zeitlimit. Nach jeder Antwort siehst du die Erklärung. Im Test gibt es keine zusätzlichen Fehlerwiederholungen. Richtige Antworten verdienen Spiele und zählen in der Statistik.</p>
+      <button class="primary-btn" id="examStartBtn">Test starten</button>
+      <button class="secondary-btn" id="examBackBtn">Zurück</button>
+      <h2>Dein Stand nach Kapiteln</h2>
+      <div id="examHistory"></div>
+    </div>
     <div class="screen" id="screen-done">
       <div class="completion-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#complete"/></svg></div>
       <h1>Super gemacht!</h1>
@@ -127,6 +175,7 @@
         </div>
       </div>
       <p class="subtitle" id="doneReward" style="display:none; margin:0 0 20px;"></p>
+      <div id="examDoneResults" hidden></div>
       <button class="secondary-btn" id="doneRewardGameBtn" style="display:none;">Belohnungsspiel wählen <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#game"/></svg></button>
       <button class="primary-btn" id="doneBonusBtn">Noch einmal <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#retry"/></svg></button>
       <button class="secondary-btn" id="doneHomeBtn">Fertig für heute <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#complete"/></svg></button>
@@ -429,6 +478,7 @@
 
     <section class="admin-tab-panel active" id="adminPanelOverview" role="tabpanel"
              aria-labelledby="adminTabOverview" tabindex="0">
+      <div id="curriculumStatistics"></div>
       <div class="operation-switch" id="operationSwitch" role="group" aria-label="Rechenart auswählen">
         <button type="button" class="active" data-operation="multiply" aria-pressed="true">Multiplikation ·</button>
         <button type="button" data-operation="divide" aria-pressed="false">Division :</button>
@@ -600,6 +650,7 @@
 <script src="arcade-extra.js"></script>
 <script src="frog-punch.js"></script>
 <script src="chicken-shooter.js"></script>
+<script src="curriculum.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

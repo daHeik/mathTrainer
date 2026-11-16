@@ -93,6 +93,7 @@ var context = {
   requestAnimationFrame:function(){ return 1; }, cancelAnimationFrame:function(){}
 };
 vm.createContext(context);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'..','curriculum.js'),'utf8'),context);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'..','arcade-extra.js'),'utf8'),context);
 context.VocabArcade=context.window.VocabArcade;
 vm.runInContext(fs.readFileSync(path.join(__dirname,'..','frog-punch.js'),'utf8'),context);
@@ -112,6 +113,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'semiDivisionQuestion:semiDivisionQuestion, semiSuggestedPart:semiSuggestedPart, semiAllowedParts:semiAllowedParts, checkSemiPart:checkSemiPart, renderSemiDivision:renderSemiDivision,',
   'correctAnswersForProfile:correctAnswersForProfile, startSession:startSession,',
   'renderQuestion:renderQuestion, onAnswer:onAnswer, finishSession:finishSession,',
+  'examKeys:examKeys, buildExamQueue:buildExamQueue, openExam:openExam, renderCurriculumQuestion:renderCurriculumQuestion, renderExamSummary:renderExamSummary,',
   'refreshDailySessionIfNeeded:refreshDailySessionIfNeeded, repeatRoundLabel:repeatRoundLabel,',
   'tapAdvance:tapAdvance,',
   'getConfetti:function(){return confettiLayer;},',
@@ -195,7 +197,7 @@ api.ensureFactPool();
 
 // All 1..10 families are available independently of mixed-round settings.
 assert.strictEqual(api.practiceSkillsInRange(null, 'hundreds').length, 110);
-assert.strictEqual(api.practiceSkillsInRange(null, 'terms').length, 8);
+assert.strictEqual(api.practiceSkillsInRange(null, 'terms').length, 12);
 assert.strictEqual(api.practiceSkillsInRange(null, 'riddles').length, 8);
 assert.strictEqual(api.practiceSkillsInRange(null, 'mixed').length, 1);
 assert.strictEqual(api.specialQuestion(api.practiceSkill('h:m:7x7')).gen.correct, 490);
@@ -207,7 +209,7 @@ assert.strictEqual(api.practiceSkill('h:invalid:3x7'), null);
   assert.strictEqual(queue.length, 5);
   assert.strictEqual(new Set(queue).size, 5);
   if (mode === 'hundreds') assert(queue.some(function(key){ return key.indexOf('h:d:') === 0; }));
-  api.practiceSkillsInRange(null, mode).forEach(function(skill){
+  api.practiceSkillsInRange(null, mode).filter(function(skill){return skill.kind!=='curriculum';}).forEach(function(skill){
     for (var sample = 0; sample < 100; sample++){
       var question = api.specialQuestion(skill);
       assert.strictEqual(question.gen.options.length, 4);
@@ -408,7 +410,7 @@ assert.strictEqual(restored.today.focusTable, null);
   assert.strictEqual(elements.profileBtn.style.display, 'none');
   timers.length = 0;
   for (var answered = 0; answered < 2; answered++){
-    var answer = elements.choicesWrap.children[0].dataset.answer;
+    var answer = elements.choicesWrap.children.length ? elements.choicesWrap.children[0].dataset.answer : 'Test';
     api.onAnswer(interrupted.today.queue[interrupted.today.index], answer, answer, null, false, 'Test');
     if (answered === 0) timers.shift()();
   }
@@ -686,7 +688,7 @@ console.log('Written division: one/two/three rows, 848:8 regression, focus, vali
 var semiProfile=api.normalizeProfile(api.defaultProfile());semiProfile.config.sound=false;semiProfile.config.rewardEvery=1;
 api.setState(semiProfile);api.ensureFactPool();
 ['semi','semiFree','semiRest'].forEach(function(mode){
-  var skills=api.practiceSkillsInRange(null,mode);assert.strictEqual(skills.length,8);
+  var skills=api.practiceSkillsInRange(null,mode).filter(function(skill){return skill.kind==='semi';});assert.strictEqual(skills.length,8);
   skills.forEach(function(skill){
     for(var sample=0;sample<100;sample++){
       var q=api.semiDivisionQuestion(skill),remaining=q.dividend,sum=0;
@@ -1934,7 +1936,7 @@ api.startSession(false,null,'roman');assert(/3999|MMMCMXCIX/.test(elements.quest
 var planBackup=api.normalizeProfile(JSON.parse(storage.km_1x1_trainer_v2).profiles[api.getRoot().activeProfileId]);
 assert.strictEqual(JSON.stringify(planBackup.config.allowedModes),'["roman"]');assert.strictEqual(planBackup.romanSkills.toRoman.correctCount,1);
 var oldPlan=api.defaultProfile();delete oldPlan.config.allowedModes;delete oldPlan.romanSkills;
-api.normalizeProfile(oldPlan);assert.strictEqual(oldPlan.config.allowedModes.length,12);assert.strictEqual(oldPlan.romanSkills.toRoman.correctCount,0);
+api.normalizeProfile(oldPlan);assert.strictEqual(oldPlan.config.allowedModes.length,17);assert.strictEqual(oldPlan.romanSkills.toRoman.correctCount,0);
 oldPlan.config.allowedModes=['bad',null];oldPlan.config.romanMin=-50;oldPlan.config.romanMax=10000;api.normalizeProfile(oldPlan);
 assert.strictEqual(JSON.stringify(oldPlan.config.allowedModes),'["roman"]');assert.strictEqual(oldPlan.config.romanMin,1);assert.strictEqual(oldPlan.config.romanMax,3999);
 console.log('Roman: 1..3999 conversion, both keypads, place-value feedback, retries, rewards and backup OK; learning plans: presets, save validation, hidden/blocked modes, rollover and profile PIN OK');
@@ -2340,3 +2342,103 @@ var penaltyProfile=api.normalizeProfile(api.defaultProfile());penaltyProfile.con
 [2,4,1].forEach(function(missCount,index){api.startChickenGame(false);elements.chickenStartBtn.click();var game=api.chickenGame();for(var shot=0;shot<missCount;shot++)context.ChickenShooter.shoot(game,300,30);assert.strictEqual(game.score,-missCount*100);penaltyNow+=90000;api.chickenStep(penaltyNow);assert.strictEqual(penaltyProfile.reward.bestChickenScore,index===2?-100:-200);var restored=api.normalizeProfile(JSON.parse(storage.km_1x1_trainer_v2).profiles[api.getRoot().activeProfileId]);assert.strictEqual(restored.reward.bestChickenScore,penaltyProfile.reward.bestChickenScore);assert.strictEqual(restored.reward.chickenLeaderboard[0].score,penaltyProfile.reward.bestChickenScore);api.stopChickenGame();});
 assert.strictEqual(penaltyProfile.reward.chickenLeaderboard.length,3);assert.strictEqual(penaltyProfile.reward.chickenLeaderboard[2].score,-400);context.performance.now=originalNow;
 console.log('Chicken Shooter signed results: real miss deductions, negative first record, worse/better rounds, ranking and backup OK');
+
+// November curriculum: run real form submissions through shared learning/rewards.
+var curriculum=context.window.TestCurriculum;
+Object.keys(curriculum.chapters).forEach(function(chapter){
+  curriculum.chapters[chapter].types.forEach(function(type){
+    for(var sample=0;sample<200;sample++){
+      var task=curriculum.question(chapter,type);
+      assert(task.prompt&&task.explanation&&task.fields.length);
+      task.fields.forEach(function(field){
+        assert.notStrictEqual(field.value,'undefined');
+        if(field.options)assert(field.options.indexOf(field.value)!==-1,'Solution must be selectable');
+        else assert(/^\d+$/.test(field.value)&&Number(field.value)<=10000,'Numeric domain '+chapter+':'+type);
+      });
+      if(chapter==='multiply'&&type==='split'){
+        var factors=task.prompt.match(/\d+/g).map(Number),parts=task.fields.slice(0,-1).map(function(f){return Number(f.value);});
+        assert.strictEqual(parts.reduce(function(sum,n){return sum+n;},0),factors[0]*factors[1]);
+        assert.strictEqual(Number(task.fields[task.fields.length-1].value),factors[0]*factors[1]);
+      }
+      if(chapter==='rest'&&(type==='division'||type==='proof')){
+        var operands=task.prompt.match(/\d+/g).map(Number);
+        assert.strictEqual(Number(task.fields[0].value)*operands[1]+Number(task.fields[1].value),operands[0]);
+        assert(Number(task.fields[1].value)<operands[1]);
+      }
+      if(chapter==='numbers'&&type==='neighbor'){
+        var source=Number(task.prompt.match(/\d+/)[0]);
+        assert(Number(task.fields[0].value)<source&&Number(task.fields[1].value)>source);
+      }
+      if(chapter==='numbers'&&type==='line')assert.strictEqual(Number(task.fields[0].value),task.visual.start+task.visual.index*task.visual.step);
+      if(chapter==='stories'&&type==='roundUp'){
+        var values=task.prompt.match(/\d+/g).map(Number);
+        assert.strictEqual(Number(task.fields[0].value),Math.ceil(values[0]/values[1]));
+      }
+    }
+  });
+});
+assert.strictEqual(curriculum.word(10000),'zehntausend');assert.strictEqual(curriculum.word(1012),'eintausendzwölf');
+assert.strictEqual(curriculum.word(7021),'siebentausendeinundzwanzig');
+var november=api.normalizeProfile(api.defaultProfile());november.config.sound=false;november.config.rewardEvery=1;
+api.setState(november);api.ensureFactPool();api.openExam();assert(elements['screen-exam'].classList.contains('active'));
+for(var round=0;round<50;round++){
+  var full=api.buildExamQueue('all');assert.strictEqual(full.length,36);assert.strictEqual(new Set(full).size,36);
+  Object.keys(curriculum.chapters).forEach(function(chapter){assert.strictEqual(full.filter(function(k){return api.examKeys(chapter).indexOf(k)!==-1;}).length,6);});
+  assert(full.some(function(k){return k.indexOf('sd:semiFree:')===0;}));assert(full.some(function(k){return k.indexOf('sd:semiRest:')===0;}));
+}
+november.today.examChapter='multiply';api.startSession(false,null,'exam1126');
+assert.strictEqual(november.today.queue.length,6);assert(november.today.queue.every(function(k){return k.indexOf('k:multiply:')===0;}));
+// Deterministic known exercise with multiple fields; empty field must not submit.
+november.today.queue=['k:multiply:split'];november.today.index=0;api.renderQuestion();
+var known={prompt:'4 · 23',fields:[{label:'4 · 20',value:'80'},{label:'4 · 3',value:'12'},{label:'Summe',value:'92'}],explanation:'80 + 12 = 92.'};
+api.renderCurriculumQuestion('k:multiply:split',known);
+function curriculumInputs(){return elements.curriculumForm.children.filter(function(n){return n.className==='curriculum-field';}).map(function(n){return n.children[n.children.length-1];});}
+var formInputs=curriculumInputs();formInputs[0].value='80';elements.curriculumForm.onsubmit({preventDefault:function(){}});
+assert.strictEqual(november.today.index,0);assert.strictEqual(api.correctAnswersForProfile(november),0);
+formInputs[1].value='12';formInputs[2].value='92';var staleSubmit=elements.curriculumForm.onsubmit;
+staleSubmit({preventDefault:function(){}});staleSubmit({preventDefault:function(){}});
+assert.strictEqual(api.correctAnswersForProfile(november),1);assert.strictEqual(november.reward.availablePlays,1);
+assert.strictEqual(november.history[november.today.date].correct,1);assert.strictEqual(november.today.examAnswers[0].independent,true);
+api.finishSession();api.finishSession();assert.strictEqual(november.examReports.length,1);assert.strictEqual(elements.examDoneResults.hidden,false);
+var backupNovember=api.normalizeProfile(JSON.parse(JSON.stringify(november)));
+assert.strictEqual(api.correctAnswersForProfile(backupNovember),1);assert.strictEqual(backupNovember.examReports[0].answers[0].correct,true);
+november.today.examChapter='stories';api.startSession(true,null,'exam1126');november.today.queue=['k:stories:roundUp'];november.today.index=0;api.renderQuestion();
+api.renderCurriculumQuestion('k:stories:roundUp',{prompt:'Busse',fields:[{label:'Busse',value:'4'}],explanation:'Ein zusätzlicher Bus.'});
+curriculumInputs()[0].value='3';elements.curriculumForm.onsubmit({preventDefault:function(){}});
+assert.strictEqual(november.today.queue.length,1,'No remedial retries in assessment');assert.strictEqual(november.today.examAnswers[0].correct,false);
+assert.strictEqual(november.reward.availablePlays,1);assert.strictEqual(november.history[november.today.date].wrong,1);
+api.finishSession();assert.strictEqual(november.examReports.length,2);
+api.openExam();assert(elements.examHistory.textContent.includes('Halbschriftlich multiplizieren'));assert(elements.examHistory.textContent.includes('Sachaufgaben'));
+// Intermediate semi errors lower independence, but final correct answers still earn exactly once.
+november.today.examChapter='divide';api.startSession(true,null,'exam1126');november.today.queue=['sd:semiFree:3'];november.today.index=0;api.renderQuestion();
+api.renderSemiDivision('sd:semiFree:3',{dividend:123,divisor:3,correct:41,rest:0,mode:'semiFree'});
+var semiForm=elements.semiDivisionForm;
+function findDeep(node,id){if(node.id===id)return node;for(var i=0;i<node.children.length;i++){var found=findDeep(node.children[i],id);if(found)return found;}return null;}
+findDeep(semiForm,'semiChunk').value='120';findDeep(semiForm,'semiPartResult').value='39';semiForm.onsubmit({preventDefault:function(){}});
+findDeep(semiForm,'semiPartResult').value='40';semiForm.onsubmit({preventDefault:function(){}});
+findDeep(semiForm,'semiChunk').value='3';findDeep(semiForm,'semiPartResult').value='1';semiForm.onsubmit({preventDefault:function(){}});
+findDeep(semiForm,'semiTotal').value='41';semiForm.onsubmit({preventDefault:function(){}});
+assert.strictEqual(november.today.examAnswers[0].correct,true);assert.strictEqual(november.today.examAnswers[0].independent,false);
+assert.strictEqual(november.reward.availablePlays,2);assert.strictEqual(api.correctAnswersForProfile(november),2);
+api.finishSession();api.renderHome();assert.strictEqual(elements['screen-exam'].classList.contains('active'),false);
+november.config.allowedModes=['roman'];var blockedQueue=JSON.stringify(november.today);api.startSession(true,null,'exam1126');assert.strictEqual(JSON.stringify(november.today),blockedQueue);
+console.log('Test 11/26: all generators, semantic checks, chapter balance, real forms, empty/stale/double submit, rewards/history, corrected steps, reports/backups and plan guards OK');
+
+var legacyFull=api.defaultProfile();delete legacyFull.config.curriculumVersion;legacyFull.config.allowedModes=legacyFull.config.allowedModes.slice(0,12);api.normalizeProfile(legacyFull);
+assert.strictEqual(legacyFull.config.allowedModes.length,17);
+legacyFull.config.allowedModes=legacyFull.config.allowedModes.filter(function(mode){return mode!=='exam1126';});api.normalizeProfile(legacyFull);assert(legacyFull.config.allowedModes.indexOf('exam1126')===-1,'Explicit new-topic opt-out survives later loads');
+assert.strictEqual(api.buildExamQueue('all').length,0,'Queue builder respects disabled test mode');
+
+// Group visibility follows the actual visible buttons, including semiFree-only plans.
+var groupedProfile=api.normalizeProfile(api.defaultProfile());api.setState(groupedProfile);api.ensureFactPool();
+groupedProfile.config.allowedModes=['semiFree'];api.renderHome();
+assert.strictEqual(elements.homeGroupMethods.hidden,false);assert.strictEqual(elements.semiBtn.hidden,false);
+['homeGroupNumbers','homeGroupArithmetic','homeGroupApplication','homeFeatured'].forEach(function(id){assert.strictEqual(elements[id].hidden,true);});
+groupedProfile.config.allowedModes=['exam1126'];api.renderHome();
+assert.strictEqual(elements.homeTopicGroups.hidden,true);assert.strictEqual(elements.examLearning.hidden,false);assert.strictEqual(elements.mixedLearning.hidden,true);
+assert(elements.homeFeatured.classList.contains('single-feature'));
+groupedProfile.config.allowedModes=['mixed','numbers10000'];api.renderHome();
+assert.strictEqual(elements.homeGroupNumbers.hidden,false);assert.strictEqual(elements.homeGroupMethods.hidden,true);assert.strictEqual(elements.examLearning.hidden,true);
+assert.strictEqual(elements.mixedLearning.hidden,false);
+api.renderHome();assert.strictEqual(elements.numbers10000Btn.children.length,0,'Topic buttons stay text-only across renders');
+console.log('Home clusters: topic membership, empty-group hiding, semiFree-only plan, featured test and text-only buttons OK');
