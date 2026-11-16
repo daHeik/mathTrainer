@@ -3,7 +3,7 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `d441ab6` mit lokalen Änderungen für Test 11/26, neue Lerninhalte, Kapitelauswertung und gruppierte Startseite; PWA-Cache `1x1-trainer-v64`, keine separate semantische App-Version |
+| Version | Basis `9c2abe9` mit lokalem Ausschluss der Einheiten-Auswahl sowie korrigierten Feldfokusrahmen und Schriftgrößen gegen iOS-Fokuszoom; PWA-Cache `1x1-trainer-v66`, keine separate semantische App-Version |
 | Letzte Quellcodeänderung | 2026-11-16 |
 | Letzte Projekt-/README-Änderung | 2026-11-16 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
@@ -43,6 +43,12 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 
 Normale Spiele laufen bis zu drei aktive Minuten pro Kontingent; **Bricks und 2048 bis zu fünf Minuten**. Diese Ausnahme ist in `gameDurationMs()` implementiert. Beim Zeitende endet der Durchlauf; mit weiterem Kontingent kann ein neues Belohnungsspiel gestartet werden. Drei verbrauchte Versuche beenden früher; **2048 bietet nur einen Versuch pro Kontingent** und endet bei einem vollständig belegten Feld ohne mögliche Verschmelzung. **Chicken Shooter bietet eine Runde mit 90 aktiven Sekunden pro Kontingent**. **Frog Punch hat stattdessen drei vollständige Runden à 40 Sekunden pro Kontingent**; verpasste Frösche kosten keine Versuche. Demo-Starter wie `snow.html` öffnen dieselbe Spielimplementierung ohne Lernbelohnung.
 
+## Eingabefelder – Fokus und automatischer Zoom
+
+Text-, Zahlen- und Auswahlfelder zeigen einen klaren Fokusrahmen innerhalb des Feldrands. Der Rahmen ragt nicht mehr als äußerer Glow in benachbarte oder scrollbare Bereiche und wird dort links/rechts nicht abgeschnitten. Die bisherigen besonderen Außenrahmen für Lernfelder sind durch eine gemeinsame CSS-Regel ersetzt: drei Pixel Outline mit negativem Abstand, ohne äußeren Schatten. Andere Tastatur-Fokusmarkierungen, etwa an Buttons und Checkboxen, bleiben erhalten.
+
+Native Eingabe- und Auswahlfelder bekommen eine Basisschriftgröße von mindestens 16 Pixeln, auch wenn eine umgebende Beschriftung kleiner ist. Die größeren Schriftgrößen der Lernformulare bleiben bestehen. Das vermeidet den üblichen automatischen Fokuszoom bei zu kleiner Feldschrift auf iOS. Die Viewport-Metadaten bleiben unverändert; manuelles Vergrößern per Pinch-Zoom ist weiter möglich. Die bestehende Tastatur-/Visual-Viewport-Behandlung bleibt aktiv. Der vollständig sichtbare Innenrahmen wurde an einem fokussierten Lernfeld in Desktop-Safari visuell geprüft. Eine physische iPhone-Prüfung des automatischen Fokuszooms steht aus; Desktop-Safari ersetzt diese Geräteprüfung nicht.
+
 ## Startseite – Themen finden
 
 Oben stehen zwei direkte Einstiege: **Vorbereitung auf die Mathe-Probe** öffnet **Test 11/26**, **Deine 1×1-Runde** startet beziehungsweise wiederholt die normale gemischte Runde. Der Belohnungshinweis darunter gilt für alle Lernmodi. Anschließend sind die Einzelübungen thematisch geordnet:
@@ -58,11 +64,13 @@ Jede Gruppenüberschrift trägt ein lokales SVG-Symbol. Die einzelnen Themen sin
 
 Der Lernplan bleibt maßgeblich: gesperrte Buttons, leere Gruppen und nicht verfügbare direkte Einstiege werden ausgeblendet. Ist nur eine der halbschriftlichen Divisionsstufen freigegeben, bleibt ihr gemeinsamer Einstieg unter „Rechenwege“ sichtbar. Bei nur einem direkten Einstieg nimmt dessen Karte die ganze Breite ein. Alle Themenbuttons behalten ihre bisherigen IDs und starten dieselben Übungen; Fortschritt, Spielbelohnungen und Backups ändern sich durch die Gruppierung nicht.
 
-Technisch erstellt `index.html` semantisch benannte `section`-Gruppen; `renderHome()` bestimmt deren Sichtbarkeit nach der vorhandenen Modusfreigabe und fügt keine Einzelsymbole mehr in Themenbuttons ein. `styles.css` setzt die neuen Raster und gemeinsamen Zeilenstile, unabhängig von der Statistikansicht. Cache/UI-Kennung 64 sorgt für den aktualisierten Assetstand. Die Lern-/Offlinetests prüfen Gruppenzuordnung und eingeschränkte Pläne; die Darstellung wurde in Safari bei 390 und 820 Pixeln Rahmenbreite visuell geprüft. Das ist eine Browser-Layoutprüfung, kein Test auf einem physischen iPhone.
+Technisch erstellt `index.html` semantisch benannte `section`-Gruppen; `renderHome()` bestimmt deren Sichtbarkeit nach der vorhandenen Modusfreigabe und fügt keine Einzelsymbole mehr in Themenbuttons ein. `styles.css` setzt die neuen Raster und gemeinsamen Zeilenstile, unabhängig von der Statistikansicht. Cache/UI-Kennung 66 sorgt für den aktualisierten Assetstand. Die Lern-/Offlinetests prüfen Gruppenzuordnung und eingeschränkte Pläne; die Darstellung wurde in Safari bei 390 und 820 Pixeln Rahmenbreite visuell geprüft. Das ist eine Browser-Layoutprüfung, kein Test auf einem physischen iPhone.
 
 ## Test 11/26 – Vorbereitung auf die Mathe-Probe
 
-Auf der Startseite **Test 11/26** öffnen. In der Kapitelauswahl **Alle Kapitel** oder ein einzelnes Thema wählen und **Test starten** drücken. Der Gesamttest hat 36 Aufgaben, je sechs aus Fachbegriffen, halbschriftlicher Multiplikation, halbschriftlicher Division, Division mit Rest, Zahlenraum bis 10.000 und Sachaufgaben. Die Aufgaben werden neu erzeugt und gemischt. Ein Einzelkapitel enthält alle dort hinterlegten Aufgabenarten: Fachbegriffe 12, Multiplikation 6, Division 11, Rest 15, Zahlenraum 16 und Sachaufgaben 8. Die Zahl einer Einzelrunde ist keine Gewichtung für die Schulprobe.
+Die Aufgabenart „Welche Einheit passt?“ (etwa die Auswahl der Einheit für eine Fingerbreite) ist auf Nutzerwunsch ausgeschlossen, da sie noch nicht Unterrichtsstoff war. Sie erscheint weder in normalen Sachaufgaben noch im Test, auch nicht aus bereits gespeicherten Aufgabenlisten. Bereits verdiente Belohnungen und historische Antworten bleiben erhalten.
+
+Auf der Startseite **Test 11/26** öffnen. In der Kapitelauswahl **Alle Kapitel** oder ein einzelnes Thema wählen und **Test starten** drücken. Der Gesamttest hat 36 Aufgaben, je sechs aus Fachbegriffen, halbschriftlicher Multiplikation, halbschriftlicher Division, Division mit Rest, Zahlenraum bis 10.000 und Sachaufgaben. Die Aufgaben werden neu erzeugt und gemischt. Ein Einzelkapitel enthält alle dort hinterlegten Aufgabenarten: Fachbegriffe 12, Multiplikation 6, Division 11, Rest 15, Zahlenraum 16 und Sachaufgaben 7. Die Zahl einer Einzelrunde ist keine Gewichtung für die Schulprobe.
 
 Kein Zeitlimit; nach jeder Antwort gibt es Rückmeldung und eine Erklärung. Anders als in normalen Übungen werden Fehler im Test nicht als Zusatzaufgaben angehängt. Mehrteilige Aufgaben zählen insgesamt einmal. Leere Felder bleiben zur Vervollständigung offen. Korrekturen in vorhandenen halbschriftlichen Teilrechnungen bleiben wie bisher möglich; ein Tipp oder ein solcher Zwischenfehler markiert die Aufgabe für die Testauswertung als „mit Hilfe“. Richtige Endantworten zählen trotzdem genau einmal für Lernstand, Tages-/Gesamtstatistik und Spiele. Bei falschen kompletten Endantworten werden keine Spiele verdient. Es gibt keine zweite Punktewährung.
 
@@ -86,7 +94,7 @@ Neue Übungsstände liegen unter `profile.curriculumSkills['k:<chapter>:<type>']
 
 `normalizeProfile()` ergänzt sichere Standardfelder, validiert bekannte Skills und begrenzt Berichte auf 20 und Antwortlisten auf 100. Die Root-Version und der Speicherschlüssel `km_1x1_trainer_v2` bleiben kompatibel. `config.curriculumVersion=1` kennzeichnet die einmalige Lernplanergänzung; bewusst eingeschränkte Pläne werden nicht aufgeweitet. Unbekannte/defekte Berichtseinträge werden verworfen, vorhandene Lernstände und Spielkontingente erhalten. Kein Backend, keine Authentifizierung und kein Transport; die Eltern-PIN bleibt eine lokale Bedienungssperre.
 
-Die neuen Formulare verwenden Zahlenfelder mit Done-Taste und Auswahlfelder, mindestens 48 Pixel hohe Ziele und die vorhandene Tastatur-/Viewport-Behandlung. `curriculum.js` ist im Offline-Assetgraph und Cache v64 enthalten. Auslieferung aller vier App-Bestandteile (`index.html`, `styles.css`, `app.js`, `curriculum.js`) und `sw.js` gemeinsam vornehmen; vorhandene Spiele unverändert mit ausliefern. Lokal umgesetzter Stand bedeutet keine Pi-Bereitstellung.
+Die neuen Formulare verwenden Zahlenfelder mit Done-Taste und Auswahlfelder, mindestens 48 Pixel hohe Ziele und die vorhandene Tastatur-/Viewport-Behandlung. `curriculum.js` ist im Offline-Assetgraph und Cache v66 enthalten. Auslieferung aller vier App-Bestandteile (`index.html`, `styles.css`, `app.js`, `curriculum.js`) und `sw.js` gemeinsam vornehmen; vorhandene Spiele unverändert mit ausliefern. Lokal umgesetzter Stand bedeutet keine Pi-Bereitstellung.
 
 Die erweiterten `tests/learning-modes.test.js` prüfen alle neuen Generatoren mit je 200 Varianten, ausgewählte mathematische Identitäten, 50 gemischte Testqueues mit Kapitelbalance, tatsächliche mehrteilige Formularabgabe, leere Felder, doppelte/veraltete Abgabe, Belohnungen, Historie, korrigierte Teilrechnungen, Berichte, Backup und Lernplansperren. Alle fünf bestehenden Node-Suiten weiter ausführen. Safari-Desktop-Sichtprüfung: Startseite, Testauswahl, halbschriftliche Testaufgabe und richtige native Formularantwort. Eine echte iPhone-/iPad-Tastatur wurde damit nicht geprüft.
 

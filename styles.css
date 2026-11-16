@@ -26,7 +26,10 @@
   *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
   /* Zoom stays allowed (accessibility); buttons opt out of double-tap zoom
      so fast tapping during practice doesn't zoom the page. */
-  button, input, select{ touch-action: manipulation; }
+  button, input, select, textarea{ touch-action: manipulation; }
+  /* Keep native field text at least 16px to avoid iOS focus auto-zoom.
+     Larger learning-field sizes below remain in effect; pinch zoom stays enabled. */
+  input, select, textarea { font-size:max(16px, 1em); }
   button{
     -webkit-appearance:none;
     appearance:none;
@@ -574,7 +577,6 @@
 [hidden] { display:none !important; }
 .answer-label { display:block; text-align:left; font-weight:700; font-size:.95rem; margin:12px 0 8px; }
 .answer-input { box-sizing:border-box; width:100%; min-height:54px; font-size:1.2rem; padding:14px; border:2px solid var(--theme-border); border-radius:14px; background:var(--theme-surface); color:var(--ink); }
-.answer-input:focus { outline:3px solid var(--bg-2); outline-offset:2px; }
 .answer-input:disabled { opacity:1; color:var(--ink); }
 #screen-question .question { font-size:clamp(1.35rem,5vw,2rem); overflow-wrap:anywhere; line-height:1.35; margin:18px 0; }
 .question-source,.catalog-note { font-size:.85rem; color:var(--ink-soft); line-height:1.5; }
@@ -869,7 +871,6 @@ body.focused-view .app-bar {padding-top:calc(4px + var(--safe-top));padding-bott
 #screen-question.active {padding:16px 12px 28px;gap:12px;}
 #screen-question #answerForm {padding:0 6px 6px;flex:none;}
 #screen-question #checkAnswerBtn {margin-top:18px;}
-#screen-question .answer-input:focus {outline:3px solid var(--bg-2);outline-offset:2px;}
 @media(min-width:700px) {#screen-question.active {padding:24px 20px 32px;}}
 
 /* Learning feedback and compact, direction-aware round review. */
@@ -894,7 +895,6 @@ body.focused-view .app-bar {padding-top:calc(4px + var(--safe-top));padding-bott
 .written-division input.written-digit {background:var(--theme-surface);border-color:var(--theme-border);}
 .written-number span.written-digit {display:grid;place-items:center;}
 .written-division input::placeholder {color:var(--ink-soft);opacity:.65;}
-.written-division input:focus {outline:3px solid var(--bg-1);outline-offset:2px;}
 .written-division input:disabled {opacity:.65;-webkit-text-fill-color:var(--ink);}
 .written-division input[aria-invalid="true"] {border-color:var(--bad);}
 .written-correct {border-color:var(--good);}
@@ -917,7 +917,6 @@ body.focused-view .app-bar {padding-top:calc(4px + var(--safe-top));padding-bott
 .semi-work {display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:end;}
 .semi-field {display:flex;flex-direction:column;gap:6px;font-size:.85rem;min-width:0;margin:8px 0;}
 .semi-input {font:inherit;font-size:1.25rem;min-height:48px;width:100%;min-width:0;box-sizing:border-box;border:2px solid var(--theme-border);border-radius:10px;background:var(--theme-surface);color:var(--ink);padding:10px;}
-.semi-input:focus {outline:3px solid var(--accent);outline-offset:2px;}
 .semi-input[readonly] {background:var(--theme-soft);font-weight:700;}
 .semi-operator {font-size:1.15rem;white-space:nowrap;padding-bottom:23px;}
 .semi-final {padding:12px 0;}
@@ -957,7 +956,6 @@ body.focused-view .app-bar {padding-top:calc(4px + var(--safe-top));padding-bott
 .remainder-field {display:flex;flex-direction:column;gap:6px;min-width:0;flex:0 1 120px;}
 .remainder-field>span {font-size:.85rem;color:var(--ink-soft);}
 .remainder-field input {width:100%;min-width:0;min-height:48px;border:2px solid var(--theme-border);border-radius:10px;background:var(--theme-surface);color:var(--ink);font:inherit;text-align:center;padding:8px;}
-.remainder-field input:focus {outline:3px solid var(--bg-1);outline-offset:2px;}
 .remainder-field input:disabled {opacity:1;-webkit-text-fill-color:var(--ink);}
 .choices .choice-btn[aria-pressed="true"] {outline:3px solid var(--bg-1);outline-offset:-3px;background:var(--theme-soft);}
 
@@ -1199,4 +1197,13 @@ body.learning-input-viewport {position:fixed;top:var(--app-top,0px);left:0;right
 @media(max-width:380px) {
   .home-feature, .home-topic-group { padding:14px; }
   #screen-home .home-actions button { font-size:.88rem; }
+}
+
+/* Draw field focus inside the field: scroll containers cannot clip the ring. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+select:focus,
+textarea:focus {
+  outline:3px solid var(--bg-1);
+  outline-offset:-3px;
+  box-shadow:none;
 }

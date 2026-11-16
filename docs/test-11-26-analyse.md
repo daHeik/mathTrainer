@@ -11,7 +11,7 @@ Geprüft am 16.11.2026 anhand des Ausgangscodes (Git-Basis `d441ab6`) und aller 
 | Halbschriftlich dividieren | Drei Stufen mit dreistelligen Dividenden, einstelligen Divisoren, Teilrechnungen und Summe | Bestehende schrittweise Formulare im Test wiederverwendet; ergänzend Zehnerdivisoren, Umkehraufgaben und Verdopplungsbeziehungen |
 | Dividieren mit Rest | Eigenständiger Quotient-/Restmodus und halbschriftliche Division mit Rest; normale Restaufgaben bisher aus kleinem Einmaleins | Größere Quotienten, Rest 0, Probe, Anzahl möglicher Restklassen, Quersumme und Neunerrest; Teiler, Primzahlen und Vielfache |
 | Zahlenraum bis 10.000 | Kein eigenes Stellenwerttraining; römische Zahlen bis 3999 sind kein Ersatz | Stellenwerte lesen/zerlegen/bündeln, Zahlwörter in beide Richtungen, Ziffernkarten, Plättchen/Blöcke, Verschieben und Quersumme, Zahlenstrahl, Nachbarzehner/-hunderter/-tausender, Vorgänger/Nachfolger, Folgen und Regeln |
-| Sachaufgaben | Kurze abstrakte Zahlenrätsel; keine Alltagssituationen mit Einheiten oder Restdeutung | Verteilen, Verpacken, Einkaufen, Preise, Wechselgeld, Cent/Euro, passende Frage und Einheit, Rest übrig lassen oder auf zusätzliche Busse aufrunden |
+| Sachaufgaben | Kurze abstrakte Zahlenrätsel; keine Alltagssituationen mit Einheiten oder Restdeutung | Verteilen, Verpacken, Einkaufen, Preise, Wechselgeld, Cent/Euro, passende Frage, Rest übrig lassen oder auf zusätzliche Busse aufrunden |
 
 Auf den vorliegenden Fotos gibt es keine eigene Fachbegriffe-Seite. Die Ergänzungen hierzu folgen dem ausdrücklich genannten Prüfungskapitel und den Rechenarten der fotografierten Aufgaben.
 
@@ -25,7 +25,7 @@ Auf den vorliegenden Fotos gibt es keine eigene Fachbegriffe-Seite. Die Ergänzu
 | IMG_4920.HEIC | Arbeitsheft 11: THZE, Zerlegen, Bündeln, Ziffernkarten | Alle genannten Fähigkeiten ergänzt |
 | IMG_4921.HEIC | Arbeitsheft 12: Zahlenstrahl, Nachbarzahlen, Vorgänger/Nachfolger, Folgen | Alle genannten Fähigkeiten ergänzt |
 | IMG_4922.HEIC | Arbeitsheft 13: Plättchen lesen/verändern, Quersumme, Zahlwörter | Eigene Stellenwertgrafiken und passende Eingabeaufgaben ergänzt |
-| IMG_4923.HEIC | Buch 31: Plättchen, Quersummenveränderung, Zahlwörter, Einheiten | Digitale Varianten ergänzt; Zahlwort schreiben wird als Auswahl geprüft |
+| IMG_4923.HEIC | Buch 31: Plättchen, Quersummenveränderung, Zahlwörter, Einheiten | Digitale Varianten ergänzt; Zahlwort schreiben wird als Auswahl geprüft. „Welche Einheit passt?“ auf Nutzerwunsch vom Training und Test ausgeschlossen |
 | IMG_4924.HEIC | Buch 30: Zahlenstrahlen verschiedener Maßstäbe, Nachbarn, Folgen; Stellenwertbeziehungen | Skalierte Zahlenstrahlen und entsprechende Aufgaben ergänzt |
 | IMG_4925.HEIC | Buch 29: Zehntausenderfeld, Stellenwertmaterial, THZE, Bündeln | Stellenwerte/Blöcke ergänzt; das volle Zehntausender-Punktefeld wird nicht kopiert |
 | IMG_4926.HEIC | Buch 27: Einmaleins-Sterne, Sternensumme, fehlende Innenzahl, Muster | Eigene Sternengrafik mit Teilprodukten, Summe und eindeutiger fehlender Innenzahl ergänzt; offene Erfindungsaufträge nicht automatisch bewertet |

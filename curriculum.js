@@ -7,7 +7,7 @@
     divide:{label:'Halbschriftlich dividieren',types:['tens','inverse','relation']},
     rest:{label:'Dividieren mit Rest',types:['division','proof','baskets','divisors','prime','multiple','digitRest']},
     numbers:{label:'Zahlenraum bis 10.000',types:['place','decompose','bundle','digits','counters','move','crossSum','word','writeWord','line','neighbor','previous','next','sequence','sequenceRule','blocks']},
-    stories:{label:'Sachaufgaben',types:['multiply','divide','rest','roundUp','twoStep','question','units','money']}
+    stories:{label:'Sachaufgaben',types:['multiply','divide','rest','roundUp','twoStep','question','money']}
   };
   function number(a,b){return a+Math.floor(Math.random()*(b-a+1));}
   function pick(a){return a[number(0,a.length-1)];}
@@ -20,8 +20,11 @@
     return (Math.floor(n/1000)===1?'ein':word(Math.floor(n/1000)))+'tausend'+(n%1000?word(n%1000):'');
   }
   function keys(chapter){return chapters[chapter].types.map(function(type){return 'k:'+chapter+':'+type;});}
-  function allKeys(){return Object.keys(chapters).reduce(function(a,c){return a.concat(keys(c));},[]);}
+  // Keep retired records for earned rewards and existing backups, never schedule them.
+  var retiredKeys = ['k:stories:units'];
+  function allKeys(){return Object.keys(chapters).reduce(function(a,c){return a.concat(keys(c));},[]).concat(retiredKeys);}
   function question(chapter,type){
+    if(!chapters[chapter] || chapters[chapter].types.indexOf(type) === -1)return null;
     var a=number(2,9),b=number(12,99),n=number(1000,9999),d=number(2,10),q=number(12,99),r=number(0,d-1);
     var prompt='',fields=[],explanation='',visual=null;
     function field(label,value,options){fields.push({label:label,value:String(value),options:options});}
@@ -85,10 +88,9 @@
       else if(type==='twoStep'){var cost=a*b,paid=cost+number(1,9)*10;prompt=a+' Eintrittskarten kosten je '+b+' €. Die Gruppe bezahlt '+paid+' €. Wie viel Wechselgeld bekommt sie?';numeric('Gesamtpreis in €',cost);numeric('Wechselgeld in €',paid-cost);explanation='Erst multiplizieren, dann den Preis vom bezahlten Geld abziehen.';}
       else if(type==='question'){prompt='Ein Kurs mit 10 Stunden kostet '+q*10+' €. Welche Frage lässt sich mit diesen Angaben beantworten?';field('Passende Frage','Was kostet eine Stunde?',['Was kostet eine Stunde?','Wie alt ist die Kursleiterin?','Wie viele Kinder kommen?','Wie lange dauert die Fahrt?']);}
       else if(type==='money'){b=number(11,99);prompt=b+' Münzen zu je 10 Cent. Wie viele Cent sind das? Wie viele ganze Euro und übrige Cent?';numeric('Insgesamt Cent',b*10);numeric('Ganze Euro',Math.floor(b/10));numeric('Übrige Cent',b%10*10);}
-      else{var unit=pick([['Ein Training dauert 60 …','min'],['Ein Wanderweg ist 12 … lang.','km'],['Ein Brief wiegt 20 …','g'],['Eine Tür ist 2 … hoch.','m'],['Ein Kind wiegt 30 …','kg'],['Ein Käfer ist 8 … lang.','mm'],['Ein Finger ist 1 … breit.','cm'],['Ein Sprung dauert 1 …','s'],['Ein Ausflug dauert 5 …','h']]);prompt=unit[0];field('Passende Einheit',unit[1],['mm','cm','m','km','g','kg','s','min','h']);}
     }
     if(!explanation)explanation=fields.map(function(f){return f.label+': '+f.value;}).join('; ')+'.';
     return {prompt:prompt,fields:fields,explanation:explanation,visual:visual};
   }
-  root.TestCurriculum={chapters:chapters,keys:keys,allKeys:allKeys,question:question,word:word};
+  root.TestCurriculum={chapters:chapters,retiredKeys:retiredKeys,keys:keys,allKeys:allKeys,question:question,word:word};
 })(typeof window !== 'undefined' ? window : globalThis);

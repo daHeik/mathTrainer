@@ -405,6 +405,16 @@
     });
     p.examReports = normalizeExamReports(p.examReports);
     if (!p.today) p.today = defaultProfile().today;
+    if (Array.isArray(p.today.queue)){
+      var removedBeforeIndex = 0;
+      p.today.queue = p.today.queue.filter(function(key,index){
+        var keep = curriculum.retiredKeys.indexOf(key) === -1;
+        if(!keep && index < p.today.index)removedBeforeIndex++;
+        return keep;
+      });
+      p.today.index = Math.max(0,(Number(p.today.index)||0)-removedBeforeIndex);
+    }
+
     if (!p.writtenSkills || typeof p.writtenSkills !== 'object') p.writtenSkills = {};
     writtenSkillKeys().forEach(function(key){
       if (!p.writtenSkills[key]) p.writtenSkills[key] = learningDefaults(normalizationDate);
@@ -729,7 +739,7 @@
   }
 
   function practiceSkill(key){
-    if (typeof key !== 'string') return null;
+    if (typeof key !== 'string' || curriculum.retiredKeys.indexOf(key) !== -1) return null;
     if (curriculum.allKeys().indexOf(key) !== -1){
       var parts = key.split(':');
       return {key:key,kind:'curriculum',chapter:parts[1],type:parts[2],operation:'curriculum_'+parts[1],fact:null,record:state.curriculumSkills[key]};

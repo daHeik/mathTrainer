@@ -2442,3 +2442,17 @@ assert.strictEqual(elements.homeGroupNumbers.hidden,false);assert.strictEqual(el
 assert.strictEqual(elements.mixedLearning.hidden,false);
 api.renderHome();assert.strictEqual(elements.numbers10000Btn.children.length,0,'Topic buttons stay text-only across renders');
 console.log('Home clusters: topic membership, empty-group hiding, semiFree-only plan, featured test and text-only buttons OK');
+
+// Retired unit-selection tasks must disappear without taking away earned progress.
+var withoutUnits=api.normalizeProfile(api.defaultProfile());api.setState(withoutUnits);api.ensureFactPool();
+withoutUnits.curriculumSkills['k:stories:units'].correctCount=3;
+withoutUnits.today.queue=['k:stories:units','k:stories:multiply','k:stories:units','k:stories:divide'];withoutUnits.today.index=2;
+api.normalizeProfile(withoutUnits);
+assert.strictEqual(JSON.stringify(withoutUnits.today.queue),'["k:stories:multiply","k:stories:divide"]');assert.strictEqual(withoutUnits.today.index,1);
+assert.strictEqual(api.correctAnswersForProfile(withoutUnits),3);
+assert.strictEqual(api.practiceSkill('k:stories:units'),null);assert.strictEqual(curriculum.question('stories','units'),null);
+assert.strictEqual(api.examKeys('stories').length,7);
+assert(api.practiceSkillsInRange(null,'wordProblems').every(function(skill){return skill.key!=='k:stories:units';}));
+assert(api.buildExamQueue('all').every(function(key){return key!=='k:stories:units';}));
+assert.strictEqual(api.correctAnswersForProfile(api.normalizeProfile(JSON.parse(JSON.stringify(withoutUnits)))),3);
+console.log('Unit selection removed from practice, tests and saved queues; historical rewards and backup counts preserved');
