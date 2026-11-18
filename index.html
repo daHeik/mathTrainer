@@ -86,7 +86,7 @@
           </div>
         </section>
       </div>
-      <p class="app-version" id="appVersion">Version 67</p>
+      <p class="app-version" id="appVersion">Version 68</p>
     </div>
 
     <div class="screen semi-intro" id="screen-semi-intro">
@@ -264,8 +264,10 @@
         <canvas id="gameCanvas" width="480" height="270" draggable="false"
                 aria-label="Dinosaurier-Sprungspiel mit Kakteen, Sternen und fliegenden Hindernissen"></canvas>
         <div class="game-overlay" id="gameOverlay" role="status" aria-live="polite" hidden>
-          <strong id="gameOverlayTitle"></strong>
-          <span id="gameOverlayText"></span>
+          <div class="game-message-card" tabindex="-1">
+            <strong id="gameOverlayTitle"></strong>
+            <span id="gameOverlayText"></span>
+          </div>
         </div>
       </div>
       <p class="game-help">Sammle Sterne über den Kakteen. Bei fliegenden Dinos bleibst du besser am Boden!</p>
@@ -290,8 +292,10 @@
         <canvas id="flappyCanvas" width="480" height="360" draggable="false"
                 aria-label="Flattervogel-Spiel mit Röhren"></canvas>
         <div class="game-overlay" id="flappyOverlay" role="status" aria-live="polite" hidden>
-          <strong id="flappyOverlayTitle"></strong>
-          <span id="flappyOverlayText"></span>
+          <div class="game-message-card" tabindex="-1">
+            <strong id="flappyOverlayTitle"></strong>
+            <span id="flappyOverlayText"></span>
+          </div>
         </div>
       </div>
       <p class="game-help">Tippe, klicke oder drücke die Leertaste, damit der Vogel flattert.</p>
@@ -316,8 +320,10 @@
         <canvas id="towerCanvas" width="480" height="480" draggable="false"
                 aria-label="Turmbauspiel mit beweglichen Bausteinen"></canvas>
         <div class="game-overlay" id="towerOverlay" role="status" aria-live="polite" hidden>
-          <strong id="towerOverlayTitle"></strong>
-          <span id="towerOverlayText"></span>
+          <div class="game-message-card" tabindex="-1">
+            <strong id="towerOverlayTitle"></strong>
+            <span id="towerOverlayText"></span>
+          </div>
         </div>
       </div>
       <p class="game-help">Tippe im richtigen Moment. Perfekte Treffer behalten die volle Breite!</p>
@@ -334,7 +340,12 @@
       <div class="game-hud"><span id="gravityTime">3:00</span><span id="gravityAttempts">Versuch: 1/3</span><span id="gravityScore">Punkte: 0</span><span id="gravityBest">Rekord: 0</span><span id="gravityLevel">Stufe: 1/6</span><span id="gravityCoins">Münzen: 0</span></div>
       <div class="game-wrap" id="gravityWrap" tabindex="0" role="button" aria-label="Tippen wechselt die Schwerkraft">
         <canvas id="gravityCanvas" width="640" height="360" draggable="false" aria-label="Gravity Run: automatisch laufende Figur mit Hindernissen und Lücken"></canvas>
-        <div class="game-overlay" id="gravityOverlay" role="status" aria-live="polite" hidden><strong id="gravityOverlayTitle"></strong><span id="gravityOverlayText"></span></div>
+        <div class="game-overlay" id="gravityOverlay" role="status" aria-live="polite" hidden>
+          <div class="game-message-card" tabindex="-1">
+            <strong id="gravityOverlayTitle"></strong>
+            <span id="gravityOverlayText"></span>
+          </div>
+        </div>
       </div>
       <p class="game-help">Tippe zum Wechseln. Erst mit Boden unter den Füßen kannst du erneut wechseln. Münzen: +20 Punkte. Schild: 10 s Superman-Schutz.</p>
       <button class="secondary-btn" id="gravityAgainBtn" style="display:none">Nochmal spielen</button>
@@ -349,7 +360,12 @@
       <div class="game-hud"><span id="brickTime">5:00</span><span id="brickAttempts">Versuch: 1/3</span><span id="brickScore">Punkte: 0</span><span id="brickBest">Rekord: 0</span></div>
       <div class="game-wrap" id="brickWrap" tabindex="0" aria-label="Bricks Spielfeld">
         <canvas id="brickCanvas" width="480" height="480" draggable="false" aria-label="Bricks"></canvas>
-        <div class="game-overlay" id="brickOverlay" role="status" aria-live="polite" hidden><strong id="brickOverlayTitle"></strong><span id="brickOverlayText"></span></div>
+        <div class="game-overlay" id="brickOverlay" role="status" aria-live="polite" hidden>
+          <div class="game-message-card" tabindex="-1">
+            <strong id="brickOverlayTitle"></strong>
+            <span id="brickOverlayText"></span>
+          </div>
+        </div>
       </div>
 
       <p class="game-help">Ziehe den Finger nach links und rechts: Der Schläger folgt direkt. ↔ macht ihn breiter, 3 bringt Mehrfachbälle.</p>
@@ -365,7 +381,12 @@
       <div class="game-hud"><span id="snakeTime">3:00</span><span id="snakeAttempts">Versuch: 1/3</span><span id="snakeScore">Punkte: 0</span><span id="snakeBest">Rekord: 0</span></div>
       <div class="game-wrap" id="snakeWrap" tabindex="0" aria-label="Cleo Spielfeld">
         <canvas id="snakeCanvas" width="480" height="480" draggable="false" aria-label="Cleo: Sammle Kürbisse mit der Regenbogenraupe und meide Bomben"></canvas>
-        <div class="game-overlay" id="snakeOverlay" role="status" aria-live="polite" hidden><strong id="snakeOverlayTitle"></strong><span id="snakeOverlayText"></span></div>
+        <div class="game-overlay" id="snakeOverlay" role="status" aria-live="polite" hidden>
+          <div class="game-message-card" tabindex="-1">
+            <strong id="snakeOverlayTitle"></strong>
+            <span id="snakeOverlayText"></span>
+          </div>
+        </div>
       </div>
       <div class="snake-controls" aria-label="Cleo-Steuerung"><button id="snakeUpBtn" aria-label="Nach oben"><span>↑</span></button><button id="snakeLeftBtn" aria-label="Nach links"><span>←</span></button><button id="snakeDownBtn" aria-label="Nach unten"><span>↓</span></button><button id="snakeRightBtn" aria-label="Nach rechts"><span>→</span></button></div>
       <p class="game-help">Wische in die gewünschte Richtung oder nutze die vier Richtungstasten. Am Rechner funktionieren die Pfeiltasten.</p>
@@ -381,7 +402,12 @@
       <div class="game-hud"><span id="snowTime">3:00</span><span id="snowAttempts">Versuch: 1/3</span><span id="snowScore">Punkte: 0</span><span id="snowBest">Rekord: 0</span></div>
       <div class="game-wrap" id="snowWrap" tabindex="0" aria-label="Schneefahrt Spielfeld">
         <canvas id="snowCanvas" width="640" height="360" aria-label="Snowboard-Spiel mit Bergen, Münzen und Saltos"></canvas>
-        <div class="game-overlay" id="snowOverlay" role="status" aria-live="polite" hidden><strong id="snowOverlayTitle"></strong><span id="snowOverlayText"></span></div>
+        <div class="game-overlay" id="snowOverlay" role="status" aria-live="polite" hidden>
+          <div class="game-message-card" tabindex="-1">
+            <strong id="snowOverlayTitle"></strong>
+            <span id="snowOverlayText"></span>
+          </div>
+        </div>
       </div>
       <p class="game-help">Tippe zum Springen. Halte im Flug für einen Rückwärtssalto und lasse rechtzeitig los. Lande mit dem Board nach unten! Kombiniere Saltos und Grinds für Boosts. Dem Verfolger entkommst du mit Backflips.</p>
       <button class="secondary-btn" id="snowAgainBtn" style="display:none">Nochmal spielen</button>
@@ -392,7 +418,12 @@
       <div class="game-hud"><span id="runnerTime">3:00</span><span id="runnerAttempts">Versuch: 1/3</span><span id="runnerScore">Punkte: 0</span><span id="runnerBest">Rekord: 0</span></div>
       <div class="game-wrap" id="runnerWrap" tabindex="0" aria-label="Metro Run: Wischen in vier Richtungen">
         <canvas id="runnerCanvas" width="480" height="720" aria-label="Dreispurige Stadtstrecke mit Zügen, Schranken und Münzen"></canvas>
-        <div class="game-overlay" id="runnerOverlay" role="status" aria-live="polite" hidden><strong id="runnerOverlayTitle"></strong><span id="runnerOverlayText"></span></div>
+        <div class="game-overlay" id="runnerOverlay" role="status" aria-live="polite" hidden>
+          <div class="game-message-card" tabindex="-1">
+            <strong id="runnerOverlayTitle"></strong>
+            <span id="runnerOverlayText"></span>
+          </div>
+        </div>
       </div>
       <div class="runner-controls" aria-label="Metro Run Steuerung"><button id="runnerleftBtn" aria-label="Spur nach links">←</button><button id="runnerjumpBtn" aria-label="Springen">↑<small>Springen</small></button><button id="runnerslideBtn" aria-label="Rutschen">↓<small>Rutschen</small></button><button id="runnerrightBtn" aria-label="Spur nach rechts">→</button></div>
       <button class="secondary-btn" id="runnerAgainBtn" style="display:none">Nochmal spielen</button>
@@ -401,22 +432,50 @@
 <div class="screen classic-game" id="screen-doodle">
  <div class="game-toolbar"><button class="secondary-btn" id="doodleHomeBtn">Spiel beenden</button><h1>Doodle Jump</h1><button class="game-pause-btn" id="doodlePauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="doodleFullscreenBtn">Vollbild</button></div>
  <div class="game-hud"><span id="doodleTime">3:00</span><span id="doodleAttempts">Versuch: 1/3</span><span id="doodleScore">Punkte: 0</span><span id="doodleBest">Rekord: 0</span></div>
- <div class="game-wrap" id="doodleWrap" tabindex="0" aria-label="Doodle Jump Spielfeld"><canvas id="doodleCanvas" width="480" height="640" aria-label="Doodle Jump"></canvas><div class="game-overlay" id="doodleOverlay" role="status" aria-live="polite" hidden><strong id="doodleOverlayTitle"></strong><span id="doodleOverlayText"></span></div></div>
+ <div class="game-wrap" id="doodleWrap" tabindex="0" aria-label="Doodle Jump Spielfeld"><canvas id="doodleCanvas" width="480" height="640" aria-label="Doodle Jump"></canvas>
+  <div class="game-overlay" id="doodleOverlay" role="status" aria-live="polite" hidden>
+    <div class="game-message-card" tabindex="-1">
+      <strong id="doodleOverlayTitle"></strong>
+      <span id="doodleOverlayText"></span>
+    </div>
+  </div>
+ </div>
  <div class="classic-controls " aria-label="Doodle Jump Steuerung"><button type="button" data-action="left" id="doodleleftBtn" aria-label="Links">←</button><button type="button" data-action="right" id="doodlerightBtn" aria-label="Rechts">→</button></div><button class="secondary-btn" id="doodleAgainBtn" style="display:none">Nochmal spielen</button></div>
 <div class="screen classic-game" id="screen-tiles">
  <div class="game-toolbar"><button class="secondary-btn" id="tilesHomeBtn">Spiel beenden</button><h1>2048</h1><button class="game-pause-btn" id="tilesPauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="tilesFullscreenBtn">Vollbild</button></div>
  <div class="game-hud"><span id="tilesTime">5:00</span><span id="tilesAttempts">Ein Versuch</span><span id="tilesScore">Punkte: 0</span><span id="tilesBest">Rekord: 0</span></div>
- <div class="game-wrap" id="tilesWrap" tabindex="0" aria-label="2048 Spielfeld"><canvas id="tilesCanvas" width="480" height="640" aria-label="2048"></canvas><div class="game-overlay" id="tilesOverlay" role="status" aria-live="polite" hidden><strong id="tilesOverlayTitle"></strong><span id="tilesOverlayText"></span></div></div>
+ <div class="game-wrap" id="tilesWrap" tabindex="0" aria-label="2048 Spielfeld"><canvas id="tilesCanvas" width="480" height="640" aria-label="2048"></canvas>
+  <div class="game-overlay" id="tilesOverlay" role="status" aria-live="polite" hidden>
+    <div class="game-message-card" tabindex="-1">
+      <strong id="tilesOverlayTitle"></strong>
+      <span id="tilesOverlayText"></span>
+    </div>
+  </div>
+ </div>
  <div class="classic-controls direction-pad" aria-label="2048 Steuerung"><button type="button" data-action="up" id="tilesupBtn" aria-label="Hoch">↑</button><button type="button" data-action="left" id="tilesleftBtn" aria-label="Links">←</button><button type="button" data-action="down" id="tilesdownBtn" aria-label="Runter">↓</button><button type="button" data-action="right" id="tilesrightBtn" aria-label="Rechts">→</button></div><button class="secondary-btn" id="tilesAgainBtn" style="display:none">Nochmal spielen</button></div>
 <div class="screen classic-game" id="screen-maze">
  <div class="game-toolbar"><button class="secondary-btn" id="mazeHomeBtn">Spiel beenden</button><h1>Pac-Man</h1><button class="game-pause-btn" id="mazePauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="mazeFullscreenBtn">Vollbild</button></div>
  <div class="game-hud"><span id="mazeTime">3:00</span><span id="mazeAttempts">Versuch: 1/3</span><span id="mazeScore">Punkte: 0</span><span id="mazeBest">Rekord: 0</span></div>
- <div class="game-wrap" id="mazeWrap" tabindex="0" aria-label="Pac-Man Spielfeld"><canvas id="mazeCanvas" width="480" height="640" aria-label="Pac-Man"></canvas><div class="game-overlay" id="mazeOverlay" role="status" aria-live="polite" hidden><strong id="mazeOverlayTitle"></strong><span id="mazeOverlayText"></span></div></div>
+ <div class="game-wrap" id="mazeWrap" tabindex="0" aria-label="Pac-Man Spielfeld"><canvas id="mazeCanvas" width="480" height="640" aria-label="Pac-Man"></canvas>
+  <div class="game-overlay" id="mazeOverlay" role="status" aria-live="polite" hidden>
+    <div class="game-message-card" tabindex="-1">
+      <strong id="mazeOverlayTitle"></strong>
+      <span id="mazeOverlayText"></span>
+    </div>
+  </div>
+ </div>
  <div class="classic-controls direction-pad" aria-label="Pac-Man Steuerung"><button type="button" data-action="up" id="mazeupBtn" aria-label="Hoch">↑</button><button type="button" data-action="left" id="mazeleftBtn" aria-label="Links">←</button><button type="button" data-action="down" id="mazedownBtn" aria-label="Runter">↓</button><button type="button" data-action="right" id="mazerightBtn" aria-label="Rechts">→</button></div><button class="secondary-btn" id="mazeAgainBtn" style="display:none">Nochmal spielen</button></div>
 <div class="screen classic-game" id="screen-asteroid">
  <div class="game-toolbar"><button class="secondary-btn" id="asteroidHomeBtn">Spiel beenden</button><h1>Asteroids</h1><button class="game-pause-btn" id="asteroidPauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="asteroidFullscreenBtn">Vollbild</button></div>
  <div class="game-hud"><span id="asteroidTime">3:00</span><span id="asteroidAttempts">Versuch: 1/3</span><span id="asteroidScore">Punkte: 0</span><span id="asteroidBest">Rekord: 0</span></div>
- <div class="game-wrap" id="asteroidWrap" tabindex="0" aria-label="Asteroids Spielfeld"><canvas id="asteroidCanvas" width="480" height="640" aria-label="Asteroids"></canvas><div class="game-overlay" id="asteroidOverlay" role="status" aria-live="polite" hidden><strong id="asteroidOverlayTitle"></strong><span id="asteroidOverlayText"></span></div></div>
+ <div class="game-wrap" id="asteroidWrap" tabindex="0" aria-label="Asteroids Spielfeld"><canvas id="asteroidCanvas" width="480" height="640" aria-label="Asteroids"></canvas>
+  <div class="game-overlay" id="asteroidOverlay" role="status" aria-live="polite" hidden>
+    <div class="game-message-card" tabindex="-1">
+      <strong id="asteroidOverlayTitle"></strong>
+      <span id="asteroidOverlayText"></span>
+    </div>
+  </div>
+ </div>
  <div class="classic-controls " aria-label="Asteroids Steuerung"><button type="button" data-action="left" id="asteroidleftBtn" aria-label="Links">←<small>Links</small></button><button type="button" data-action="up" id="asteroidupBtn" aria-label="Schub">↑<small>Schub</small></button><button type="button" data-action="fire" id="asteroidfireBtn" aria-label="Feuer">✦<small>Feuer</small></button><button type="button" data-action="right" id="asteroidrightBtn" aria-label="Rechts">→<small>Rechts</small></button></div><button class="secondary-btn" id="asteroidAgainBtn" style="display:none">Nochmal spielen</button></div>
 
   </div>

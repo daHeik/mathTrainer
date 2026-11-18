@@ -3,7 +3,7 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `939a588` mit lokalem Quadrat-/Wurzelmodus; PWA-Cache `1x1-trainer-v67`, keine separate semantische App-Version |
+| Version | Basis `62ee14e` mit gemeinsamen Spiel-Nachrichtenkarten; PWA-Cache `1x1-trainer-v68`, keine separate semantische App-Version |
 | Letzte Quellcodeänderung | 2026-11-18 |
 | Letzte Projekt-/README-Änderung | 2026-11-18 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
@@ -297,6 +297,12 @@ Backups sind lokal erzeugte JSON-Dateien und werden vor Übernahme geprüft. Neu
 
 Die ursprünglichen zwölf Canvas-Spiele teilen Lebenszyklus, Pause, erste-Spielaktion-Buchung, Profilrekorde und Touchabbildung. Das dreizehnte Spiel, Frog Punch, verwendet SVG-/DOM-Ziele und drei Zeitrunden; es ist in dieselbe Auswahl, Pause und Kontingentbuchung integriert. Als vierzehntes Spiel ergänzt Chicken Shooter eine eigenständige 90-Sekunden-Partie mit saisonalem Hühnerhof und eigener Top-5-Liste. Die ursprünglichen Spiele liegen in `app.js`, Doodle/2048/Pac-Man/Asteroids in `arcade-extra.js` mit `VocabArcade.create()` als Schnittstelle. Ein Spiel auf der Auswahlseite zu öffnen bucht noch nichts ab. Aktive Spielzeit und Versuchszahl werden unabhängig vom Öffnen der Spielauswahl geführt. Eine Verlängerung derselben Welt wie in Vocabulator ist hier nicht implementiert.
 
+### Nachrichtenkarten für Start, Fehlversuch und Endstand
+
+Die zwölf Canvas-Spiele von Dino bis Asteroids zeigen Hinweise, Fehlversuche und Ergebnisse in einer mittigen Karte. Tippen auf die Karte oder daneben erreicht dieselbe Spielsteuerung. Während des Spiels verschwindet die Karte. Lange Ergebnisse brechen um und lassen sich bei Platzmangel in der Karte scrollen. Der vorhandene Button für ein weiteres Spiel bleibt außerhalb des Feldes. Frog Punch und Chicken Shooter nutzen ihre eigenen Anzeigen.
+
+In `index.html` gruppiert `.game-message-card` die vorhandenen Titel- und Textknoten innerhalb der Live-Region `.game-overlay`. Die Zustandsfunktionen in `app.js` setzen weiterhin Texte und `hidden` über die vorhandenen IDs. Eingaben erreichen den bestehenden Listener des Spielfelds. `styles.css` begrenzt die Kartenbreite auf 320 CSS-Pixel, dimmt die Spielfläche leicht und reduziert die Kartenpolsterung im niedrigen Querformat. Die bestehende Pauseebene deckt auch die Nachrichtenkarte ab.
+
 ### 2048: Start, ein Versuch und endgültiges Spielende
 
 Ein Tipp/Klick auf das Spielfeld startet die aktive Zeit und bucht genau ein
@@ -357,7 +363,7 @@ Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben un
 
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v62`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v68`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 

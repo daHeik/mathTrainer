@@ -512,13 +512,41 @@
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    padding:20px;
-    background:rgba(255,255,255,0.86);
-    text-align:center;
+    padding:12px;
+    background:rgba(23,23,27,.14);
   }
   .game-overlay[hidden]{ display:none; }
-  .game-overlay strong{ font-size:1.35rem; }
-  .game-overlay span{ color:var(--ink-soft); margin-top:6px; }
+  .game-message-card{
+    background:var(--card);
+    color:var(--ink);
+    border:1px solid var(--app-line);
+    border-radius:16px;
+    padding:16px;
+    width:min(100%,320px);
+    max-height:100%;
+    overflow-y:auto;
+    overflow-wrap:anywhere;
+    overscroll-behavior:contain;
+    touch-action:pan-y pinch-zoom;
+    text-align:center;
+    box-shadow:0 3px 12px #17171b18;
+  }
+  .game-overlay .game-message-card strong{
+    display:block;
+    font-size:1.125rem;
+    line-height:1.25;
+  }
+  .game-overlay .game-message-card span{
+    display:block;
+    font-size:1rem;
+    line-height:1.35;
+    color:var(--ink-soft);
+    margin-top:6px;
+  }
+  @media (orientation:landscape) and (max-height:500px){
+    .game-overlay{ padding:8px; }
+    .game-message-card{ padding:10px 14px; }
+  }
   .game-help{
     text-align:center;
     color:var(--ink-soft);
