@@ -86,7 +86,7 @@
           </div>
         </section>
       </div>
-      <p class="app-version" id="appVersion">Version 69</p>
+      <p class="app-version" id="appVersion">Version 70</p>
     </div>
 
     <div class="screen semi-intro" id="screen-semi-intro">
@@ -260,7 +260,7 @@
         <span id="gameStars">Sterne: 0 · Super 0/3</span>
         <span id="gameCombo">Combo ×1</span>
       </div>
-      <div class="game-wrap" id="gameWrap">
+      <div class="game-wrap" id="gameWrap" tabindex="0" role="group" aria-label="Spielfeld für Dino-Sprung" aria-describedby="gameOverlayText">
         <canvas id="gameCanvas" width="480" height="270" draggable="false"
                 aria-label="Dinosaurier-Sprungspiel mit Kakteen, Sternen und fliegenden Hindernissen"></canvas>
         <div class="game-overlay" id="gameOverlay" role="status" aria-live="polite" hidden>
@@ -288,7 +288,7 @@
         <span id="flappyScore">Punkte: 0</span>
         <span id="flappyBest">Rekord: 0</span>
       </div>
-      <div class="game-wrap" id="flappyWrap">
+      <div class="game-wrap" id="flappyWrap" tabindex="0" role="group" aria-label="Spielfeld für Flattervogel" aria-describedby="flappyOverlayText">
         <canvas id="flappyCanvas" width="480" height="360" draggable="false"
                 aria-label="Flattervogel-Spiel mit Röhren"></canvas>
         <div class="game-overlay" id="flappyOverlay" role="status" aria-live="polite" hidden>
@@ -316,7 +316,7 @@
         <span id="towerScore">Punkte: 0</span>
         <span id="towerBest">Rekord: 0</span>
       </div>
-      <div class="game-wrap" id="towerWrap">
+      <div class="game-wrap" id="towerWrap" tabindex="0" role="group" aria-label="Spielfeld für Turmbauer" aria-describedby="towerOverlayText">
         <canvas id="towerCanvas" width="480" height="480" draggable="false"
                 aria-label="Turmbauspiel mit beweglichen Bausteinen"></canvas>
         <div class="game-overlay" id="towerOverlay" role="status" aria-live="polite" hidden>
@@ -375,12 +375,12 @@
 
     <div class="screen" id="screen-snake">
       <div class="game-toolbar"><button class="secondary-btn" id="snakeHomeBtn">Spiel beenden</button><h1>Cleo</h1><button class="game-pause-btn" id="snakePauseBtn" aria-label="Spiel pausieren">Ⅱ</button><button class="secondary-btn fullscreen-btn" id="snakeFullscreenBtn" aria-label="Bildschirmfüllende Spielansicht umschalten">Vollbild</button></div>
-      <p class="subtitle">Sammle Äpfel mit deiner Regenbogenraupe – die Ränder führen zur anderen Seite!</p>
+      <p class="subtitle">Sammle Futter mit deiner Regenbogenraupe. Am Rand geht es auf der anderen Seite weiter.</p>
 
 
       <div class="game-hud"><span id="snakeTime">3:00</span><span id="snakeAttempts">Versuch: 1/3</span><span id="snakeScore">Punkte: 0</span><span id="snakeBest">Rekord: 0</span></div>
       <div class="game-wrap" id="snakeWrap" tabindex="0" aria-label="Cleo Spielfeld">
-        <canvas id="snakeCanvas" width="480" height="480" draggable="false" aria-label="Cleo: Sammle Kürbisse mit der Regenbogenraupe und meide Bomben"></canvas>
+        <canvas id="snakeCanvas" width="480" height="480" draggable="false" aria-label="Cleo: Futter sammeln und Bomben ausweichen"></canvas>
         <div class="game-overlay" id="snakeOverlay" role="status" aria-live="polite" hidden>
           <div class="game-message-card" tabindex="-1">
             <strong id="snakeOverlayTitle"></strong>

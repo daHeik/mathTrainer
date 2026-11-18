@@ -3236,7 +3236,7 @@
     };
     resetGameAttempt();
     gameOverlayTitle.textContent = 'Bereit?';
-    gameOverlayText.textContent = 'Tippe zum Loslaufen und Springen!';
+    gameOverlayText.textContent = 'Tippe oder drücke die Leertaste zum Springen.';
     gameOverlay.hidden = false;
     showScreen(screenGame);
     updateGameHud();
@@ -3624,16 +3624,14 @@
   });
   document.addEventListener('keydown', function(e){
     if(gameControlKey(e))return;
-    if ((e.key === ' ' || e.key === 'ArrowUp') && rewardGame && rewardGame.active){
-      e.preventDefault();
-      jumpRewardDino();
-    } else if ((e.key === ' ' || e.key === 'ArrowUp') && flappyGame && flappyGame.active){
-      e.preventDefault();
-      flapRewardBird();
-    } else if ((e.key === ' ' || e.key === 'ArrowDown') && towerGame && towerGame.active){
-      e.preventDefault();
-      placeTowerBlock();
-    }
+    var space = e.key === ' ';
+    var action;
+    if ((space || e.key === 'ArrowUp') && rewardGame && rewardGame.active) action = jumpRewardDino;
+    else if ((space || e.key === 'ArrowUp') && flappyGame && flappyGame.active) action = flapRewardBird;
+    else if ((space || e.key === 'ArrowDown') && towerGame && towerGame.active) action = placeTowerBlock;
+    if (!action) return;
+    e.preventDefault();
+    if (!space || !e.repeat) action();
   });
   gameHomeBtn.addEventListener('click', function(){
     exitGameFullscreen();
@@ -3703,7 +3701,7 @@
     };
     resetFlappyAttempt();
     flappyOverlayTitle.textContent = 'Bereit?';
-    flappyOverlayText.textContent = 'Tippe zum Losflattern!';
+    flappyOverlayText.textContent = 'Tippe oder drücke die Leertaste zum Flattern.';
     flappyOverlay.hidden = false;
     showScreen(screenFlappy);
     updateFlappyHud();
@@ -4008,7 +4006,7 @@
     };
     resetTowerAttempt();
     towerOverlayTitle.textContent = 'Bereit?';
-    towerOverlayText.textContent = 'Tippe zum Starten und dann zum Stapeln!';
+    towerOverlayText.textContent = 'Tippe oder drücke die Leertaste zum Starten. Beim nächsten Mal setzt du den Stein.';
     towerOverlay.hidden = false;
     showScreen(screenTower);
     updateTowerHud();

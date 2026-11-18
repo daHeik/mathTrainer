@@ -67,6 +67,7 @@ Array.from(html.matchAll(/<canvas\b[^>]*\bid="([^"]+)"[^>]*>/g)).forEach(functio
 });
 var storage = {};
 var timers = [];
+var documentKeydowns = [];
 var context = {
   console:console, Date:Date, Math:Object.create(Math), Set:Set,
   document:{
@@ -83,7 +84,7 @@ var context = {
     createElement:function(){ return new Element(); },
     createElementNS:function(){ return new Element(); },
     createTextNode:function(value){ var node = new Element(); node.textContent = value; return node; },
-    addEventListener:function(){}
+    addEventListener:function(name, callback){ if (name === 'keydown') documentKeydowns.push(callback); }
   },
   window:{ scrollTo:function(){}, addEventListener:function(){} },
   localStorage:{ getItem:function(key){ return storage[key] || null; }, setItem:function(key, value){ storage[key] = value; } },
@@ -2502,3 +2503,52 @@ var sqBlocked=JSON.stringify(squaresProfile.today);api.startSession(true,null,'s
 var sqOld=api.defaultProfile();delete sqOld.squareSkills;api.normalizeProfile(sqOld);assert.strictEqual(Object.keys(sqOld.squareSkills).length,40);
 sqOld.squareSkills={'sq:root:7':[]};api.normalizeProfile(sqOld);assert.strictEqual(sqOld.squareSkills['sq:root:7'].correctCount,0);
 console.log('Squares/roots: configured base/result range, mixed rounds, root overbar, input/choices, retries, repeat, progress/history/backups and plan guards OK');
+
+var keyboardGameProfile = api.normalizeProfile(api.defaultProfile());
+keyboardGameProfile.config.childName = 'Tastaturtest';
+keyboardGameProfile.config.sound = false;
+api.setState(keyboardGameProfile);
+
+function gameKey(target, key, repeat){
+  var prevented = false;
+  var event = { target:target, key:key, repeat:repeat, preventDefault:function(){ prevented = true; } };
+  documentKeydowns.forEach(function(listener){ listener(event); });
+  return prevented;
+}
+
+[
+  ['Dino', 'game', 'dino', 'ArrowUp', function(game){ game.dino.grounded = true; return function(){ return game.dino.grounded; }; }],
+  ['Flappy', 'flappy', 'flappy', 'ArrowUp', function(game){ game.bird.vy = 0; return function(){ return game.bird.vy; }; }],
+  ['Tower', 'tower', 'tower', 'ArrowDown', function(game){ game.moving.x = game.blocks[game.blocks.length - 1].x; return function(){ return game.height; }; }]
+].forEach(function(spec){
+  keyboardGameProfile.reward.availablePlays = 1;
+  elements.navGames.click();
+  elements['choose' + spec[0] + 'Btn'].click();
+  var prefix = spec[1];
+  var screen = elements['screen-' + prefix];
+  var wrap = elements[prefix + 'Wrap'];
+  var pause = elements[prefix + 'PauseBtn'];
+  var game = api.games()[spec[2]];
+  pause.closest = function(selector){ return selector === '.game-immersive button' ? pause : null; };
+  wrap.focus();
+  assert.strictEqual(gameKey(wrap, 'Tab', false), false);
+  assert.strictEqual(gameKey(pause, ' ', false), false, 'Native button action receives Space');
+  assert.strictEqual(game.running, false);
+  assert.strictEqual(keyboardGameProfile.reward.availablePlays, 1);
+  assert.strictEqual(gameKey(wrap, ' ', false), true);
+  assert.strictEqual(game.running, true);
+  assert.strictEqual(keyboardGameProfile.reward.availablePlays, 0);
+
+  var actionState = spec[4](game);
+  var before = actionState();
+  assert.strictEqual(gameKey(wrap, ' ', true), true, 'Repeated Space also suppresses browser scrolling');
+  assert.strictEqual(actionState(), before, 'Held Space does not trigger another action');
+  api.pauseGame(screen);
+  gameKey(wrap, ' ', false);
+  assert.strictEqual(actionState(), before);
+  api.resumeGame(screen);
+  assert.strictEqual(gameKey(wrap, spec[3], true), true);
+  assert.notStrictEqual(actionState(), before, 'Existing arrow action still accepts repeats');
+  elements[prefix + 'HomeBtn'].click();
+});
+console.log('Dino, Flappy and Tower: keyboard start, one Space action, native toolbar controls, pause and arrow mappings OK');

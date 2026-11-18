@@ -3,7 +3,7 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `a92c053` mit gegliederter Spielstatusleiste; PWA-Cache `1x1-trainer-v69`, keine separate semantische App-Version |
+| Version | Basis `231990c` mit Tastaturfokus für drei Ein-Tipp-Spiele; PWA-Cache `1x1-trainer-v70`, keine separate semantische App-Version |
 | Letzte Quellcodeänderung | 2026-11-18 |
 | Letzte Projekt-/README-Änderung | 2026-11-18 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
@@ -309,6 +309,12 @@ In der geöffneten Spielansicht sind Zeit und Punkte kräftiger gesetzt als Vers
 
 `styles.css` ordnet die vorhandenen `Time`- und `Score`-IDs innerhalb der aktiven immersiven Ansicht als Hauptwerte ein. Das Gravity-Raster verwendet die vorhandenen fünf Statusfelder. Separate Rekordfelder sind in der immersiven Ansicht ausgeblendet. Bereits zusammengefasste Angaben können innerhalb ihres Felds umbrechen, etwa Punkte und Rekord bei Dino-Sprung oder Zeit und letzter Versuch beim Turmbauer. Die Anzeige liest weiterhin die von `app.js` gesetzten Werte für Zeit, Versuche, Punkte und Ladezustand. Der CSS-Wechsel benötigt keine Anpassung des Spielfortschritts oder der Profildaten.
 
+### Tastatursteuerung für Dino-Sprung, Flattervogel und Turmbauer
+
+Mit Tab erreichst du zuerst die Toolbar und danach das Spielfeld. Ein dunkler und ein heller Rand markieren den Tastaturfokus. Drücke auf dem Feld die Leertaste zum Springen oder Flattern. Beim Turmbauer startest du damit zuerst den Versuch und setzt den Stein mit dem nächsten Tastendruck. Alternativ funktionieren Pfeil hoch bei Dino und Flattervogel, Pfeil runter beim Turmbauer und ein Tipp oder Klick aufs Feld.
+
+In `index.html` stehen die drei Spielfelder als benannte Gruppen mit `tabindex="0"` in der Fokusreihenfolge. Die vorhandenen Statusmeldungen beschreiben das Feld, und `styles.css` zeichnet die Fokusmarkierung innerhalb der Spielfläche. Der dokumentweite Tasten-Listener in `app.js` routet die Leertaste und die Pfeiltasten zu den bestehenden Spielaktionen. Er unterdrückt die automatische Wiederholung der Leertaste. Toolbar-Buttons verarbeiten ihre eigene Tastaturaktion, etwa Pause oder Fortsetzen. Das Fokussieren eines Feldes löst keine Spielaktion aus. Pause und Kontingentbuchung werden weiterhin von den jeweiligen Spielaktionen geprüft.
+
 ### 2048: Start, ein Versuch und endgültiges Spielende
 
 Ein Tipp/Klick auf das Spielfeld startet die aktive Zeit und bucht genau ein
@@ -369,7 +375,7 @@ Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben un
 
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v69`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v70`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 
@@ -627,7 +633,7 @@ Bilder oder Videos werden eingebunden.
   dem Spiel. Fehlversuche setzen weder Turmhöhe noch Umgebung zurück.
 - Gravity Run: per Tipp zwischen Boden und Decke wechseln, Hindernissen ausweichen
   und Extras sammeln; Bricks: Ball und direkt per Finger/Maus steuerbarer Schläger,
-  mehrere Steinbilder und Extras; Cleo: Regenbogenraupe mit umlaufenden Rändern,
+  mehrere Steinbilder und Extras; Cleo: Futter sammeln mit der Regenbogenraupe und umlaufenden Rändern,
   Richtungskreuz, Wischsteuerung und Bomben. Cleo gleitet flüssig zwischen den
   Rasterzellen; Richtungswechsel erfolgen erst am nächsten Zellpunkt, mit
   höchstens einem vorgemerkten Wechsel zusätzlich zur laufenden Bewegung.
