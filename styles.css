@@ -828,8 +828,36 @@ body.focused-view .app-navigation {display:none;}
 .game-immersive .secondary-btn[id$="HomeBtn"] {justify-content:flex-start;}
 .game-immersive .secondary-btn[id$="HomeBtn"]::after {content:'‹';font-size:2rem;}
 .game-immersive .game-hud {width:100%;flex:none;gap:6px;margin:0;font-size:.75rem;justify-content:center;}
-.game-immersive .game-hud span {background:none;flex:0 1 auto;padding:3px 5px;min-width:0;}
+.game-immersive.active .game-hud {
+  column-gap:6px;
+  row-gap:2px;
+  color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;
+  font-weight:500;
+}
+.game-immersive.active .game-hud span {
+  background:none;
+  flex:0 1 auto;
+  padding:3px 4px;
+  min-width:0;
+  white-space:normal;
+}
+.game-immersive.active .game-hud :is([id$="Time"],[id$="Score"]) {
+  color:var(--ink);
+  font-weight:700;
+}
 .game-immersive .game-hud [id$="Best"] {display:none;}
+#screen-gravity.game-immersive.active .game-hud {
+  display:grid;
+  grid-template-columns:auto auto auto;
+  justify-content:center;
+  align-items:center;
+}
+#gravityTime {grid-area:1/1;}
+#gravityScore {grid-area:1/2;}
+#gravityAttempts {grid-area:1/3;}
+#gravityLevel {grid-area:2/1/3/3;text-align:right;}
+#gravityCoins {grid-area:2/3;text-align:left;}
 .game-immersive .game-wrap {flex:1 1 0;min-height:0;width:100%;max-width:none;border:0;border-radius:12px;background:#e6eff4;display:flex;align-items:center;justify-content:center;overflow:hidden;}
 .game-immersive .game-wrap canvas {width:100%!important;height:100%!important;object-fit:contain;border-radius:0;}
 .game-immersive .secondary-btn[id$="AgainBtn"] {flex:none;align-self:center;min-height:44px;width:auto;margin:0;padding:8px 14px;font-size:.88rem;}

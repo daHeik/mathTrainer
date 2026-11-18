@@ -3,7 +3,7 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `62ee14e` mit gemeinsamen Spiel-Nachrichtenkarten; PWA-Cache `1x1-trainer-v68`, keine separate semantische App-Version |
+| Version | Basis `a92c053` mit gegliederter Spielstatusleiste; PWA-Cache `1x1-trainer-v69`, keine separate semantische App-Version |
 | Letzte Quellcodeänderung | 2026-11-18 |
 | Letzte Projekt-/README-Änderung | 2026-11-18 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
@@ -303,6 +303,12 @@ Die zwölf Canvas-Spiele von Dino bis Asteroids zeigen Hinweise, Fehlversuche un
 
 In `index.html` gruppiert `.game-message-card` die vorhandenen Titel- und Textknoten innerhalb der Live-Region `.game-overlay`. Die Zustandsfunktionen in `app.js` setzen weiterhin Texte und `hidden` über die vorhandenen IDs. Eingaben erreichen den bestehenden Listener des Spielfelds. `styles.css` begrenzt die Kartenbreite auf 320 CSS-Pixel, dimmt die Spielfläche leicht und reduziert die Kartenpolsterung im niedrigen Querformat. Die bestehende Pauseebene deckt auch die Nachrichtenkarte ab.
 
+### Statusleiste in der Spielansicht
+
+In der geöffneten Spielansicht sind Zeit und Punkte kräftiger gesetzt als Versuch, Stufe und andere Zusatzwerte. Gleich breite Ziffern halten die Anzeige beim Sekunden- und Punktewechsel ruhiger. In Gravity Run stehen Zeit, Punkte und Versuch in der ersten Zeile, Stufe und Münzen in der zweiten. Chicken Shooter bietet weiterhin während des Spiels „Nachladen“ mit dem aktuellen Ladezustand als mindestens 44 CSS-Pixel hohen Button.
+
+`styles.css` ordnet die vorhandenen `Time`- und `Score`-IDs innerhalb der aktiven immersiven Ansicht als Hauptwerte ein. Das Gravity-Raster verwendet die vorhandenen fünf Statusfelder. Separate Rekordfelder sind in der immersiven Ansicht ausgeblendet. Bereits zusammengefasste Angaben können innerhalb ihres Felds umbrechen, etwa Punkte und Rekord bei Dino-Sprung oder Zeit und letzter Versuch beim Turmbauer. Die Anzeige liest weiterhin die von `app.js` gesetzten Werte für Zeit, Versuche, Punkte und Ladezustand. Der CSS-Wechsel benötigt keine Anpassung des Spielfortschritts oder der Profildaten.
+
 ### 2048: Start, ein Versuch und endgültiges Spielende
 
 Ein Tipp/Klick auf das Spielfeld startet die aktive Zeit und bucht genau ein
@@ -363,7 +369,7 @@ Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben un
 
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v68`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v69`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 
