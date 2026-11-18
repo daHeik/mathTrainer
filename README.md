@@ -3,9 +3,9 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `9c2abe9` mit lokalem Ausschluss der Einheiten-Auswahl sowie korrigierten Feldfokusrahmen und Schriftgrößen gegen iOS-Fokuszoom; PWA-Cache `1x1-trainer-v66`, keine separate semantische App-Version |
-| Letzte Quellcodeänderung | 2026-11-16 |
-| Letzte Projekt-/README-Änderung | 2026-11-16 |
+| Version | Basis `939a588` mit lokalem Quadrat-/Wurzelmodus; PWA-Cache `1x1-trainer-v67`, keine separate semantische App-Version |
+| Letzte Quellcodeänderung | 2026-11-18 |
+| Letzte Projekt-/README-Änderung | 2026-11-18 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
 
 ## TL;DR – so funktioniert mathTrainer
@@ -56,7 +56,7 @@ Oben stehen zwei direkte Einstiege: **Vorbereitung auf die Mathe-Probe** öffnet
 | Gruppe | Übungen |
 | --- | --- |
 | Zahlen & Begriffe | Zahlen bis 10.000, römische Zahlen, Rechenbegriffe |
-| Malnehmen & Teilen | Zahlenreihen, Rechnen mit 100ern, Division mit Rest, Teiler und Rest verstehen |
+| Malnehmen & Teilen | Zahlenreihen, Quadrate & Wurzeln, Rechnen mit 100ern, Division mit Rest, Teiler und Rest verstehen |
 | Rechenwege | Halbschriftlich multiplizieren, halbschriftlich dividieren, schriftlich dividieren, Punkt vor Strich |
 | Sachaufgaben & Rätsel | Sachaufgaben und Zahlenrätsel |
 
@@ -65,6 +65,18 @@ Jede Gruppenüberschrift trägt ein lokales SVG-Symbol. Die einzelnen Themen sin
 Der Lernplan bleibt maßgeblich: gesperrte Buttons, leere Gruppen und nicht verfügbare direkte Einstiege werden ausgeblendet. Ist nur eine der halbschriftlichen Divisionsstufen freigegeben, bleibt ihr gemeinsamer Einstieg unter „Rechenwege“ sichtbar. Bei nur einem direkten Einstieg nimmt dessen Karte die ganze Breite ein. Alle Themenbuttons behalten ihre bisherigen IDs und starten dieselben Übungen; Fortschritt, Spielbelohnungen und Backups ändern sich durch die Gruppierung nicht.
 
 Technisch erstellt `index.html` semantisch benannte `section`-Gruppen; `renderHome()` bestimmt deren Sichtbarkeit nach der vorhandenen Modusfreigabe und fügt keine Einzelsymbole mehr in Themenbuttons ein. `styles.css` setzt die neuen Raster und gemeinsamen Zeilenstile, unabhängig von der Statistikansicht. Cache/UI-Kennung 66 sorgt für den aktualisierten Assetstand. Die Lern-/Offlinetests prüfen Gruppenzuordnung und eingeschränkte Pläne; die Darstellung wurde in Safari bei 390 und 820 Pixeln Rahmenbreite visuell geprüft. Das ist eine Browser-Layoutprüfung, kein Test auf einem physischen iPhone.
+
+## Quadrate & Wurzeln
+
+Auf der Startseite unter **Malnehmen & Teilen → Quadrate & Wurzeln** starten. Der Modus mischt Quadrataufgaben mit Quadratwurzeln; jede Runde ab zwei Aufgaben enthält beide Arten. Unter **Admin → Lernen** das Thema im Lernplan aktivieren, falls ein bestehender Plan es noch nicht enthält. Vorhandene explizite Lernpläne werden nicht erweitert. Neue Profile und der Vorschlag für Klasse 4 enthalten den Modus standardmäßig; ein individuell gewählter Plan bleibt maßgeblich.
+
+Die Einstellungen **Zahlenbereich** und **Zahlen in den Aufgaben** bestimmen die Grundzahlen von 1 bis 20. Bei Auswahl 7 bis 20 entstehen `7 · 7` bis `20 · 20` und `√49` bis `√400`. Für die Wurzel ist die gewählte Zahl **das Ergebnis**: Aus der Grundzahl Z wird die Aufgabe √(Z²), beispielsweise `√49 = 7`. Das Wurzelzeichen hat einen durchgehenden Strich über dem gesamten Radikanden. Abgewählte Zahlen werden ausgelassen. Die schrittweise Freischaltung der normalen Einmaleinsreihen und der Divisionsschalter begrenzen diesen eigenen Modus nicht. Lückenaufgaben sind hier ausgeschaltet.
+
+Antwortauswahl, Zifferntastatur und adaptive Eingabe folgen dem eingestellten Antwortmodus. Nach der Antwort erklärt die App das Quadrat beziehungsweise die Umkehrung über `Z · Z`. Fehler werden wie in normalen Lernrunden erneut eingeplant. Jede richtige Endantwort zählt einmal für Tagesstatistik und Spielbelohnungen. „Noch einmal“ wiederholt denselben Modus, Abbrechen erhält bereits gespeicherte Antworten.
+
+Technisch integriert `app.js` den Sitzungsmodus `squares` in Lernplan, Startseite, Warteschlange und Abschluss. `practiceSkillsInRange()` bildet aus `configuredTables()` zwei Lernschlüssel je Zahl: `sq:square:Z` und `sq:root:Z`. Die 40 möglichen Lernstände liegen getrennt von den normalen Malaufgaben in `profile.squareSkills`; Box, Fälligkeit und Antwortzeiten folgen den gemeinsamen Lernregeln. `specialQuestion()` liefert Rechnung, ganzzahlige Lösung, vier unterschiedliche Auswahlantworten und Erklärung. `renderMathText()` erzeugt Wurzelzeichen und Radikanden mit sicheren DOM-Knoten; `.square-root` und `.root-radicand` in `styles.css` halten sie mit Überstrich zusammen, auch in Eingabe und Rückmeldung. Ein zugänglicher Name nennt die Quadratwurzel und die Zahl.
+
+`normalizeProfile()` ergänzt fehlende oder ungültige Lernstände beim Laden alter Profile und Backups. Historienoperationen heißen `square` und `squareRoot`; `correctAnswersForProfile()` zählt beide für Belohnungen. Die bestehende Profilsicherung enthält diese Daten ohne Änderung des Speicherkeys oder Backupformats. Ein gesperrter Modus erzeugt keine Aufgaben. `tests/learning-modes.test.js` prüft Zahlenfilter einschließlich 7–20, Mischung beider Arten, Zahlen bis 400, DOM-Überstrich, Antwortmodi, Wiederholung, Fehler, Lernplan und JSON-Rundreise. PWA-Cache und sichtbare UI-Kennung stehen auf 67.
 
 ## Test 11/26 – Vorbereitung auf die Mathe-Probe
 

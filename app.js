@@ -87,11 +87,11 @@
   var curriculum = window.TestCurriculum;
   var curriculumModes = {semiMultiply:'multiply',numbers10000:'numbers',wordProblems:'stories',numberTheory:'rest',exam1126:null};
   var questionHadHelp = false;
-  var SESSION_MODES = ['mixed', 'table', 'hundreds', 'terms', 'riddles', 'written', 'semi', 'semiFree', 'semiRest', 'remainder', 'precedence', 'roman', 'semiMultiply', 'numbers10000', 'wordProblems', 'numberTheory', 'exam1126'];
+  var SESSION_MODES = ['mixed', 'table', 'hundreds', 'terms', 'riddles', 'written', 'semi', 'semiFree', 'semiRest', 'remainder', 'precedence', 'roman', 'semiMultiply', 'numbers10000', 'wordProblems', 'numberTheory', 'exam1126', 'squares'];
   var MODE_LABELS = {mixed:'Gemischtes 1×1',table:'Einzelne Zahlenreihen',hundreds:'Rechnen mit 100ern',
     terms:'Rechenbegriffe',riddles:'Zahlenrätsel',written:'Schriftlich dividieren',semi:'Halbschriftlich · mit Hilfe',
     semiFree:'Halbschriftlich · selbst aufteilen',semiRest:'Halbschriftlich · mit Rest',remainder:'Division mit Rest',
-    semiMultiply:'Halbschriftlich multiplizieren',numbers10000:'Zahlen bis 10.000',wordProblems:'Sachaufgaben',numberTheory:'Teiler und Rest verstehen',exam1126:'Test 11/26',precedence:'Punkt vor Strich',roman:'Römische Zahlen'};
+    semiMultiply:'Halbschriftlich multiplizieren',numbers10000:'Zahlen bis 10.000',wordProblems:'Sachaufgaben',numberTheory:'Teiler und Rest verstehen',exam1126:'Test 11/26',precedence:'Punkt vor Strich',roman:'Römische Zahlen',squares:'Quadrate & Wurzeln'};
 
   function normalizedModes(value){
     if (!Array.isArray(value)) return SESSION_MODES.slice();
@@ -237,6 +237,7 @@
       examReports: [],
       termSkills: {},
       riddleSkills: {},
+      squareSkills: {},
       romanSkills: {},
       precedenceSkills: {},
       writtenSkills: {},
@@ -287,6 +288,9 @@
         total += Number(facts[key].hundreds.divide.correctCount) || 0;
       }
     }
+    squareSkillKeys().forEach(function(key){
+      if (profile.squareSkills && profile.squareSkills[key]) total += Number(profile.squareSkills[key].correctCount) || 0;
+    });
     var termSkills = profile.termSkills || {};
     TERM_CONCEPTS.forEach(function(concept){
       if (termSkills[concept]) total += Number(termSkills[concept].correctCount) || 0;
@@ -378,6 +382,11 @@
       normalizeLearningRecord(fact.hundreds.multiply, normalizationDate);
       normalizeLearningRecord(fact.hundreds.divide, normalizationDate);
     }
+    if (!p.squareSkills || typeof p.squareSkills !== 'object' || Array.isArray(p.squareSkills)) p.squareSkills = {};
+    squareSkillKeys().forEach(function(key){
+      if (!p.squareSkills[key] || typeof p.squareSkills[key] !== 'object' || Array.isArray(p.squareSkills[key])) p.squareSkills[key] = learningDefaults(normalizationDate);
+      normalizeLearningRecord(p.squareSkills[key], normalizationDate);
+    });
     if (!p.romanSkills || typeof p.romanSkills !== 'object' || Array.isArray(p.romanSkills)) p.romanSkills = {};
     ['toRoman','toArabic'].forEach(function(direction){
       if (!p.romanSkills[direction] || typeof p.romanSkills[direction] !== 'object' || Array.isArray(p.romanSkills[direction])) p.romanSkills[direction] = learningDefaults(normalizationDate);
@@ -460,7 +469,7 @@
           divide:{ attempts:0, correct:0, wrong:0, totalResponseMs:0 }
         };
       }
-      ['multiply','divide','hundredsMultiply','hundredsDivide','terms','riddles','writtenDivide','semiDivide','remainderDivide','precedence','roman','curriculum_terms','curriculum_multiply','curriculum_divide','curriculum_rest','curriculum_numbers','curriculum_stories'].forEach(function(operation){
+      ['multiply','divide','hundredsMultiply','hundredsDivide','terms','riddles','writtenDivide','semiDivide','remainderDivide','precedence','roman','square','squareRoot','curriculum_terms','curriculum_multiply','curriculum_divide','curriculum_rest','curriculum_numbers','curriculum_stories'].forEach(function(operation){
         var operationDay = historyDay.byOperation[operation] || {};
         operationDay.attempts = Math.max(0, Number(operationDay.attempts) || 0);
         operationDay.correct = Math.max(0, Number(operationDay.correct) || 0);
@@ -614,6 +623,10 @@
     if (!state.curriculumSkills) state.curriculumSkills = {};
     curriculum.allKeys().forEach(function(key){if (!state.curriculumSkills[key]) state.curriculumSkills[key] = learningDefaults(today);});
     if (!state.examReports) state.examReports = [];
+    if (!state.squareSkills) state.squareSkills = {};
+    squareSkillKeys().forEach(function(key){
+      if (!state.squareSkills[key]) state.squareSkills[key] = learningDefaults(today);
+    });
     if (!state.romanSkills) state.romanSkills = {};
     ['toRoman','toArabic'].forEach(function(direction){
       if (!state.romanSkills[direction]) state.romanSkills[direction] = learningDefaults(today);
@@ -738,11 +751,24 @@
     return { dividend:quotient * skill.divisor, divisor:skill.divisor, correct:quotient, steps:steps };
   }
 
+  function squareSkillKeys(){
+    var keys = [];
+    for (var n = 1; n <= 20; n++){
+      keys.push('sq:square:' + n);keys.push('sq:root:' + n);
+    }
+    return keys;
+  }
+
   function practiceSkill(key){
     if (typeof key !== 'string' || curriculum.retiredKeys.indexOf(key) !== -1) return null;
     if (curriculum.allKeys().indexOf(key) !== -1){
       var parts = key.split(':');
       return {key:key,kind:'curriculum',chapter:parts[1],type:parts[2],operation:'curriculum_'+parts[1],fact:null,record:state.curriculumSkills[key]};
+    }
+    if (squareSkillKeys().indexOf(key) !== -1){
+      var squareParts = key.split(':');
+      return {key:key,kind:'square',operation:squareParts[1] === 'root' ? 'squareRoot' : 'square',
+        number:Number(squareParts[2]),fact:null,record:state.squareSkills[key]};
     }
     if (key === 'roman:toRoman' || key === 'roman:toArabic'){
       return {key:key,kind:'roman',operation:'roman',direction:key.slice(6),fact:null,record:state.romanSkills[key.slice(6)]};
@@ -837,6 +863,13 @@
   function practiceSkillsInRange(focusTable, mode){
     if (!modeAllowed(mode || (focusTable ? 'table' : 'mixed'))) return [];
     if (Object.prototype.hasOwnProperty.call(curriculumModes,mode)) return (mode === 'exam1126' ? examKeys(state.today.examChapter || 'all') : curriculum.keys(curriculumModes[mode]).concat(mode==='numberTheory'?curriculum.keys('divide'):[])).map(practiceSkill);
+    if (mode === 'squares'){
+      var squarePool = [];
+      configuredTables().forEach(function(n){
+        squarePool.push(practiceSkill('sq:square:' + n),practiceSkill('sq:root:' + n));
+      });
+      return squarePool;
+    }
     if (mode === 'roman') return ['roman:toRoman','roman:toArabic'].map(practiceSkill);
     if (mode === 'precedence') return PRECEDENCE_PRACTICE_TYPES.map(function(type){return practiceSkill('p:' + type);});
     if (mode === 'remainder') return factsInRange().filter(function(fact){ return fact.b > 1; })
@@ -893,7 +926,7 @@
     // A focused table round should cover as many different members of the
     // selected row as its configured size permits. Mixed rounds keep the
     // normal limit for newly introduced facts.
-    var broadMode = Object.prototype.hasOwnProperty.call(curriculumModes,mode) || !!focusTable || mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || mode === 'precedence' || mode === 'roman' || isSemiMode(mode);
+    var broadMode = Object.prototype.hasOwnProperty.call(curriculumModes,mode) || !!focusTable || mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || mode === 'precedence' || mode === 'roman' || mode === 'squares' || isSemiMode(mode);
     var newLimit = Math.min(size, broadMode ? size : state.config.newFactsPerRound);
     var dueReviews = pool.filter(function(skill){ return skill.record.seen && skill.record.dueDate <= today; });
     var newCandidates = pool.filter(function(skill){ return !skill.record.seen; });
@@ -981,6 +1014,13 @@
       occurrenceCounts[filler.key] = (occurrenceCounts[filler.key] || 0) + 1;
     }
     var queueKeys = chosen.map(function(skill){ return skill.key; });
+    if (mode === 'squares' && size >= 2 && pool.length){
+      ['square','squareRoot'].forEach(function(operation,index){
+        if (!queueKeys.some(function(key){return practiceSkill(key).operation === operation;})){
+          queueKeys[index] = pool.filter(function(skill){return skill.operation === operation;})[0].key;
+        }
+      });
+    }
     if (mode === 'roman' && size >= 2 && pool.length){
       queueKeys[0] = 'roman:toRoman';queueKeys[1] = 'roman:toArabic';
     }
@@ -1406,6 +1446,14 @@
 
   function specialQuestion(skill){
     var a, b, correct, prompt, explanation;
+    if (skill.kind === 'square'){
+      var n = skill.number, squared = n * n;
+      var root = skill.operation === 'squareRoot';
+      return {prompt:root ? '√' + squared : n + ' · ' + n,
+        gen:root ? genDivisionChoices(n) : genChoices(n,n),
+        explanation:root ? 'Die Quadratwurzel aus ' + squared + ' ist ' + n + ', denn ' + n + ' · ' + n + ' = ' + squared + '.' :
+          'Eine Zahl mal sich selbst ergibt ihr Quadrat: ' + n + ' · ' + n + ' = ' + squared + '.'};
+    }
     if (skill.kind === 'precedence') return precedenceQuestion(skill.precedenceType);
     if (skill.kind === 'riddle') return riddleQuestion(skill.riddleType);
     if (skill.kind === 'hundreds'){
@@ -1913,6 +1961,7 @@
   function repeatRoundLabel(recoveryPending){
     if (recoveryPending) return 'Serie retten: zweite Runde';
     if (Object.prototype.hasOwnProperty.call(curriculumModes,state.today.mode)) return 'Noch einmal: '+MODE_LABELS[state.today.mode];
+    if (state.today.mode === 'squares') return 'Noch einmal: Quadrate & Wurzeln 🔁';
     if (state.today.mode === 'roman') return 'Noch einmal: Römische Zahlen 🔁';
     if (state.today.mode === 'precedence') return 'Noch einmal: Punkt vor Strich 🔁';
     if (state.today.mode === 'remainder') return 'Noch einmal: Division mit Rest 🔁';
@@ -2155,7 +2204,7 @@
     var visibleGroups = 0;
     [
       ['homeGroupNumbers',['numbers10000Btn','romanBtn','termsBtn']],
-      ['homeGroupArithmetic',['tablePracticeBtn','hundredsBtn','remainderBtn','numberTheoryBtn']],
+      ['homeGroupArithmetic',['tablePracticeBtn','squaresBtn','hundredsBtn','remainderBtn','numberTheoryBtn']],
       ['homeGroupMethods',['semiMultiplyBtn','semiBtn','writtenBtn','precedenceBtn']],
       ['homeGroupApplication',['wordProblemsBtn','riddlesBtn']]
     ].forEach(function(group){
@@ -2176,7 +2225,7 @@
     sessionRewardUnlocks = 0;
     var selectedTable = parseInt(focusTable, 10);
     var focused = configuredTables().indexOf(selectedTable) !== -1;
-    var specialMode = Object.prototype.hasOwnProperty.call(curriculumModes,mode) || mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || mode === 'precedence' || mode === 'roman' || isSemiMode(mode);
+    var specialMode = Object.prototype.hasOwnProperty.call(curriculumModes,mode) || mode === 'hundreds' || mode === 'terms' || mode === 'riddles' || mode === 'written' || mode === 'remainder' || mode === 'precedence' || mode === 'roman' || mode === 'squares' || isSemiMode(mode);
     if (bonus || focused || specialMode || state.today.mode !== requestedMode){
       state.today.focusTable = focused ? selectedTable : null;
       state.today.mode = specialMode ? mode : (focused ? 'table' : 'mixed');
@@ -2224,13 +2273,21 @@
     // Keep calculations intact, while the surrounding sentence wraps normally.
     // Use DOM nodes rather than HTML so all text stays literal and safe.
     element.textContent = '';
-    var expression = /[0-9?▢]+(?:[ \t]*(?:[+−\-·×*÷/:=]|und)[ \t]*[0-9?▢]+)+/g;
+    var expression = /√[0-9]+(?:[ \t]*=[ \t]*[0-9?▢]+)?|[0-9?▢]+(?:[ \t]*(?:[+−\-·×*÷/:=]|und)[ \t]*[0-9?▢]+)+/g;
     var match, cursor = 0;
     while ((match = expression.exec(value)) !== null){
       if (match.index > cursor) element.appendChild(document.createTextNode(value.slice(cursor, match.index)));
       var group = document.createElement('span');
       group.className = 'math-expression';
-      group.textContent = match[0];
+      if (match[0].charAt(0) === '√'){
+        var digits = match[0].match(/^√([0-9]+)/)[1];
+        var radical = document.createElement('span');radical.className = 'square-root';
+        radical.setAttribute('role','math');radical.setAttribute('aria-label','Quadratwurzel aus ' + digits);
+        var sign = document.createElement('span');sign.className = 'root-sign';sign.textContent = '√';sign.setAttribute('aria-hidden','true');
+        var radicand = document.createElement('span');radicand.className = 'root-radicand';radicand.textContent = digits;radicand.setAttribute('aria-hidden','true');
+        radical.appendChild(sign);radical.appendChild(radicand);group.appendChild(radical);
+        group.appendChild(document.createTextNode(match[0].slice(digits.length + 1)));
+      } else group.textContent = match[0];
       element.appendChild(group);
       cursor = match.index + match[0].length;
     }
@@ -2238,7 +2295,7 @@
   }
 
   function setQuestionText(value){
-    if (questionText.classList.contains('word-question')) renderMathText(questionText, value);
+    if (value.indexOf('√') !== -1 || questionText.classList.contains('word-question')) renderMathText(questionText, value);
     else questionText.textContent = value;
   }
 
@@ -2300,7 +2357,7 @@
     }
     questionText.classList.toggle('word-question', skill.kind === 'term' || skill.kind === 'riddle');
     choicesWrap.classList.toggle('word-choices', skill.kind === 'term');
-    if (skill.kind === 'hundreds' || skill.kind === 'term' || skill.kind === 'riddle' || skill.kind === 'precedence'){
+    if (skill.kind === 'square' || skill.kind === 'hundreds' || skill.kind === 'term' || skill.kind === 'riddle' || skill.kind === 'precedence'){
       var special = specialQuestion(skill);
       gen = special.gen;
       questionExplanation = special.explanation || '';
@@ -2937,8 +2994,8 @@
           : (wasBonus ? "Noch eine Runde geschafft! Extra-Übung hilft immer. 🌈"
             : "Du hast alle Aufgaben für heute geschafft.")));
     doneStreakVal.textContent = state.streak;
-    if (!recoveryPending && !streakRecovered && ['hundreds', 'terms', 'riddles', 'written','semi','semiFree','semiRest','remainder','precedence','roman'].indexOf(state.today.mode) !== -1){
-      doneSubtitle.textContent = { roman:'Römische Zahlen geübt! 🌟', precedence:'Punkt vor Strich geübt! 🌟', remainder:'Division mit Rest geübt! 🌟', hundreds:'Rechnen mit 100ern geschafft! 🌟',
+    if (!recoveryPending && !streakRecovered && ['hundreds', 'terms', 'riddles', 'written','semi','semiFree','semiRest','remainder','precedence','roman','squares'].indexOf(state.today.mode) !== -1){
+      doneSubtitle.textContent = { squares:'Quadrate und Wurzeln geübt! 🌟', roman:'Römische Zahlen geübt! 🌟', precedence:'Punkt vor Strich geübt! 🌟', remainder:'Division mit Rest geübt! 🌟', hundreds:'Rechnen mit 100ern geschafft! 🌟',
         terms:'Rechenbegriffe geübt! 🌟', riddles:'Zahlenrätsel gelöst! 🌟', written:'Schriftlich dividiert! 🌟',semi:'Halbschriftlich dividiert! 🌟',semiFree:'Deinen eigenen Rechenweg gefunden! 🌟',semiRest:'Mit Rest dividiert! 🌟' }[state.today.mode];
     }
     el('examDoneResults').hidden = state.today.mode !== 'exam1126';
@@ -3017,6 +3074,7 @@
   riddlesBtn.addEventListener('click', function(){ startSession(state.today.completed, null, 'riddles'); });
   writtenBtn.addEventListener('click', function(){ startSession(state.today.completed, null, 'written'); });
   el('remainderBtn').addEventListener('click', function(){ startSession(state.today.completed, null, 'remainder'); });
+  el('squaresBtn').addEventListener('click', function(){startSession(state.today.completed,null,'squares');});
   el('romanBtn').addEventListener('click', function(){startSession(state.today.completed,null,'roman');});
   el('precedenceBtn').addEventListener('click', function(){ startSession(state.today.completed, null, 'precedence'); });
   el('semiBtn').addEventListener('click',function(){if (['semi','semiFree','semiRest'].some(modeAllowed)) showScreen(el('screen-semi-intro'));});

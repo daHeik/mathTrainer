@@ -1207,3 +1207,8 @@ textarea:focus {
   outline-offset:-3px;
   box-shadow:none;
 }
+
+/* A continuous overbar keeps the entire radicand under the square-root sign. */
+.square-root{display:inline-flex;align-items:baseline;white-space:nowrap;}
+.root-sign{font-family:Georgia,'Times New Roman',serif;font-size:1.18em;line-height:1;}
+.root-radicand{border-top:.065em solid currentColor;padding:.02em .08em 0 .04em;line-height:1.12;}

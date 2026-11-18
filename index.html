@@ -63,6 +63,7 @@
           <h2 id="homeTitleArithmetic"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#cards"/></svg> Malnehmen & Teilen</h2>
           <div class="home-actions">
             <button class="secondary-btn" id="tablePracticeBtn">Zahlenreihe auswählen</button>
+            <button class="secondary-btn" id="squaresBtn">Quadrate &amp; Wurzeln</button>
             <button class="secondary-btn" id="hundredsBtn">Rechnen mit 100ern</button>
             <button class="secondary-btn" id="remainderBtn">Division mit Rest</button>
             <button class="secondary-btn" id="numberTheoryBtn">Teiler und Rest verstehen</button>
@@ -85,7 +86,7 @@
           </div>
         </section>
       </div>
-      <p class="app-version" id="appVersion">Version 66</p>
+      <p class="app-version" id="appVersion">Version 67</p>
     </div>
 
     <div class="screen semi-intro" id="screen-semi-intro">
@@ -556,19 +557,19 @@
     </div>
 
     <div class="field">
-      <label>Zahlenbereich (kleines Einmaleins)</label>
+      <label>Zahlenbereich (Einmaleins, Quadrate und Wurzeln)</label>
       <div class="range-row">
         <select id="rangeMin"></select>
         <span>bis</span>
         <select id="rangeMax"></select>
       </div>
-      <div class="hint">Bestimmt, welche Malaufgaben geübt werden (z.B. 1 bis 10).</div>
+      <div class="hint">Bestimmt die Zahlen für Malaufgaben, Quadrate und Wurzeln (z.B. 7 bis 20). Bei Wurzeln ist die gewählte Zahl das Ergebnis: √49 = 7.</div>
     </div>
 
     <div class="field">
       <label>Zahlen in den Aufgaben</label>
       <div class="table-choice-grid" id="tableChoices"></div>
-      <div class="hint">Nur Aufgaben, deren beide Zahlen ausgewählt sind, werden geübt. Mindestens eine Zahl bleibt aktiv.</div>
+      <div class="hint">Nur Aufgaben, deren beide Zahlen ausgewählt sind, werden geübt. Bei Quadraten und Wurzeln werden diese Zahlen als Grundzahl beziehungsweise Wurzelergebnis geübt. Mindestens eine Zahl bleibt aktiv.</div>
     </div>
 
     <div class="field">

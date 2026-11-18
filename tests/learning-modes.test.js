@@ -1936,7 +1936,7 @@ api.startSession(false,null,'roman');assert(/3999|MMMCMXCIX/.test(elements.quest
 var planBackup=api.normalizeProfile(JSON.parse(storage.km_1x1_trainer_v2).profiles[api.getRoot().activeProfileId]);
 assert.strictEqual(JSON.stringify(planBackup.config.allowedModes),'["roman"]');assert.strictEqual(planBackup.romanSkills.toRoman.correctCount,1);
 var oldPlan=api.defaultProfile();delete oldPlan.config.allowedModes;delete oldPlan.romanSkills;
-api.normalizeProfile(oldPlan);assert.strictEqual(oldPlan.config.allowedModes.length,17);assert.strictEqual(oldPlan.romanSkills.toRoman.correctCount,0);
+api.normalizeProfile(oldPlan);assert.strictEqual(oldPlan.config.allowedModes.length,18);assert.strictEqual(oldPlan.romanSkills.toRoman.correctCount,0);
 oldPlan.config.allowedModes=['bad',null];oldPlan.config.romanMin=-50;oldPlan.config.romanMax=10000;api.normalizeProfile(oldPlan);
 assert.strictEqual(JSON.stringify(oldPlan.config.allowedModes),'["roman"]');assert.strictEqual(oldPlan.config.romanMin,1);assert.strictEqual(oldPlan.config.romanMax,3999);
 console.log('Roman: 1..3999 conversion, both keypads, place-value feedback, retries, rewards and backup OK; learning plans: presets, save validation, hidden/blocked modes, rollover and profile PIN OK');
@@ -2425,7 +2425,7 @@ november.config.allowedModes=['roman'];var blockedQueue=JSON.stringify(november.
 console.log('Test 11/26: all generators, semantic checks, chapter balance, real forms, empty/stale/double submit, rewards/history, corrected steps, reports/backups and plan guards OK');
 
 var legacyFull=api.defaultProfile();delete legacyFull.config.curriculumVersion;legacyFull.config.allowedModes=legacyFull.config.allowedModes.slice(0,12);api.normalizeProfile(legacyFull);
-assert.strictEqual(legacyFull.config.allowedModes.length,17);
+assert.strictEqual(legacyFull.config.allowedModes.length,18);
 legacyFull.config.allowedModes=legacyFull.config.allowedModes.filter(function(mode){return mode!=='exam1126';});api.normalizeProfile(legacyFull);assert(legacyFull.config.allowedModes.indexOf('exam1126')===-1,'Explicit new-topic opt-out survives later loads');
 assert.strictEqual(api.buildExamQueue('all').length,0,'Queue builder respects disabled test mode');
 
@@ -2456,3 +2456,49 @@ assert(api.practiceSkillsInRange(null,'wordProblems').every(function(skill){retu
 assert(api.buildExamQueue('all').every(function(key){return key!=='k:stories:units';}));
 assert.strictEqual(api.correctAnswersForProfile(api.normalizeProfile(JSON.parse(JSON.stringify(withoutUnits)))),3);
 console.log('Unit selection removed from practice, tests and saved queues; historical rewards and backup counts preserved');
+
+// Squares use the configured base/result numbers, with independent progress.
+var squaresProfile=api.defaultProfile();squaresProfile.config.min=7;squaresProfile.config.max=20;
+squaresProfile.config.enabledTables=Array.from({length:14},function(_,i){return i+7;});
+squaresProfile.config.autoUnlockTables=true;squaresProfile.config.tasksPerDay=4;
+api.normalizeProfile(squaresProfile);api.setState(squaresProfile);api.ensureFactPool();
+var squarePool=api.practiceSkillsInRange(null,'squares');assert.strictEqual(squarePool.length,28);
+squarePool.forEach(function(skill){
+  assert(skill.number>=7&&skill.number<=20);
+  var task=api.specialQuestion(skill),root=skill.operation==='squareRoot';
+  assert.strictEqual(task.prompt,root?'√'+(skill.number*skill.number):skill.number+' · '+skill.number);
+  assert.strictEqual(task.gen.correct,root?skill.number:skill.number*skill.number);
+  assert.strictEqual(new Set(task.gen.options).size,4);assert(task.gen.options.includes(task.gen.correct));
+});
+for(var round=0;round<40;round++){
+  var sqQueue=api.buildQueue(4,null,'squares');assert.strictEqual(sqQueue.length,4);
+  assert(sqQueue.some(function(key){return key.indexOf('sq:root:')===0;}));
+  assert(sqQueue.some(function(key){return key.indexOf('sq:square:')===0;}));
+}
+squaresProfile.config.enabledTables=[7,20];assert.strictEqual(api.practiceSkillsInRange(null,'squares').length,4);
+api.renderHome();assert.strictEqual(elements.squaresBtn.hidden,false);elements.squaresBtn.click();
+assert.strictEqual(squaresProfile.today.mode,'squares');assert(api.repeatRoundLabel(false).includes('Quadrate'));
+// Both numeric input paths keep the root bar while changing the answer.
+squaresProfile.config.answerMode='input';squaresProfile.today.queue=['sq:root:7'];squaresProfile.today.index=0;
+api.renderQuestion();assert(elements.questionText.textContent.includes('√49'));
+function findClass(node,name){if(node.className===name)return node;for(var child of node.children){var found=findClass(child,name);if(found)return found;}return null;}
+assert.strictEqual(findClass(elements.questionText,'root-radicand').textContent,'49');
+api.onAnswer('sq:root:7',7,7,null,true,'√49 = 7');
+assert.strictEqual(squaresProfile.squareSkills['sq:root:7'].correctCount,1);
+assert.strictEqual(squaresProfile.history[Object.keys(squaresProfile.history).sort().pop()].byOperation.squareRoot.correct,1);
+assert.strictEqual(api.correctAnswersForProfile(squaresProfile),1);
+var sqBackup=api.normalizeProfile(JSON.parse(JSON.stringify(squaresProfile)));
+assert.strictEqual(sqBackup.squareSkills['sq:root:7'].correctCount,1);assert.strictEqual(api.correctAnswersForProfile(sqBackup),1);
+api.tapAdvance({target:elements.questionText,preventDefault:function(){},stopPropagation:function(){}});assert(elements.doneSubtitle.textContent.includes('Quadrate'));
+api.startSession(true,null,'squares');assert.strictEqual(squaresProfile.today.mode,'squares');
+squaresProfile.config.answerMode='choice';squaresProfile.today.queue=['sq:square:20'];squaresProfile.today.index=0;api.renderQuestion();
+assert.strictEqual(elements.questionText.textContent,'20 · 20');
+api.onAnswer('sq:square:20',39,400,null,false,'20 · 20 = 400');
+assert.strictEqual(squaresProfile.today.queue.length,2);assert.strictEqual(squaresProfile.squareSkills['sq:square:20'].wrongCount,1);
+api.tapAdvance({target:elements.questionText,preventDefault:function(){},stopPropagation:function(){}});api.onAnswer('sq:square:20',400,400,null,false,'20 · 20 = 400');
+assert.strictEqual(squaresProfile.squareSkills['sq:square:20'].correctCount,1);
+squaresProfile.config.allowedModes=['roman'];api.renderHome();assert.strictEqual(elements.squaresBtn.hidden,true);
+var sqBlocked=JSON.stringify(squaresProfile.today);api.startSession(true,null,'squares');assert.strictEqual(JSON.stringify(squaresProfile.today),sqBlocked);
+var sqOld=api.defaultProfile();delete sqOld.squareSkills;api.normalizeProfile(sqOld);assert.strictEqual(Object.keys(sqOld.squareSkills).length,40);
+sqOld.squareSkills={'sq:root:7':[]};api.normalizeProfile(sqOld);assert.strictEqual(sqOld.squareSkills['sq:root:7'].correctCount,0);
+console.log('Squares/roots: configured base/result range, mixed rounds, root overbar, input/choices, retries, repeat, progress/history/backups and plan guards OK');
