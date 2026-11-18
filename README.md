@@ -3,7 +3,7 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `231990c` mit Tastaturfokus für drei Ein-Tipp-Spiele; PWA-Cache `1x1-trainer-v70`, keine separate semantische App-Version |
+| Version | Basis `9f7e1f1` mit bedingten Textaktualisierungen in Chicken Shooter; PWA-Cache `1x1-trainer-v71`, keine separate semantische App-Version |
 | Letzte Quellcodeänderung | 2026-11-18 |
 | Letzte Projekt-/README-Änderung | 2026-11-18 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
@@ -375,7 +375,7 @@ Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben un
 
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v70`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v71`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 
@@ -976,7 +976,9 @@ Alle Auftritte verwenden ausschließlich aktive Spielzeit: Pause friert Erschein
 
 `create()` erzeugt eine wartende Partie. Der Host in `app.js` verwaltet Belohnung, Start/Ende, Animation, Fokus, HUD, Bestenliste und vorhandene Vollbild-/Pausensteuerung. `advance()` verarbeitet ausschließlich aktive Sekunden in maximal 50-ms-Simulationsschritten, erzeugt Ziele und beendet einmalig bei 90 Sekunden. Vor jedem Schuss aktualisiert der Host zuerst die Zeit, damit bereits abgelaufene Spiele keine Treffer mehr annehmen. `shoot()` prüft Vordergrund vor Hintergrund und dieselben Baum-/Scheunenflächen, die der Renderer zeichnet. Ein Treffer entfernt genau ein Ziel und addiert dessen ganzzahlige Punkte. Für fliegende Hühner ergeben sich die Punkte gerundet in Fünferschritten aus `18 + (39 − Größe) · 1,5 + Geschwindigkeit · 0,18`; die Größenbasis liegt zwischen 24 und 39, die Grundgeschwindigkeit normaler Hühner zwischen 90 und 351 Weltpixeln pro Sekunde. Alle Grundgeschwindigkeiten wurden um 80 % erhöht. Ballons fliegen mit 61,2–104,4, Paraglider mit 108–180, Flugzeuge mit 225–342; individuelle Temposchwankungen und Schwebephasen kommen hinzu. Die Tiefenebene skaliert zusätzlich die sichtbare Größe. Die Szene passt ihre Weltbreite an die verfügbare Fläche an; `resize()` erhält dabei Zielalter, Manöver und relative horizontale Positionen. Die Canvas-Auflösung berücksichtigt bis zu zweifache Pixeldichte.
 
-Simulationszustand: `elapsed`, `running`, `pausedAt`, `targets`, `visitors`, `nextPond`, `nextPeek`, `effects`, `ammo`, `reloadUntil`, `score` und zufällige Spawnparameter. Zeit und Nachladen stehen bei Pause still, und Treffer werden abgewiesen. Das Verbergen der Seite aktiviert die gemeinsame Pause. Ziel-/Effektzustände existieren nur im Arbeitsspeicher. Persistiert werden nur abgeschlossene Ergebnisse `{id, at, score}` und der Rekord. `topFive()` validiert IDs mit Präfix `chicken-`, endliche Zeitstempel und sichere ganzzahlige Punkte einschließlich negativer Ergebnisse, entfernt doppelte IDs und begrenzt auf fünf Einträge. Fehlende Altprofilfelder erhalten 0 beziehungsweise eine leere Liste; andere Lern-/Profildaten bleiben bestehen. Alle Dateien und der Direktstarter sind im PWA-App-Cache enthalten (Cache-/UI-Kennung 62).
+`chickenDraw()` berechnet die vier Anzeigetexte für Zeit, Punkte, Rekord und Nachladen aus Partie- und Profilzustand. Die Funktion aktualisiert das jeweilige DOM-Element nur, wenn sich sein sichtbarer Text geändert hat. Sie prüft die Texte vor der Entscheidung über das erneute Zeichnen des Canvas. So erscheint „Lädt nach …“ beim manuellen Nachladen auch dann sofort, wenn im selben Zeitschritt noch kein neues Bild anfällt.
+
+Simulationszustand: `elapsed`, `running`, `pausedAt`, `targets`, `visitors`, `nextPond`, `nextPeek`, `effects`, `ammo`, `reloadUntil`, `score` und zufällige Spawnparameter. Zeit und Nachladen stehen bei Pause still, und Treffer werden abgewiesen. Das Verbergen der Seite aktiviert die gemeinsame Pause. Ziel-/Effektzustände existieren nur im Arbeitsspeicher. Persistiert werden nur abgeschlossene Ergebnisse `{id, at, score}` und der Rekord. `topFive()` validiert IDs mit Präfix `chicken-`, endliche Zeitstempel und sichere ganzzahlige Punkte einschließlich negativer Ergebnisse, entfernt doppelte IDs und begrenzt auf fünf Einträge. Fehlende Altprofilfelder erhalten 0 beziehungsweise eine leere Liste; andere Lern-/Profildaten bleiben bestehen. Alle Dateien und der Direktstarter sind im PWA-App-Cache enthalten.
 
 Prüfung aus dem Projektordner:
 

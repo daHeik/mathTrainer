@@ -5706,9 +5706,17 @@
   function chickenDraw(){
     var g=chickenGame;if(!g)return;var canvas=el('chickenCanvas'),rect=canvas.getBoundingClientRect();
     if(rect.width&&rect.height){var width=Math.max(360,Math.round(600*rect.width/rect.height));ChickenShooter.resize(g,width);var density=Math.min(2,window.devicePixelRatio||1),pixelWidth=Math.round(g.width*density),pixelHeight=Math.round(600*density);if(canvas.width!==pixelWidth)canvas.width=pixelWidth;if(canvas.height!==pixelHeight)canvas.height=pixelHeight;g.minRadius=Math.max(22,22*600/rect.height,22*g.width/rect.width);}
+    // Manual reload can change its label before the next simulation step.
+    var time = el('chickenTime'), timeLabel = formatGameTime((90-g.elapsed)*1000);
+    var score = el('chickenScore'), scoreLabel = 'Punkte: ' + g.score;
+    var best = el('chickenBest'), bestLabel = 'Rekord: ' + state.reward.bestChickenScore;
+    var reload = el('chickenReloadBtn'), reloadLabel = g.reloadUntil ? 'Lädt nach …' : 'Nachladen · ' + g.ammo + '/6';
+    if (time.textContent !== timeLabel) time.textContent = timeLabel;
+    if (score.textContent !== scoreLabel) score.textContent = scoreLabel;
+    if (best.textContent !== bestLabel) best.textContent = bestLabel;
+    if (reload.textContent !== reloadLabel) reload.textContent = reloadLabel;
     var ctx=canvas.getContext('2d');g.reduced=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);var paintKey=[g.elapsed,g.width,canvas.width,canvas.height,g.score,g.ammo,g.effects.length,g.targets.length,g.visitors.length,g.keyboard,g.aimX,g.aimY,g.reduced].join(':');if(paintKey===g.paintKey)return;g.paintKey=paintKey;ctx.setTransform(canvas.width/g.width,0,0,canvas.height/600,0,0);ChickenShooter.draw(ctx,g,g.reduced);
     if(g.keyboard){ctx.strokeStyle='#233b50';ctx.lineWidth=3;ctx.beginPath();ctx.arc(g.aimX,g.aimY,15,0,7);ctx.moveTo(g.aimX-23,g.aimY);ctx.lineTo(g.aimX+23,g.aimY);ctx.moveTo(g.aimX,g.aimY-23);ctx.lineTo(g.aimX,g.aimY+23);ctx.stroke();}
-    text('chickenTime',formatGameTime((90-g.elapsed)*1000));text('chickenScore','Punkte: '+g.score);text('chickenBest','Rekord: '+state.reward.bestChickenScore);text('chickenReloadBtn',g.reloadUntil?'Lädt nach …':'Nachladen · '+g.ammo+'/6');
   }
   function chickenStep(now){
     var g=chickenGame;if(!g)return;var dt=Math.max(0,(now-g.lastFrame)/1000);g.lastFrame=now;

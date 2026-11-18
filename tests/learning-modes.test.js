@@ -2338,6 +2338,22 @@ var chickenBackup=api.normalizeProfile(JSON.parse(storage.km_1x1_trainer_v2).pro
 api.stopChickenGame();api.startChickenGame(false);assert.strictEqual(api.chickenGame(),null);var chickenSaved=JSON.stringify(chickenProfile.reward);api.startChickenGame(true);elements.chickenStartBtn.click();chickenNow+=90000;api.chickenStep(chickenNow);assert.strictEqual(JSON.stringify(chickenProfile.reward),chickenSaved);api.stopChickenGame();
 chickenProfile.reward.availablePlays=1;api.startChickenGame(false);elements.chickenStartBtn.click();chickenNow+=1000;api.chickenStep(chickenNow);api.stopChickenGame();assert.strictEqual(chickenProfile.reward.chickenLeaderboard.length,1,'Partial games never rank');context.performance.now=originalNow;
 console.log('Chicken Shooter integration: one reward, pause, completed game ranking/current marker, backup, no credit, demo isolation and partial game exit OK');
+
+// Reload can change HUD text before another simulation step or Canvas paint.
+api.startChickenGame(true);
+elements.chickenStartBtn.click();
+elements.chickenCanvas.events.pointerdown.call(elements.chickenCanvas, { button:0, clientX:0, clientY:0 });
+var sameFrameChicken = api.chickenGame();
+var previousPaintKey = sameFrameChicken.paintKey;
+assert.strictEqual(elements.chickenScore.textContent, 'Punkte: -100');
+assert.strictEqual(elements.chickenReloadBtn.textContent, 'Nachladen · 5/6');
+elements.chickenReloadBtn.click();
+assert.strictEqual(sameFrameChicken.elapsed, 0);
+assert.strictEqual(sameFrameChicken.paintKey, previousPaintKey);
+assert.strictEqual(elements.chickenReloadBtn.textContent, 'Lädt nach …');
+api.stopChickenGame();
+console.log('Chicken Shooter HUD: manual reload updates its label even before the next paint');
+
 // Signed Chicken Shooter results survive ranking, records and backup normalization.
 var penaltyProfile=api.normalizeProfile(api.defaultProfile());penaltyProfile.config.childName='Punktetest';penaltyProfile.reward.availablePlays=3;api.setState(penaltyProfile);var penaltyNow=1;context.performance.now=function(){return penaltyNow;};
 [2,4,1].forEach(function(missCount,index){api.startChickenGame(false);elements.chickenStartBtn.click();var game=api.chickenGame();for(var shot=0;shot<missCount;shot++)context.ChickenShooter.shoot(game,300,30);assert.strictEqual(game.score,-missCount*100);penaltyNow+=90000;api.chickenStep(penaltyNow);assert.strictEqual(penaltyProfile.reward.bestChickenScore,index===2?-100:-200);var restored=api.normalizeProfile(JSON.parse(storage.km_1x1_trainer_v2).profiles[api.getRoot().activeProfileId]);assert.strictEqual(restored.reward.bestChickenScore,penaltyProfile.reward.bestChickenScore);assert.strictEqual(restored.reward.chickenLeaderboard[0].score,penaltyProfile.reward.bestChickenScore);api.stopChickenGame();});
