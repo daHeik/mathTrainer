@@ -60,3 +60,7 @@ Hexfarben, direkter Avatar-Vorschau und Erhalt vorhandener Augenfarben.
 Am 3. November 2026 wurde Frog Punch als eigene DOM-/SVG-Implementierung ergänzt.
 Froschsymbol, Lochgrafik und CSS-Teichwiese sind eigene lokale Geometrien ohne
 externe Bild-, Schrift- oder Sounddateien. Keine zusätzlichen Fremdassets.
+
+Mini-Golf, Schatzgreifer und Taschen-Flipper übernehmen Canvas-Grafiken und
+die drei SVG-Auswahlbilder aus Vocabulator `dd849bd` (Version 66, MIT,
+Copyright 2026 Heiko Hanickel).

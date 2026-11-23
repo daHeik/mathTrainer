@@ -4,6 +4,9 @@ var BlankPaper = (function(){
 
   var WIDTH = 1588; // Two A4 widths at the CSS reference density.
   var EXTENSION = 1123;
+  var SAVE_PAUSE = 500;
+  var SAVE_INTERVAL = 2500;
+  var SLOW_SAVE = 800;
   var tools = {pen:4, pencil:2.5, marker:18, eraser:28};
   var bounds = new WeakMap();
   var paths = new WeakMap();
@@ -204,7 +207,8 @@ var BlankPaper = (function(){
     var scroll = el('paperScroll'), surface = el('paperSurface'), canvas = el('paperCanvas');
     var ctx = canvas.getContext('2d');
     var date = new Intl.DateTimeFormat('de-DE', {dateStyle:'long', timeStyle:'medium'});
-    var profileId, sheet, active, pending, dirty, redo, height, frame;
+    var profileId, sheet, active, pending, redo, height, frame;
+    var dirtySince = null, lastEdit, saveTimer, statusTimer;
     var tool = 'pen', touches = new Map();
     var archiveRequest = 0, archiveBusy = false;
 
@@ -216,6 +220,7 @@ var BlankPaper = (function(){
 
     function showArchive(message, focus){
       var request = ++archiveRequest;
+      clearTimeout(saveTimer);
       editor.hidden = true;
       archive.hidden = false;
       list.textContent = '';
@@ -294,7 +299,7 @@ var BlankPaper = (function(){
       ++archiveRequest;
       sheet = record;
       pending = null;
-      dirty = false;
+      dirtySince = null;
       redo = [];
       touches.clear();
       height = 0;
@@ -305,30 +310,50 @@ var BlankPaper = (function(){
       editor.hidden = false;
       scroll.scrollTo(0, 0);
       el('paperDiscard').hidden = true;
-      status.textContent = record.revision ? 'Auf diesem Gerät gespeichert' : '';
+      status.textContent = '';
       updateHistory();
       render();
       scroll.focus({preventScroll:true});
     }
 
-    function flush(){
-      if (pending) return pending;
-      if (!dirty) return Promise.resolve(true);
+    function scheduleSave(){
+      clearTimeout(saveTimer);
+      var due = Math.min(lastEdit + SAVE_PAUSE, dirtySince + SAVE_INTERVAL);
+      saveTimer = setTimeout(function(){
+        if (!active && !editor.hidden) flush(false);
+      }, Math.max(0, due - performance.now()));
+    }
+
+    function flush(immediate){
+      if (pending){
+        return immediate ? pending.then(function(saved){ return saved && flush(true); }) : pending;
+      }
+      if (dirtySince === null) return Promise.resolve(true);
+      clearTimeout(saveTimer);
       var snapshot = Object.assign({}, sheet, {revision:sheet.revision + 1});
-      dirty = false;
-      status.textContent = 'Speichert …';
+      var changeStarted = dirtySince;
+      dirtySince = null;
+      statusTimer = setTimeout(function(){
+        if (!status.textContent) status.textContent = 'Speichert …';
+      }, SLOW_SAVE);
       pending = save(snapshot).then(function(){
         sheet.revision = snapshot.revision;
         pending = null;
-        if (dirty) return flush();
+        clearTimeout(statusTimer);
         el('paperDiscard').hidden = true;
-        status.textContent = 'Auf diesem Gerät gespeichert';
+        if (status.textContent) status.textContent = '';
+        if (dirtySince !== null){
+          if (immediate) return flush(true);
+          if (!active) scheduleSave();
+        }
         return true;
-      }).catch(function(){
+      }, function(){
         pending = null;
-        dirty = true;
+        clearTimeout(statusTimer);
+        clearTimeout(saveTimer);
+        dirtySince = changeStarted;
         el('paperDiscard').hidden = false;
-        status.textContent = 'Speichern fehlgeschlagen. Sichere das Blatt als Datei.';
+        status.textContent = 'Speicherfehler';
         return false;
       });
       return pending;
@@ -337,10 +362,11 @@ var BlankPaper = (function(){
     function changed(strokes){
       sheet.strokes = strokes;
       sheet.updatedAt = Date.now();
-      dirty = true;
+      lastEdit = performance.now();
+      if (dirtySince === null) dirtySince = lastEdit;
       updateHistory();
       redraw();
-      flush();
+      scheduleSave();
     }
 
     function addSamples(event){
@@ -351,8 +377,12 @@ var BlankPaper = (function(){
       samples.forEach(function(sample){
         var x = Math.max(0, Math.min(WIDTH, sample.clientX - rect.left + scroll.scrollLeft));
         var y = Math.max(0, Math.min(height, sample.clientY - rect.top + scroll.scrollTop));
-        var pressure = event.pointerType === 'pen' && sample.pressure > 0 ? sample.pressure : 0.5;
         var last = points[points.length - 1];
+        var pressure = 0.5;
+        if (event.pointerType === 'pen'){
+          // At lift-off Pointer Events reports zero, which is no new pressure sample.
+          pressure = sample.pressure > 0 ? sample.pressure : (last ? last[2] : 0.5);
+        }
         if (!last || x !== last[0] || y !== last[1]) points.push([x, y, pressure]);
       });
       redraw();
@@ -399,7 +429,7 @@ var BlankPaper = (function(){
     scroll.addEventListener('scroll', redraw);
     new ResizeObserver(redraw).observe(scroll);
     document.addEventListener('visibilitychange', function(){
-      if (document.hidden && !editor.hidden){ finish(); flush(); }
+      if (document.hidden && !editor.hidden){ finish(); flush(true); }
     });
 
     el('paperTools').querySelectorAll('[data-paper-tool]').forEach(function(button){
@@ -428,7 +458,7 @@ var BlankPaper = (function(){
       finish();
       var button = el('paperBack');
       button.disabled = true;
-      flush().then(function(saved){
+      flush(true).then(function(saved){
         button.disabled = false;
         if (saved) showArchive('', true);
         else button.focus();

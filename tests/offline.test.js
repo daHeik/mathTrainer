@@ -10,7 +10,7 @@ var context = { self:{ addEventListener:function(name, fn){ handlers[name] = fn;
 vm.runInNewContext(fs.readFileSync(path.join(root, 'sw.js'), 'utf8'), context);
 var assets = Array.from(context.ASSETS);
 assets.forEach(function(asset){ assert(fs.existsSync(path.join(root, asset)), 'Missing cached asset: ' + asset); });
-['gravity','brick','snake','snow','flappy','tower','runner','doodle','tiles','maze','asteroid','frog','chicken'].forEach(function(game){
+['gravity','brick','snake','snow','flappy','tower','runner','doodle','tiles','maze','asteroid','golf','grab','pinball','frog','chicken'].forEach(function(game){
   assert(assets.indexOf('./' + game + '.html') !== -1);
   assert(fs.readFileSync(path.join(root, game + '.html'), 'utf8').indexOf('?demo=' + game) !== -1);
 });
@@ -34,7 +34,7 @@ var css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
 // Avatar imports must not replace the app shell, learning forms or game layout.
 [
   '.app-bar', '#app>.card', '.screen.active', '.app-navigation',
-  'body.standalone-app .app-navigation', 'body.focused-view', 'body.learning-input-viewport',
+  'body.focused-view', 'body.learning-input-viewport',
   '.game-immersive.active', '.game-immersive .game-toolbar',
   '.game-immersive .game-wrap', '.written-equation', '.written-number',
   '.semi-division', '.semi-work', '.runner-controls', '.classic-controls',
@@ -44,9 +44,12 @@ var css = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
   assert(css.indexOf(selector + ' {') !== -1 || css.indexOf(selector + '{') !== -1,
     'Required layout rule: ' + selector);
 });
+assert(/\.app-navigation\s*\{[^}]*grid-row:3;[^}]*var\(--safe-bottom\)/.test(css), 'Mobile navigation reserves the full bottom safe area');
 assert(/@media\s*\(min-width:760px\)/.test(css), 'Desktop sidebar layout remains available');
 assert(/@media\s*\(orientation:landscape\)/.test(css), 'Landscape layout remains available');
 assert(/\.modal-overlay\s*\{[^}]*height:var\(--modal-height,/.test(css), 'Modal follows keyboard viewport independently of app shell');
+assert(html.includes('viewport-fit=contain') && !html.includes('black-translucent'),
+  'iOS keeps the app viewport inside the system controls');
 var appVersion = html.match(/id="appVersion">Version (\d+)<\/p>/);
 assert(appVersion, 'Home screen shows the app version');
 assert.strictEqual('1x1-trainer-v' + appVersion[1], context.CACHE_NAME, 'Visible app version matches the release cache version');
@@ -78,6 +81,6 @@ Array.from(html.matchAll(/href="icons\.svg#([^"]+)"/g)).forEach(function(match){
 });
 assert(!/vocabulator|Vokabel|trainer\.js|data\/manifest/.test(html));
 assert(handlers.install && handlers.activate && handlers.fetch);
-console.log('Offline: all fourteen games, launchers, colored SVG icons, module load order and screen structure OK');
+console.log('Offline: all seventeen games, launchers, colored SVG icons, module load order and screen structure OK');
 
 assert(html.indexOf('src="curriculum.js"')<html.indexOf('src="app.js"'),'Curriculum loads before the app');

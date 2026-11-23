@@ -1,6 +1,7 @@
 'use strict';
 var assert=require('node:assert/strict'),A=require('../arcade-extra.js');
-function ctx(){return new Proxy({createLinearGradient:function(){return {addColorStop:function(){}};}},{get:function(o,k){return k in o?o[k]:function(){};}});}
+function gradient(){return {addColorStop:function(){}};}
+function ctx(){return new Proxy({createLinearGradient:gradient,createRadialGradient:gradient},{get:function(o,k){return k in o?o[k]:function(){};}});}
 var games={},losses=[],api=A.create({
  get:function(kind){return games[kind];},
  begin:function(kind){games[kind].awaitingStart=false;games[kind].running=true;return true;},
@@ -95,3 +96,57 @@ api.definitions.asteroid.recover(touch);assert.equal(touch.touchTarget,null);
 touch.touchTarget={x:20,y:30};touch.canvas.height=300;api.resize('asteroid',640);assert.equal(touch.touchTarget,null);
 A.kinds.forEach(function(kind){var g=start(kind);g.pausedAt=1;var before=JSON.stringify(g);api.update(kind,1);api.action(kind,'left',true);assert.equal(JSON.stringify(g),before);g.canvas.height=300;api.draw(kind);g.canvas.height=960;api.draw(kind);});
 console.log('OK: canonical 2048 merges/no-op/spawn/final board, reachable Doodle chain/bounce/wrap/recovery, connected maze/power/ghosts, inertial Asteroid split/wrap/respawn, pause and portrait/landscape rendering.');
+
+var golf=start('golf'),golfDef=api.definitions.golf;
+golfDef.pointer(golf,'down',{x:200,y:300});golfDef.pointer(golf,'cancel',{});assert.equal(golf.strokes,0);
+golfDef.pointer(golf,'down',{x:200,y:300});golfDef.pointer(golf,'up',{x:175,y:355});
+assert.equal(golf.strokes,1);assert(golf.ball.vx>0&&golf.ball.vy<0);
+golf.ball={x:345,y:150,vx:2,vy:0};golf.strokes=6;api.update('golf',1/60);
+assert.equal(golf.hole,2);assert.equal(golf.score,25);assert.equal(golf.attempts,0);
+golf.ball={x:240,y:400,vx:1,vy:0};golf.strokes=6;golf.rolling=true;api.update('golf',1/60);
+assert.equal(golf.attempts,1);assert.equal(golf.hole,2);assert.equal(golf.ball.y,400);
+
+// The jump clears the divider, the castle transports the ball, all six cups score.
+golf.running=true;golf.awaitingStart=false;golf.ball={x:236,y:372,vx:0,vy:-350};golf.rolling=true;
+api.update('golf',.25);assert(golf.ball.y<305&&golf.air>0);
+[[242,146],[336,152],[359,503],[234,143],[330,159]].forEach(function(cup){
+ if(golf.hole===3){golf.ball={x:110,y:335,vx:0,vy:-30};golf.rolling=true;api.update('golf',.01);assert(golf.portalLock&&golf.ball.x>310);}
+ golf.ball={x:cup[0],y:cup[1],vx:0,vy:0};golf.rolling=true;api.update('golf',.01);
+});
+assert.equal(golf.hole,7);
+
+var grab=start('grab'),fish=grab.treasures[0],oldX=fish.x;
+api.update('grab',.1);assert.notEqual(fish.x,oldX);
+for(var i=0;i<6;i++){grab.phase='in';grab.length=52;api.update('grab',.02);}
+assert.equal(grab.attempts,0);assert(grab.running);
+function deliver(type,score){
+ grab.cargo={type:type,home:200};grab.phase='in';grab.length=52;
+ api.update('grab',.02);assert.equal(grab.score,score);
+}
+deliver('boot',-35);deliver('can',-55);deliver('fish',-20);
+grab.treasures=[];grab.crab.x=240+174*Math.sin((grab.elapsed+.001)*.36);
+var dx=grab.crab.x-240,dy=grab.crab.y-26-89;grab.angle=Math.atan2(dx,dy);
+grab.length=Math.hypot(dx,dy);grab.phase='out';api.update('grab',.001);
+assert.equal(grab.cargo.type,'crown');assert(grab.crab.readyAt>grab.elapsed);
+grab.length=52;api.update('grab',.01);assert.equal(grab.score,180);
+
+var pin=start('pinball');assert(pin.ball.y<1350);var initialCamera=pin.camera;
+api.update('pinball',1);assert(pin.ball.y<710&&pin.camera<initialCamera-250&&!pin.ride);
+[[106,1350],[79,824],[92,402]].forEach(function(deck){
+ ['left','right'].forEach(function(side){
+  var g=start('pinball');g.ride=null;
+  g.ball={x:side==='left'?deck[0]+60:480-deck[0]-60,y:deck[1],vx:0,vy:240};
+  api.action('pinball',side,true);api.update('pinball',.06);
+  assert(g.ball.vy<-700,side+' shoots from deck '+deck[1]);
+ });
+});
+pin=start('pinball');pin.ride=null;pin.ball={x:140,y:1012,vx:0,vy:400};api.update('pinball',.02);
+assert(pin.lamps[0]);assert.equal(pin.score,20);
+[[371,924,140],[104,487,160],[232,170,250]].forEach(function(route){
+ pin.ride=null;pin.lamps.fill(true);pin.ball={x:route[0],y:route[1]+1,vx:0,vy:-150};
+ var score=pin.score;api.update('pinball',.01);assert(pin.ride);assert.equal(pin.score,score+route[2]);
+ api.update('pinball',1.27);assert(!pin.ride);
+});
+pin.ball.y=1490;pin.safeUntil=0;api.update('pinball',.02);
+assert.equal(pin.attempts,1);assert(pin.ball.y<1350&&pin.ride);
+console.log('OK: six golf courses, jump and castle tunnel; timed fishing, signed catches and treasure crab; launch, scrolling, three flipper pairs, tube, orbit and hyperlane.');

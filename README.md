@@ -3,7 +3,7 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `fb65592` mit lokalen Änderungen für „Leeres Blatt“, PWA-Cache `1x1-trainer-v72`, keine separate semantische App-Version |
+| Version | Basis `722d0ad` mit lokalen Änderungen für Safe Areas, „Leeres Blatt“ und drei Spiele aus Vocabulator, PWA-Cache `1x1-trainer-v73`, keine separate semantische App-Version |
 | Letzte Quellcodeänderung | 2026-11-23 |
 | Letzte Projekt-/README-Änderung | 2026-11-23 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
@@ -50,7 +50,7 @@ Normale Spiele laufen bis zu drei aktive Minuten pro Kontingent; **Bricks und 20
 1. Unter **Lernen → Leeres Blatt** das Archiv öffnen. Das zuletzt bearbeitete Blatt steht oben. Das angezeigte Datum mit Uhrzeit antippen, um weiterzuschreiben, oder **Neues Blatt** wählen.
 2. Mit dem Apple Pencil oder der Maus schreiben. Füller und Bleistift reagieren auf den vom Gerät gemeldeten Stiftdruck. Der halbtransparente Textmarker hebt Stellen hervor, der Radierer löscht Tinte unter seiner Spitze. Für jedes Werkzeug stehen drei Strichstärken zur Wahl. Der Farbwähler öffnet die Farbauswahl des Browsers. **Rückgängig** und **Wiederholen** arbeiten innerhalb des aktuell geöffneten Blatts.
 3. Mit einem Finger oder per Mausrad bzw. Trackpad verschieben. Das Raster umfasst zwei DIN-A4-Breiten nebeneinander, entsprechend je 794 CSS-Pixeln im Referenzmaßstab. Eine senkrechte Linie markiert den Übergang. Das Papier wächst beim Scrollen nach unten automatisch, innerhalb der technischen Scrollgrenze des Browsers. Auf einem großen Bildschirm können beide Breiten gleichzeitig sichtbar sein.
-4. Jeder abgeschlossene Strich und jede Rückgängig-/Wiederholen-Aktion wird automatisch gespeichert. Ein neues Blatt erscheint nach der ersten Bearbeitung im Archiv. Über **Blätter** zur Auswahl zurückkehren.
+4. Während du schreibst, erscheinen Striche sofort. Das Blatt speichert abgeschlossene Striche nach einer kurzen Pause automatisch. Über **Blätter** kannst du zur Auswahl zurückkehren, sobald die letzten Änderungen gesichert sind. Bei normalen Speichervorgängen bleibt die Statuszeile ruhig.
 5. **Blatt sichern** exportiert das offene Blatt. **Archiv sichern** exportiert alle Blätter des aktiven Profils. Auf dem iPad kann die JSON-Datei über den Download-Ordner in der Dateien-App abgelegt werden. **Sicherung importieren** fügt die Blätter mit ihren ursprünglichen Bearbeitungsdaten als eigenständige Kopien zum gerade aktiven Profil hinzu.
 6. Wenn der Browser nicht speichern kann, bleibt das Blatt zum Datei-Export im Editor. **Blätter** versucht erneut zu speichern. Über **Ohne Speichern zurück** lassen sich die ungespeicherten Änderungen nach Bestätigung verwerfen.
 
@@ -60,7 +60,11 @@ Die Sicherung für Lernstände im Elternbereich und die Blattsicherungen werden 
 
 Text-, Zahlen- und Auswahlfelder zeigen einen klaren Fokusrahmen innerhalb des Feldrands. Der Rahmen ragt nicht mehr als äußerer Glow in benachbarte oder scrollbare Bereiche und wird dort links/rechts nicht abgeschnitten. Die bisherigen besonderen Außenrahmen für Lernfelder sind durch eine gemeinsame CSS-Regel ersetzt: drei Pixel Outline mit negativem Abstand, ohne äußeren Schatten. Andere Tastatur-Fokusmarkierungen, etwa an Buttons und Checkboxen, bleiben erhalten.
 
-Native Eingabe- und Auswahlfelder bekommen eine Basisschriftgröße von mindestens 16 Pixeln, auch wenn eine umgebende Beschriftung kleiner ist. Die größeren Schriftgrößen der Lernformulare bleiben bestehen. Das vermeidet den üblichen automatischen Fokuszoom bei zu kleiner Feldschrift auf iOS. Die Viewport-Metadaten bleiben unverändert; manuelles Vergrößern per Pinch-Zoom ist weiter möglich. Die bestehende Tastatur-/Visual-Viewport-Behandlung bleibt aktiv. Der vollständig sichtbare Innenrahmen wurde an einem fokussierten Lernfeld in Desktop-Safari visuell geprüft. Eine physische iPhone-Prüfung des automatischen Fokuszooms steht aus; Desktop-Safari ersetzt diese Geräteprüfung nicht.
+Native Eingabe- und Auswahlfelder bekommen eine Basisschriftgröße von mindestens 16 Pixeln, auch wenn eine umgebende Beschriftung kleiner ist. Die größeren Schriftgrößen der Lernformulare bleiben bestehen. Das vermeidet den üblichen automatischen Fokuszoom bei zu kleiner Feldschrift auf iOS. Manuelles Vergrößern per Pinch-Zoom ist weiter möglich. Die bestehende Tastatur-/Visual-Viewport-Behandlung bleibt aktiv. Der vollständig sichtbare Innenrahmen wurde an einem fokussierten Lernfeld in Desktop-Safari visuell geprüft. Eine physische iPhone-Prüfung des automatischen Fokuszooms steht aus; Desktop-Safari ersetzt diese Geräteprüfung nicht.
+
+## Sichere Bildschirmränder auf iPhone und iPad
+
+Safari und die Home-Bildschirm-App verwenden den vom System begrenzten Viewport mit `viewport-fit=contain` und einer regulären Statusleiste. Die App berücksichtigt zusätzlich die gemeldeten Safe-Area-Abstände an allen vier Seiten. Die Navigation nutzt in Safari und der installierten App dieselbe Rasterzeile mit dem vollständigen unteren Abstand. Blattarchiv und Editor lassen oben und unten je acht zusätzliche Pixel frei. Spielleisten, Dialoge und die übrige App-Hülle verwenden ihre eigenen Safe-Area-Abstände innerhalb des Viewports.
 
 ## Startseite – Themen finden
 
@@ -310,6 +314,16 @@ Backups sind lokal erzeugte JSON-Dateien und werden vor Übernahme geprüft. Neu
 
 Die ursprünglichen zwölf Canvas-Spiele teilen Lebenszyklus, Pause, erste-Spielaktion-Buchung, Profilrekorde und Touchabbildung. Das dreizehnte Spiel, Frog Punch, verwendet SVG-/DOM-Ziele und drei Zeitrunden; es ist in dieselbe Auswahl, Pause und Kontingentbuchung integriert. Als vierzehntes Spiel ergänzt Chicken Shooter eine eigenständige 90-Sekunden-Partie mit saisonalem Hühnerhof und eigener Top-5-Liste. Die ursprünglichen Spiele liegen in `app.js`, Doodle/2048/Pac-Man/Asteroids in `arcade-extra.js` mit `VocabArcade.create()` als Schnittstelle. Ein Spiel auf der Auswahlseite zu öffnen bucht noch nichts ab. Aktive Spielzeit und Versuchszahl werden unabhängig vom Öffnen der Spielauswahl geführt. Eine Verlängerung derselben Welt wie in Vocabulator ist hier nicht implementiert.
 
+### Mini-Golf, Schatzgreifer und Taschen-Flipper
+
+Die drei Spiele stammen aus Vocabulator `dd849bd` (Version 66, MIT). Sie verwenden die übernommenen Canvas-Grafiken, Physik, Eingaberegeln und mobilen Spielflächen. Im Mathetrainer teilen sie sich mit den vorhandenen Spielen die Kontingentbuchung bei der ersten Spielaktion, Pause und drei Minuten aktive Spielzeit.
+
+- **Mini-Golf** bietet sechs Bahnen mit eigenen Hindernissen, darunter Mühle, Sprungschanze und Burgtunnel. Im Spielfeld zurückziehen und loslassen. Per Tastatur mit links/rechts zielen, mit hoch/runter die Kraft wählen und mit der Leertaste schlagen. Nach sechs erfolglosen Schlägen ist ein Versuch verbraucht.
+- **Schatzgreifer** startet beim ersten Tippen auf das Spielfeld oder per Leertaste. Weitere Eingaben lassen den Greifer ausfahren. Fische und Krabbenschätze erhöhen den Punktestand, Stiefel und Dosen ziehen Punkte ab. Die drei aktiven Minuten begrenzen die Runde.
+- **Taschen-Flipper** startet über die linke oder rechte Feldhälfte oder Pfeiltaste. Die Kamera folgt der Kugel über drei Ebenen. Bumper, Röhren und Rampen sammeln Punkte. Drei verlorene Kugeln beenden die Partie.
+
+`arcade-extra.js` stellt die drei Definitionen über `VocabArcade.create()` bereit. Mini-Golf und Schatzgreifer verwenden einen festen Ausschnitt von 480 × 640 Spieleinheiten. Taschen-Flipper berechnet die Höhe des scrollenden Ausschnitts aus dem verfügbaren Bereich. Mini-Golf und Flipper prüfen ihre Kollisionen in Teilschritten bis 1/120 Sekunde. `app.js` übernimmt Start, Pause, Kontingent, Zeitlimit und Rekorde. `bestGolfScore`, `bestGrabScore` und `bestPinballScore` sind Profilfelder und werden im normalen Profilbackup mitgeführt. Fehlende Rekorde erhalten den Startwert null. Die Offline-Direktstarter `golf.html`, `grab.html` und `pinball.html` laden dieselben Spiele als Demos ohne Kontingentbuchung oder Rekordänderung.
+
 ### Nachrichtenkarten für Start, Fehlversuch und Endstand
 
 Die zwölf Canvas-Spiele von Dino bis Asteroids zeigen Hinweise, Fehlversuche und Ergebnisse in einer mittigen Karte. Tippen auf die Karte oder daneben erreicht dieselbe Spielsteuerung. Während des Spiels verschwindet die Karte. Lange Ergebnisse brechen um und lassen sich bei Platzmangel in der Karte scrollen. Der vorhandene Button für ein weiteres Spiel bleibt außerhalb des Feldes. Frog Punch und Chicken Shooter nutzen ihre eigenen Anzeigen.
@@ -388,17 +402,17 @@ Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben un
 
 ## Technischer Deep-Dive – Zeichenfläche und Blattarchiv
 
-`showScreen()` in `app.js` öffnet den Blattmodus mit der aktiven Profil-ID. `blank-paper.js` verarbeitet Pointer Events für Stift, Maus und Finger. Stiftpunkte einschließlich Druck werden in Papierkoordinaten erfasst. Während eines Stiftstrichs löst Fingerkontakt kein Verschieben aus. Die Werkzeugpalette orientiert sich an den Grundwerkzeugen von [Apple Markierungen auf dem iPad](https://support.apple.com/de-de/guide/ipad/ipad6350b8dc/ipados).
+`showScreen()` in `app.js` öffnet den Blattmodus mit der aktiven Profil-ID. `blank-paper.js` verarbeitet Pointer Events für Stift, Maus und Finger. Stiftpunkte einschließlich Druck werden in Papierkoordinaten erfasst. Hat der Stift beim Abheben eine neue Position, verwendet der Endpunkt den zuletzt gemessenen Druck. Während eines Stiftstrichs löst Fingerkontakt kein Verschieben aus. Die Werkzeugpalette orientiert sich an den Grundwerkzeugen von [Apple Markierungen auf dem iPad](https://support.apple.com/de-de/guide/ipad/ipad6350b8dc/ipados).
 
 Ein CSS-Hintergrund zeichnet die Karos und die DIN-A4-Trennlinie. Das Canvas folgt dem sichtbaren Ausschnitt des Scrollcontainers und rastert die darin liegenden Striche mit begrenzter Pixeldichte. Darunter wächst die Papierfläche bei Annäherung an den unteren Rand in Abschnitten von 1123 CSS-Pixeln. Jeder Strich enthält Werkzeug, Farbe, Strichstärke und Punkte mit X, Y und Druck. Radieren wird als eigener Strich mit Canvas-Komposition gespeichert, damit das Raster sichtbar bleibt und der Vorgang rückgängig gemacht werden kann.
 
-IndexedDB `mathTrainer-paper` speichert je Blatt ID, Profil-ID, letztes Bearbeitungsdatum, Revision und geordnete Striche im Store `sheets`. Der Index `recent` liefert zunächst nur die Schlüssel des ausgewählten Profils in absteigender Reihenfolge. Der Editor lädt die Striche beim Öffnen. Schreibtransaktionen sichern einen konsistenten Blattstand und prüfen die vorherige Revision, damit ein zweiter Tab keine neuere Fassung überschreibt. Die App meldet Speicherfehler und lässt den aktuell bearbeiteten Stand als Datei exportieren.
+IndexedDB `mathTrainer-paper` speichert je Blatt ID, Profil-ID, letztes Bearbeitungsdatum, Revision und geordnete Striche im Store `sheets`. Der Index `recent` liefert zunächst nur die Schlüssel des ausgewählten Profils in absteigender Reihenfolge. Der Editor lädt die Striche beim Öffnen. Automatisches Speichern bündelt abgeschlossene Änderungen nach 500 Millisekunden Pause. Nach 2,5 Sekunden mit offenen Änderungen nutzt es die nächste Lücke zwischen Strichen. Beim Weg zurück ins Archiv wartet die App auf den aktuellen Stand. Beim Ausblenden stößt sie die sofortige Speicherung an, soweit der Browser noch Ausführungszeit gewährt. Erst nach 800 Millisekunden Transaktionsdauer erscheint „Speichert …“ im dafür reservierten Feld. Schreibtransaktionen sichern den gesamten Blattstand und prüfen die vorherige Revision, damit ein zweiter Tab keine neuere Fassung überschreibt. Die App meldet Speicherfehler und lässt den aktuell bearbeiteten Stand als Datei exportieren.
 
 Der Export verwendet eine versionierte JSON-Hülle mit Kennung `mathTrainer-paper`. Der Import prüft Datum, Farbwerte, Werkzeugparameter und Punktkoordinaten und speichert die Kopien in einer gemeinsamen Transaktion. Die Blätter bleiben im Browserkontext der App. Die App bittet den Browser, falls unterstützt, um persistenten Speicher. Speicherquoten, Browserregeln und manuelles Löschen können den lokalen Bestand betreffen. Siehe [WebKit-Speicherregeln](https://webkit.org/blog/14403/updates-to-storage-policy/).
 
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v72`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v73`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 

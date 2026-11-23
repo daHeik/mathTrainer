@@ -73,7 +73,7 @@ var context = {
   document:{
     documentElement:new Element(), activeElement:null, body:new Element(),
     getElementById:function(id){
-      if(/^(doodle|tiles|maze|asteroid)(left|right|up|down|fire)Btn$/.test(id))return elements[id]||null;
+      if(/^(doodle|tiles|maze|asteroid|golf|grab|pinball)(left|right|up|down|fire)Btn$/.test(id))return elements[id]||null;
       assert(elements[id], 'Missing DOM id ' + id); return elements[id];
     },
     querySelector:function(selector){
@@ -126,7 +126,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'drawGame:function(kind){if(extraArcade.definitions[kind])extraArcade.draw(kind);else ({dino:drawRewardGame,flappy:drawFlappyGame,tower:drawTowerGame,gravity:drawGravityGame,brick:drawBrickGame,snake:drawSnakeGame,snow:drawSnowGame,runner:drawRunnerGame})[kind]();},',
   'gravityContext:function(value){if(value)gravityCtx=value;return gravityCtx;},',
   'prepareGameCanvas:prepareGameCanvas, logicalCanvasHeight:logicalCanvasHeight,',
-  'games:function(){return {dino:rewardGame,flappy:flappyGame,tower:towerGame,gravity:gravityGame,brick:arcadeGames.brick,snake:arcadeGames.snake,snow:arcadeGames.snow,runner:arcadeGames.runner,doodle:arcadeGames.doodle,tiles:arcadeGames.tiles,maze:arcadeGames.maze,asteroid:arcadeGames.asteroid};},',
+  'games:function(){return {dino:rewardGame,flappy:flappyGame,tower:towerGame,gravity:gravityGame,brick:arcadeGames.brick,snake:arcadeGames.snake,snow:arcadeGames.snow,runner:arcadeGames.runner,doodle:arcadeGames.doodle,tiles:arcadeGames.tiles,maze:arcadeGames.maze,asteroid:arcadeGames.asteroid,golf:arcadeGames.golf,grab:arcadeGames.grab,pinball:arcadeGames.pinball};},',
   'extras:extraArcade, resizeExtraCanvases:resizeExtraCanvases,',
   'chickenGame:function(){return chickenGame;}, startChickenGame:startChickenGame, chickenStep:chickenStep, stopChickenGame:stopChickenGame,',
   'frogGame:function(){return frogGame;}, startFrogGame:startFrogGame, frogStep:frogStep, tapFrog:tapFrog, stopFrogGame:stopFrogGame,',
@@ -2568,3 +2568,52 @@ function gameKey(target, key, repeat){
   elements[prefix + 'HomeBtn'].click();
 });
 console.log('Dino, Flappy and Tower: keyboard start, one Space action, native toolbar controls, pause and arrow mappings OK');
+
+// Vocabulator ports use the mathTrainer reward and demo lifecycle.
+[['golf','Golf','fire'],['grab','Grab','fire'],['pinball','Pinball','left']].forEach(function(spec){
+  var kind=spec[0], label=spec[1], action=spec[2], record='best'+label+'Score';
+  var reward=api.getState().reward;
+  reward.availablePlays=1;
+  elements['choose'+label+'Btn'].click();
+  var game=api.games()[kind];
+  assert(game.active && !game.running);
+  assert.strictEqual(reward.availablePlays,1);
+  if(kind==='golf'){
+    var wrap=elements.golfWrap;
+    wrap.events.pointerdown({button:0,pointerId:8,clientX:200,clientY:200,preventDefault:function(){}});
+    assert(game.drag);
+    elements.golfPauseBtn.click();
+    assert.strictEqual(game.drag,null);
+    elements.golfPauseBtn.click();
+    wrap.events.pointerup({pointerId:8,clientX:170,clientY:260});
+    assert.strictEqual(reward.availablePlays,1);
+  }
+  api.extras.action(kind,action,true);
+  assert(game.running);
+  assert.strictEqual(reward.availablePlays,0);
+  api.extras.action(kind,action,true);
+  assert.strictEqual(reward.availablePlays,0);
+  elements[kind+'PauseBtn'].click();
+  api.extras.update(kind,.1);
+  assert.strictEqual(game.playTimeMs||0,0);
+  elements[kind+'PauseBtn'].click();
+  game.score=123;
+  game.playTimeMs=api.gameDurationMs(game);
+  api.runArcadeGame(kind,1000);
+  assert(!game.active);
+  assert.strictEqual(reward[record],123);
+  elements[kind+'HomeBtn'].click();
+  api.startArcadeGame(kind,true);
+  game=api.games()[kind];
+  api.extras.action(kind,action,true);
+  assert(game.running);
+  game.score=999;
+  elements[kind+'HomeBtn'].click();
+  assert.strictEqual(reward[record],123);
+  assert.strictEqual(reward.availablePlays,0);
+  var old=api.defaultProfile();
+  delete old.reward[record];
+  api.normalizeProfile(old);
+  assert.strictEqual(old.reward[record],0);
+});
+console.log('Mini-Golf, Schatzgreifer and Taschen-Flipper integrate with reward, pause, deadline, records, backups and demo isolation.');

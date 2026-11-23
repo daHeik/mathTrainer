@@ -727,7 +727,7 @@ h1 .icon,h2 .icon{width:28px;height:28px;color:var(--bg-1);margin:0 0 0 6px;}
 /* App shell: stable navigation, light grouped surfaces, deliberate content scrolling. */
 :root {color-scheme:light;--app-surface:#f2f2f7;--card:#fff;--ink:#17171b;--ink-soft:#696973;--app-line:#e2e2e8;--app-height:100dvh;}
 html {height:100%;background:var(--app-surface);overflow:hidden;}
-body {height:100vh;height:var(--app-height);min-height:0;padding:0;background:var(--app-surface);display:grid;grid-template-rows:calc(64px + var(--safe-top)) minmax(0,1fr) calc(56px + min(var(--safe-bottom),14px));overflow:hidden;}
+body {height:100vh;height:var(--app-height);min-height:0;padding:0;background:var(--app-surface);display:grid;grid-template-rows:calc(64px + var(--safe-top)) minmax(0,1fr) calc(56px + var(--safe-bottom));overflow:hidden;}
 [hidden] {display:none!important;}
 .app-bar {display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:calc(20px + var(--safe-top)) var(--page-right) 0 var(--page-left);min-width:0;}
 .app-brand {color:var(--ink-soft);font-size:.9rem;font-weight:600;}
@@ -746,14 +746,8 @@ h1 {font-size:clamp(1.7rem,4vw,2.2rem);line-height:1.15;letter-spacing:-.6px;tex
 .secondary-btn {border:0;background:var(--card);}
 .primary-btn:active,.secondary-btn:active {transform:none;box-shadow:none;filter:brightness(.96);}
 .section-label {font-size:.78rem;font-weight:600;color:var(--ink-soft);letter-spacing:.6px;text-transform:uppercase;margin:20px 0 8px;}
-.app-navigation {position:fixed;bottom:0;left:0;right:0;z-index:20;height:calc(56px + min(var(--safe-bottom),14px));display:flex;justify-content:space-around;gap:6px;align-items:center;padding:2px max(12px,env(safe-area-inset-right)) calc(2px + min(var(--safe-bottom),14px)) max(12px,env(safe-area-inset-left));background:var(--card);border-top:1px solid var(--app-line);}
-/* Keep installed-app navigation in the explicit grid row. This avoids a second
-   iOS viewport reference for bottom-fixed painting during cold launch. */
-body.standalone-app .app-navigation {position:static;grid-row:3;}
-@media(display-mode:standalone) {
-  :root {--app-height:100vh;}
-  .app-navigation {position:static;grid-row:3;}
-}
+.app-navigation {grid-row:3;z-index:20;height:calc(56px + var(--safe-bottom));display:flex;justify-content:space-around;gap:6px;align-items:center;padding:2px max(12px,var(--safe-right)) calc(2px + var(--safe-bottom)) max(12px,var(--safe-left));background:var(--card);border-top:1px solid var(--app-line);}
+@media(display-mode:standalone) { :root {--app-height:100vh;} }
 .app-navigation button {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:48px;min-width:72px;background:none;border:0;padding:6px 12px;color:var(--ink-soft);font:inherit;font-size:.72rem;cursor:pointer;border-radius:12px;}
 .app-navigation button[aria-current="page"] {color:var(--bg-1);}
 .app-navigation .icon {width:22px;height:22px;margin:0;}
@@ -894,7 +888,7 @@ body.focused-view .app-navigation {display:none;}
   body {grid-template-columns:180px minmax(0,1fr);grid-template-rows:calc(68px + var(--safe-top)) minmax(0,1fr);}
   .app-bar {grid-column:1/-1;grid-row:1;}
   #app {grid-column:2;grid-row:2;}
-  .app-navigation,body.standalone-app .app-navigation {position:static;height:auto;grid-column:1;grid-row:2;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:8px;padding:18px 12px;background:none;border-top:0;border-right:1px solid var(--app-line);}
+  .app-navigation {height:auto;grid-column:1;grid-row:2;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:8px;padding:18px 12px calc(18px + var(--safe-bottom)) max(12px,var(--safe-left));background:none;border-top:0;border-right:1px solid var(--app-line);}
   .app-navigation button {flex-direction:row;justify-content:flex-start;gap:10px;font-size:.95rem;padding:12px;}
   .app-navigation button[aria-current="page"] {background:var(--theme-soft);}
   body.focused-view {grid-template-columns:1fr;}
@@ -902,9 +896,9 @@ body.focused-view .app-navigation {display:none;}
 }
 @media(orientation:landscape) and (max-height:599px) {
   :root {--game-toolbar-top:calc(12px + var(--safe-top));}
-  body {grid-template-rows:calc(56px + var(--safe-top)) minmax(0,1fr) calc(46px + min(var(--safe-bottom),8px));}
+  body {grid-template-rows:calc(56px + var(--safe-top)) minmax(0,1fr) calc(46px + var(--safe-bottom));}
   .app-bar {padding-top:calc(12px + var(--safe-top));padding-bottom:0;}
-  .app-navigation {height:calc(46px + min(var(--safe-bottom),8px));padding-top:0;padding-bottom:min(var(--safe-bottom),8px);}
+  .app-navigation {height:calc(46px + var(--safe-bottom));padding-top:0;padding-bottom:var(--safe-bottom);}
   .app-navigation button {flex-direction:row;gap:8px;font-size:.78rem;min-height:44px;}
   .home-top {margin-bottom:10px;}
   .home-heading .subtitle {display:none;}
@@ -1003,6 +997,9 @@ body.focused-view .app-bar {padding-top:calc(4px + var(--safe-top));padding-bott
 /* Classic games use the actual slot aspect ratio; large held controls never scroll. */
 .classic-game .game-wrap {touch-action:none;}
 .classic-game.game-immersive .game-wrap canvas {object-fit:contain;}
+#screen-golf .game-wrap {background:#12372f;}
+#screen-grab .game-wrap {background:#134858;}
+#screen-pinball .game-wrap {background:#211f3d;}
 .classic-controls {display:flex;gap:8px;flex:none;width:100%;justify-content:center;margin:0;}
 .classic-controls button {touch-action:none;flex:1;min-height:44px;border:0;border-radius:12px;background:#e2eaf1;color:#29495f;font-size:1.4rem;font-weight:700;}
 .classic-controls,.classic-controls * {user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none;}
@@ -1286,7 +1283,7 @@ textarea:focus {
 
 /* Blank paper keeps the tool palette outside the scrolling paper surface. */
 .paper-entry {margin-top:12px;}
-body.paper-view {grid-template-rows:minmax(0,1fr);padding-top:var(--safe-top);padding-bottom:var(--safe-bottom);}
+body.paper-view {grid-template-rows:minmax(0,1fr);padding-top:calc(8px + var(--safe-top));padding-bottom:calc(8px + var(--safe-bottom));}
 body.paper-view #app {grid-row:1;}
 #screen-paper.active {max-width:none;padding:0;}
 #paperArchive {max-width:740px;margin:0 auto;padding:12px 0 20px;}
@@ -1302,7 +1299,7 @@ body.paper-view #app {grid-row:1;}
 .paper-toolbar {padding:5px 0;display:grid;gap:5px;max-height:45vh;overflow:auto;}
 .paper-toolbar .paper-actions {gap:4px;}
 .paper-toolbar .secondary-btn {padding:6px 9px;}
-#paperSaveStatus {flex:1;font-size:.85rem;}
+#paperSaveStatus {flex:1;min-width:0;min-height:2.4em;display:flex;align-items:center;font-size:.8rem;line-height:1.1;}
 #paperTools button[aria-pressed="true"] {box-shadow:inset 0 0 0 2px var(--bg-1);color:var(--bg-1);}
 #paperTools label {display:flex;align-items:center;gap:4px;padding:0 5px;}
 #paperColor {width:44px;height:44px;padding:3px;background:var(--card);border:0;border-radius:10px;}
