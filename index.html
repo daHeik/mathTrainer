@@ -49,6 +49,7 @@
           </div>
         </section>
       </div>
+      <button class="secondary-btn paper-entry" id="openPaper" type="button">Leeres Blatt</button>
       <p class="reward-note" id="rewardNote"></p>
       <div class="home-topic-groups" id="homeTopicGroups">
         <section class="home-topic-group" id="homeGroupNumbers" aria-labelledby="homeTitleNumbers">
@@ -86,7 +87,53 @@
           </div>
         </section>
       </div>
-      <p class="app-version" id="appVersion">Version 71</p>
+      <p class="app-version" id="appVersion">Version 72</p>
+    </div>
+
+    <div class="screen" id="screen-paper">
+      <div id="paperArchive">
+        <div class="paper-heading">
+          <button class="secondary-btn" id="paperHome" type="button">‹ Lernen</button>
+          <h1>Leeres Blatt</h1>
+        </div>
+        <div class="paper-actions">
+          <button class="primary-btn" id="paperNew" type="button">Neues Blatt</button>
+          <button class="secondary-btn" id="paperExportAll" type="button">Archiv sichern</button>
+          <button class="secondary-btn" id="paperImport" type="button">Sicherung importieren</button>
+          <input id="paperFile" type="file" accept=".json,application/json" hidden>
+        </div>
+        <h2>Zuletzt bearbeitete Blätter</h2>
+        <p id="paperArchiveStatus" role="status"></p>
+        <ul id="paperList" aria-label="Blätter nach Bearbeitungsdatum"></ul>
+      </div>
+      <div id="paperEditor" hidden>
+        <div class="paper-toolbar">
+          <div class="paper-actions">
+            <button class="secondary-btn" id="paperBack" type="button">‹ Blätter</button>
+            <span id="paperSaveStatus" role="status"></span>
+            <button class="secondary-btn" id="paperDiscard" type="button" hidden>Ohne Speichern zurück</button>
+            <button class="secondary-btn" id="paperExport" type="button">Blatt sichern</button>
+          </div>
+          <div class="paper-actions" id="paperTools" role="group" aria-label="Stiftwerkzeuge">
+            <button class="secondary-btn" type="button" data-paper-tool="pen" aria-pressed="true">Füller</button>
+            <button class="secondary-btn" type="button" data-paper-tool="pencil" aria-pressed="false">Bleistift</button>
+            <button class="secondary-btn" type="button" data-paper-tool="marker" aria-pressed="false">Textmarker</button>
+            <button class="secondary-btn" type="button" data-paper-tool="eraser" aria-pressed="false">Radierer</button>
+            <label class="paper-color">Farbe <input type="color" id="paperColor" value="#173253"></label>
+            <label>Strich <select id="paperSize">
+              <option value="0.65">Fein</option>
+              <option value="1" selected>Mittel</option>
+              <option value="1.65">Breit</option>
+            </select></label>
+            <button class="secondary-btn" id="paperUndo" type="button" aria-label="Rückgängig" title="Rückgängig" disabled>↶</button>
+            <button class="secondary-btn" id="paperRedo" type="button" aria-label="Wiederholen" title="Wiederholen" disabled>↷</button>
+          </div>
+        </div>
+        <div id="paperScroll" tabindex="0" role="region" aria-label="Kariertes Endlospapier" aria-describedby="paperHint">
+          <div id="paperSurface"><canvas id="paperCanvas" aria-label="Zeichenfläche"></canvas></div>
+        </div>
+        <p id="paperHint">Mit Stift oder Maus schreiben, mit dem Finger verschieben.</p>
+      </div>
     </div>
 
     <div class="screen semi-intro" id="screen-semi-intro">
@@ -711,6 +758,7 @@
 <script src="frog-punch.js"></script>
 <script src="chicken-shooter.js"></script>
 <script src="curriculum.js"></script>
+<script src="blank-paper.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

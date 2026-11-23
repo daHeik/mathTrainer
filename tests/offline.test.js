@@ -14,7 +14,7 @@ assets.forEach(function(asset){ assert(fs.existsSync(path.join(root, asset)), 'M
   assert(assets.indexOf('./' + game + '.html') !== -1);
   assert(fs.readFileSync(path.join(root, game + '.html'), 'utf8').indexOf('?demo=' + game) !== -1);
 });
-['index.html','app.js','curriculum.js','arcade-extra.js','frog-punch.js','chicken-shooter.js','styles.css','icons.svg','manifest.json'].forEach(function(file){ assert(assets.indexOf('./' + file) !== -1); });
+['index.html','app.js','blank-paper.js','curriculum.js','arcade-extra.js','frog-punch.js','chicken-shooter.js','styles.css','icons.svg','manifest.json'].forEach(function(file){ assert(assets.indexOf('./' + file) !== -1); });
 var html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 var home = html.slice(html.indexOf('id="screen-home"'), html.indexOf('id="screen-semi-intro"'));
 var homeGroups = [
@@ -57,6 +57,8 @@ assert(icons.lastIndexOf('</symbol>')<icons.indexOf('</svg>'),'All icons belong 
   var symbol=icons.match(new RegExp('<symbol id="'+name+'"[\\s\\S]*?</symbol>'));
   assert(symbol&&/fill="#[\da-f]{6}"/i.test(symbol[0]),'Colored game icon: '+name);
 });
+assert(html.includes('id="openPaper"') && html.includes('id="paperCanvas"'));
+assert(html.indexOf('<script src="blank-paper.js">') >= 0 && html.indexOf('<script src="blank-paper.js">') < html.indexOf('<script src="app.js">'));
 assert(html.indexOf('<script src="chicken-shooter.js">')<html.indexOf('<script src="app.js">'),'Chicken Shooter loads before normalization');
 assert(html.indexOf('<script src="frog-punch.js">')<html.indexOf('<script src="app.js">'),'Frog Punch loads before app/profile normalization');
 assert(html.indexOf('<script src="arcade-extra.js">')<html.indexOf('<script src="app.js">'),'Arcade module loads before app');

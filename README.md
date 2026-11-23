@@ -3,9 +3,9 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `9f7e1f1` mit bedingten Textaktualisierungen in Chicken Shooter; PWA-Cache `1x1-trainer-v71`, keine separate semantische App-Version |
-| Letzte Quellcodeänderung | 2026-11-18 |
-| Letzte Projekt-/README-Änderung | 2026-11-18 |
+| Version | Basis `fb65592` mit lokalen Änderungen für „Leeres Blatt“, PWA-Cache `1x1-trainer-v72`, keine separate semantische App-Version |
+| Letzte Quellcodeänderung | 2026-11-23 |
+| Letzte Projekt-/README-Änderung | 2026-11-23 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
 
 ## TL;DR – so funktioniert mathTrainer
@@ -22,11 +22,13 @@ Alles läuft direkt im Browser, Fortschritt wird lokal gespeichert
 eine PWA mit Service Worker: Einmal geladen, funktioniert sie auch offline
 bzw. wenn der Server gerade nicht erreichbar ist.
 
+Unter **Leeres Blatt** steht kariertes Endlospapier für den Apple Pencil bereit. Blätter werden getrennt pro Profil in IndexedDB archiviert und lassen sich als bearbeitbare JSON-Datei sichern und wieder importieren.
+
 Die App kommt ohne Werbung, Benutzerkonto, Tracker oder Telemetrie aus. Sie
 überträgt selbst keine Lernstände oder Profildaten an einen Server.
 
 Die Oberfläche liegt in `index.html`, das Styling in `styles.css` und die
-Anwendungs- und Spiellogik in `app.js`, `arcade-extra.js` sowie `frog-punch.js` und `chicken-shooter.js`. `flappy.html`, `tower.html`,
+Anwendungs- und Spiellogik in `app.js`, `arcade-extra.js` sowie `frog-punch.js` und `chicken-shooter.js`. `blank-paper.js` enthält die Zeichenfläche und das Blattarchiv. `flappy.html`, `tower.html`,
 `gravity.html`, `brick.html`, `snake.html`, `snow.html`, `runner.html`,
 `doodle.html`, `tiles.html`, `maze.html`, `asteroid.html`, `frog.html` und `chicken.html` sind
 kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
@@ -42,6 +44,17 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 6. Verdiente Spiele in „Spiele“ auswählen. Erst die erste Spielaktion verbraucht ein Kontingent. Pause und ausgeblendete Ansichten verbrauchen keine aktive Spielzeit.
 
 Normale Spiele laufen bis zu drei aktive Minuten pro Kontingent; **Bricks und 2048 bis zu fünf Minuten**. Diese Ausnahme ist in `gameDurationMs()` implementiert. Beim Zeitende endet der Durchlauf; mit weiterem Kontingent kann ein neues Belohnungsspiel gestartet werden. Drei verbrauchte Versuche beenden früher; **2048 bietet nur einen Versuch pro Kontingent** und endet bei einem vollständig belegten Feld ohne mögliche Verschmelzung. **Chicken Shooter bietet eine Runde mit 90 aktiven Sekunden pro Kontingent**. **Frog Punch hat stattdessen drei vollständige Runden à 40 Sekunden pro Kontingent**; verpasste Frösche kosten keine Versuche. Demo-Starter wie `snow.html` öffnen dieselbe Spielimplementierung ohne Lernbelohnung.
+
+## Leeres Blatt – schreiben, weiterarbeiten und sichern
+
+1. Unter **Lernen → Leeres Blatt** das Archiv öffnen. Das zuletzt bearbeitete Blatt steht oben. Das angezeigte Datum mit Uhrzeit antippen, um weiterzuschreiben, oder **Neues Blatt** wählen.
+2. Mit dem Apple Pencil oder der Maus schreiben. Füller und Bleistift reagieren auf den vom Gerät gemeldeten Stiftdruck. Der halbtransparente Textmarker hebt Stellen hervor, der Radierer löscht Tinte unter seiner Spitze. Für jedes Werkzeug stehen drei Strichstärken zur Wahl. Der Farbwähler öffnet die Farbauswahl des Browsers. **Rückgängig** und **Wiederholen** arbeiten innerhalb des aktuell geöffneten Blatts.
+3. Mit einem Finger oder per Mausrad bzw. Trackpad verschieben. Das Raster umfasst zwei DIN-A4-Breiten nebeneinander, entsprechend je 794 CSS-Pixeln im Referenzmaßstab. Eine senkrechte Linie markiert den Übergang. Das Papier wächst beim Scrollen nach unten automatisch, innerhalb der technischen Scrollgrenze des Browsers. Auf einem großen Bildschirm können beide Breiten gleichzeitig sichtbar sein.
+4. Jeder abgeschlossene Strich und jede Rückgängig-/Wiederholen-Aktion wird automatisch gespeichert. Ein neues Blatt erscheint nach der ersten Bearbeitung im Archiv. Über **Blätter** zur Auswahl zurückkehren.
+5. **Blatt sichern** exportiert das offene Blatt. **Archiv sichern** exportiert alle Blätter des aktiven Profils. Auf dem iPad kann die JSON-Datei über den Download-Ordner in der Dateien-App abgelegt werden. **Sicherung importieren** fügt die Blätter mit ihren ursprünglichen Bearbeitungsdaten als eigenständige Kopien zum gerade aktiven Profil hinzu.
+6. Wenn der Browser nicht speichern kann, bleibt das Blatt zum Datei-Export im Editor. **Blätter** versucht erneut zu speichern. Über **Ohne Speichern zurück** lassen sich die ungespeicherten Änderungen nach Bestätigung verwerfen.
+
+Die Sicherung für Lernstände im Elternbereich und die Blattsicherungen werden separat exportiert. Browserverlauf, Website-Daten, Profil und App-Installationskontext bestimmen, welche lokalen Daten erreichbar sind. Für den Transfer auf ein anderes Gerät, zu einer anderen App-Adresse oder zwischen Safari und der Home-Bildschirm-App dient die JSON-Datei.
 
 ## Eingabefelder – Fokus und automatischer Zoom
 
@@ -373,9 +386,19 @@ Persistiert werden im bestehenden Profil unter `reward` der nichtnegative `bestF
 
 Fehlende Spielkontingente verhindern normale Starts. Pause blockiert Eingaben und Zeitfortschritt. Verlassen der Ansicht stoppt RAF und löscht den flüchtigen Spielzustand sowie Konfetti. Im nativen Browser-Vollbild sitzt Frog-Punch-Konfetti innerhalb des Spielbildschirms, damit es dort sichtbar bleibt. Das SVG-/DOM-Spiel braucht keinen Canvas-Resizepfad; CSS passt das Raster bei Rotation an und die Lochindizes bleiben gleich. Die Teichszene ist ganzjährig und verändert die zwölf saisonalen Canvas-Spiele nicht.
 
+## Technischer Deep-Dive – Zeichenfläche und Blattarchiv
+
+`showScreen()` in `app.js` öffnet den Blattmodus mit der aktiven Profil-ID. `blank-paper.js` verarbeitet Pointer Events für Stift, Maus und Finger. Stiftpunkte einschließlich Druck werden in Papierkoordinaten erfasst. Während eines Stiftstrichs löst Fingerkontakt kein Verschieben aus. Die Werkzeugpalette orientiert sich an den Grundwerkzeugen von [Apple Markierungen auf dem iPad](https://support.apple.com/de-de/guide/ipad/ipad6350b8dc/ipados).
+
+Ein CSS-Hintergrund zeichnet die Karos und die DIN-A4-Trennlinie. Das Canvas folgt dem sichtbaren Ausschnitt des Scrollcontainers und rastert die darin liegenden Striche mit begrenzter Pixeldichte. Darunter wächst die Papierfläche bei Annäherung an den unteren Rand in Abschnitten von 1123 CSS-Pixeln. Jeder Strich enthält Werkzeug, Farbe, Strichstärke und Punkte mit X, Y und Druck. Radieren wird als eigener Strich mit Canvas-Komposition gespeichert, damit das Raster sichtbar bleibt und der Vorgang rückgängig gemacht werden kann.
+
+IndexedDB `mathTrainer-paper` speichert je Blatt ID, Profil-ID, letztes Bearbeitungsdatum, Revision und geordnete Striche im Store `sheets`. Der Index `recent` liefert zunächst nur die Schlüssel des ausgewählten Profils in absteigender Reihenfolge. Der Editor lädt die Striche beim Öffnen. Schreibtransaktionen sichern einen konsistenten Blattstand und prüfen die vorherige Revision, damit ein zweiter Tab keine neuere Fassung überschreibt. Die App meldet Speicherfehler und lässt den aktuell bearbeiteten Stand als Datei exportieren.
+
+Der Export verwendet eine versionierte JSON-Hülle mit Kennung `mathTrainer-paper`. Der Import prüft Datum, Farbwerte, Werkzeugparameter und Punktkoordinaten und speichert die Kopien in einer gemeinsamen Transaktion. Die Blätter bleiben im Browserkontext der App. Die App bittet den Browser, falls unterstützt, um persistenten Speicher. Speicherquoten, Browserregeln und manuelles Löschen können den lokalen Bestand betreffen. Siehe [WebKit-Speicherregeln](https://webkit.org/blog/14403/updates-to-storage-policy/).
+
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v71`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v72`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 
@@ -895,7 +918,7 @@ mehreren Geräten, gibt es entsprechend getrennte Fortschritte.
 ## Datenschutz
 
 Profile, Einstellungen, Lernstände und Statistiken werden ausschließlich im
-`localStorage` des verwendeten Browsers gespeichert. Die App enthält keine
+`localStorage` des verwendeten Browsers gespeichert. Freihandblätter liegen in der lokalen IndexedDB. Die App enthält keine
 Analyse- oder Werbedienste und sendet diese Daten nicht an Dritte. Beim
 Exportieren eines Backups wird eine JSON-Datei lokal im Browser erzeugt; beim
 Importieren wird nur die vom Nutzer ausgewählte Datei verarbeitet.
