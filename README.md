@@ -3,7 +3,7 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `7d08b62` mit überarbeitetem Offline-Fallback, Speicherfreigabe im Blattarchiv und optimierten Spielanzeigen, PWA-Cache `1x1-trainer-v74`, keine separate semantische App-Version |
+| Version | Basis `f2478b1` mit Kugel-Merge und Blockhafen, PWA-Cache `1x1-trainer-v75`, keine separate semantische App-Version |
 | Letzte Quellcodeänderung | 2026-11-24 |
 | Letzte Projekt-/README-Änderung | 2026-11-24 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
@@ -43,7 +43,7 @@ kleine Direktstarter, die dieselben integrierten Spiele ohne Lernbelohnung
 5. Im Statistikbereich Tages-/Wochenwerte und Lernstände prüfen. Vor Browserwechsel oder Löschen lokaler Daten im Elternbereich eine JSON-Sicherung exportieren. Import ersetzt den geprüften lokalen Bestand; vorherige Sicherung behalten.
 6. Verdiente Spiele in „Spiele“ auswählen. Erst die erste Spielaktion verbraucht ein Kontingent. Pause und ausgeblendete Ansichten verbrauchen keine aktive Spielzeit.
 
-Normale Spiele laufen bis zu drei aktive Minuten pro Kontingent; **Bricks und 2048 bis zu fünf Minuten**. Diese Ausnahme ist in `gameDurationMs()` implementiert. Beim Zeitende endet der Durchlauf; mit weiterem Kontingent kann ein neues Belohnungsspiel gestartet werden. Drei verbrauchte Versuche beenden früher; **2048 bietet nur einen Versuch pro Kontingent** und endet bei einem vollständig belegten Feld ohne mögliche Verschmelzung. **Chicken Shooter bietet eine Runde mit 90 aktiven Sekunden pro Kontingent**. **Frog Punch hat stattdessen drei vollständige Runden à 40 Sekunden pro Kontingent**; verpasste Frösche kosten keine Versuche. Demo-Starter wie `snow.html` öffnen dieselbe Spielimplementierung ohne Lernbelohnung.
+Normale Spiele laufen bis zu drei aktive Minuten pro Kontingent; **Bricks, 2048, Kugel-Merge und Blockhafen bis zu fünf Minuten**. Diese Ausnahme ist in `gameDurationMs()` implementiert. Beim Zeitende endet der Durchlauf; mit weiterem Kontingent kann ein neues Belohnungsspiel gestartet werden. Drei verbrauchte Versuche beenden früher; **2048 bietet nur einen Versuch pro Kontingent** und endet bei einem vollständig belegten Feld ohne mögliche Verschmelzung. **Chicken Shooter bietet eine Runde mit 90 aktiven Sekunden pro Kontingent**. **Frog Punch hat stattdessen drei vollständige Runden à 40 Sekunden pro Kontingent**; verpasste Frösche kosten keine Versuche. Demo-Starter wie `snow.html` öffnen dieselbe Spielimplementierung ohne Lernbelohnung.
 
 ## Leeres Blatt – schreiben, weiterarbeiten und sichern
 
@@ -316,6 +316,16 @@ Die ursprünglichen zwölf Canvas-Spiele teilen Lebenszyklus, Pause, erste-Spiel
 
 Bei Dino, Flattervogel, Turmbauer und Gravity Run schreibt die Spielschleife Zeit, Punkte und andere Anzeigen nur bei geändertem Text ins DOM.
 
+### Kugel-Merge und Blockhafen
+
+Beide Spiele bieten eine Partie mit bis zu fünf aktiven Minuten. Es gibt keine Frist für einzelne Züge. Beim Öffnen erscheint die Spielanleitung. Die erste Spielaktion löst eine verdiente Belohnung ein. Die Direktstarter [Kugel-Merge](merge.html) und [Blockhafen](harbor.html) öffnen kostenlose Offline-Demos ohne Änderung der Profilrekorde.
+
+**Kugel-Merge.** Zum Zielen im Glas ziehen und zum Abwerfen loslassen. Alternativ mit den Pfeiltasten zielen und mit der Leertaste abwerfen. Das erste Paar besteht aus zwei Zweien. Berühren sich gleiche Zahlen, entsteht eine doppelt so große Zahl, deren Wert als Punkte zählt. Auch eine soeben entstandene Kugel kann gleich weiter verschmelzen. Oben rechts steht die nächste Kugel. Das erste Ziel ist eine 16. Ab einer selbst gebauten 32 können auch Achter fallen. Die wachsenden Kugeln brauchen Platz. Bleibt der Stapel über der gestrichelten Linie, endet die Partie.
+
+**Blockhafen.** Eine der drei Frachten wählen und auf dem 8 × 8 Felder großen Kai platzieren. Dazu auf das linke obere Zielfeld der Form tippen oder die Fracht dorthin ziehen. „Drehen“ dreht die ausgewählte Fracht um 90 Grad. An der Tastatur wechselt N die Fracht, R dreht, die Pfeile bewegen die Vorschau, die Leertaste setzt. Die erste Dreierkiste kann die unterste Reihe schließen. Jede volle Reihe oder Spalte wird geräumt. Ein gelegtes Feld zählt einen Punkt. Eine geräumte Linie gibt zehn Zusatzpunkte, zwei im selben Zug geben vierzig. Erst nach der dritten Platzierung kommt neue Fracht. Ab der dritten Lieferung kommen längere und verzweigte Formen hinzu, ab der fünften auch ein Fünferwinkel. Die Partie endet, wenn keine verbliebene Fracht in irgendeiner Drehung passt.
+
+**Technischer Ablauf.** Beide Definitionen in `arcade-extra.js` verwenden die feste Spielfläche von 480 × 640 und die gemeinsame Eingabe-, Pausen- und Zeitsteuerung in `app.js`. Kugel-Merge simuliert Kreisbewegungen und Kontakte in Teilschritten von höchstens 1/120 Sekunde. Neue und schnell fallende Kugeln zählen nicht zum Überlauf. Der Stapel muss 1,5 aktive Sekunden am Rand bleiben. Blockhafen speichert im laufenden Spiel 64 Feldwerte, die drei Frachtplätze, deren Formen und das gewählte Zielfeld. Eine ungültige Platzierung behält die Fracht. Volle Linien werden vor dem Räumen gemeinsam ermittelt. Nur Punktebestwerte bleiben über die Partie hinaus erhalten. `bestMergeScore` und `bestHarborScore` werden im Profilbackup mitgeführt und bei älteren Profilen mit 0 initialisiert.
+
 ### Mini-Golf, Schatzgreifer und Taschen-Flipper
 
 Die drei Spiele stammen aus Vocabulator `dd849bd` (Version 66, MIT). Sie verwenden die übernommenen Canvas-Grafiken, Physik, Eingaberegeln und mobilen Spielflächen. Im Mathetrainer teilen sie sich mit den vorhandenen Spielen die Kontingentbuchung bei der ersten Spielaktion, Pause und drei Minuten aktive Spielzeit.
@@ -416,7 +426,7 @@ Beim Wechsel ins Blattarchiv gibt der Editor die Strichliste, den Wiederholen-St
 
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v74`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback für die aufgelisteten App-Dateien. Bei Netzfehlern und HTTP-5xx liefert er die vorhandene Kopie aus dem aktuellen Projektcache. Offline-Demoaufrufe mit Query-Parametern nutzen die gecachte Startseite. Erfolgreiche direkte Abrufe aktualisieren den Cache, fehlende Skripte behalten ihren Fehlerstatus. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v75`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback für die aufgelisteten App-Dateien. Bei Netzfehlern und HTTP-5xx liefert er die vorhandene Kopie aus dem aktuellen Projektcache. Offline-Demoaufrufe mit Query-Parametern nutzen die gecachte Startseite. Erfolgreiche direkte Abrufe aktualisieren den Cache, fehlende Skripte behalten ihren Fehlerstatus. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 
@@ -645,15 +655,15 @@ Bilder oder Videos werden eingebunden.
   bleiben in Lernstand und Statistik, freigeschaltete Belohnungsspiele bleiben
   verfügbar. Ein Abbruch zählt nicht als Rundenabschluss für Sticker und Serie;
   die nächste Runde beginnt neu.
-- Vierzehn Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel, Turmbauer,
+- Neunzehn Lernbelohnungen zur Auswahl: Dino-Sprung, Flattervogel, Turmbauer,
   Gravity Run, Bricks, Cleo, Schneefahrt, Metro Run, Doodle Jump, 2048,
-  Pac-Man, Asteroids, Frog Punch und Chicken Shooter. Die benötigte
+  Pac-Man, Asteroids, Frog Punch, Chicken Shooter, Mini-Golf, Schatzgreifer, Taschen-Flipper, Kugel-Merge und Blockhafen. Die benötigte
   Anzahl richtiger Antworten pro Spiel ist im Eltern-Bereich konfigurierbar
   (Standard: 10); die Startseite zeigt, wie viele richtige Antworten bis zum
-  nächsten Spiel fehlen. Bricks und 2048 enden nach höchstens fünf aktiven Minuten,
+  nächsten Spiel fehlen. Bricks, 2048, Kugel-Merge und Blockhafen enden nach höchstens fünf aktiven Minuten,
   Chicken Shooter nach 90 Sekunden, die übrigen Canvas-Spiele nach drei Minuten. Frog Punch bietet stattdessen drei Runden à 40 Sekunden;
   Pausen, Wartezeit vor Versuchen und ausgeblendete Ansichten zählen nicht mit.
-  Bei den übrigen Canvas-Spielen beenden drei Fehlversuche das Spiel (Dino kann einen Bonusversuch sammeln); 2048 hat nur einen Versuch und endet endgültig bei vollem, blockiertem Feld.
+  Bei Spielen mit drei Versuchen beenden drei Fehlversuche das Spiel (Dino kann einen Bonusversuch sammeln); 2048 hat nur einen Versuch und endet endgültig bei vollem, blockiertem Feld.
   Beim Dino sorgen riskant platzierte Sterne, Combo-Multiplikatoren, fünf Sekunden
   Super-Dino nach jeweils drei Sternen, seltene Bonus-Versuch-Eier und ein
   persönlicher Punkterekord sorgen für Abwechslung; das Spiel wird in sechs

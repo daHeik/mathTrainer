@@ -1,5 +1,5 @@
-var CACHE_NAME = "1x1-trainer-v74";
-var ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./blank-paper.js", "./curriculum.js", "./arcade-extra.js", "./frog-punch.js", "./frog.html", "./chicken-shooter.js", "./chicken.html", "./doodle.html", "./tiles.html", "./maze.html", "./asteroid.html", "./golf.html", "./grab.html", "./pinball.html", "./icons.svg", "./flappy.html", "./tower.html", "./gravity.html", "./brick.html", "./snake.html", "./snow.html", "./runner.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+var CACHE_NAME = "1x1-trainer-v75";
+var ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./blank-paper.js", "./curriculum.js", "./arcade-extra.js", "./frog-punch.js", "./frog.html", "./chicken-shooter.js", "./chicken.html", "./doodle.html", "./tiles.html", "./maze.html", "./asteroid.html", "./golf.html", "./grab.html", "./pinball.html", "./merge.html", "./harbor.html", "./icons.svg", "./flappy.html", "./tower.html", "./gravity.html", "./brick.html", "./snake.html", "./snow.html", "./runner.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", function(e){
   e.waitUntil(

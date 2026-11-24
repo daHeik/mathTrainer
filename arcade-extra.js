@@ -1,7 +1,7 @@
 /* Original Canvas implementations. No assets, dependencies or network. */
 (function(global){
   'use strict';
-  var KINDS=['doodle','tiles','maze','asteroid','golf','grab','pinball'];
+  var KINDS=['doodle','tiles','maze','asteroid','golf','grab','pinball','merge','harbor'];
   function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
   function delta(a,b,size){var d=a-b;return d>size/2?d-size:d<-size/2?d+size:d;}
   function mergeLine(values){
@@ -634,7 +634,220 @@
       shine.addColorStop(0,'#fff');shine.addColorStop(.38,'#dfeaf4');shine.addColorStop(.7,'#8599b0');shine.addColorStop(1,'#435674');dot(c,b.x,b.y,10,shine);
       c.restore();banner(s);
     }
+    // Number balls share one world. Only settled overflow counts, so a falling
+    // ball can still save a full jar by starting a chain near the rim.
+    var ink='#18344a', cream='#fff7df';
+    var ballColors=['#98dfcf','#ffc36b','#ff998d','#adc5ff','#d1a4e9','#8bd3ea','#f6d771'];
+    function radius(value){return 14+Math.log2(value)*5;}
+    function aim(s,x){
+      var r=radius(s.current);
+      s.aimX=clamp(x,56+r,424-r);
+    }
+    function dropBall(s){
+      if(s.elapsed<s.readyAt)return;
+      s.balls.push({x:s.aimX,y:116,r:radius(s.current),value:s.current,vx:0,vy:0,born:s.elapsed});
+      s.current=s.next;
+      var pool=s.largest>=32?[2,2,4,4,8]:[2,2,4];
+      s.next=pool[Math.floor(Math.random()*pool.length)];
+      aim(s,s.aimX);
+      s.readyAt=s.elapsed+.42;
+    }
+    function mergePointer(s,phase,p){
+      if(phase==='cancel'||!begin('merge'))return;
+      aim(s,p.x);
+      if(phase==='up')dropBall(s);
+    }
+    function mergeAction(s,a){
+      if(['left','right','fire'].indexOf(a)<0||!begin('merge'))return;
+      if(a==='fire')dropBall(s);
+      else aim(s,s.aimX+(a==='left'?-18:18));
+    }
+    function contain(b){
+      if(b.x<56+b.r||b.x>424-b.r){
+        b.x=clamp(b.x,56+b.r,424-b.r);
+        b.vx*= -.25;
+      }
+      if(b.y>593-b.r){
+        b.y=593-b.r;
+        b.vy=-Math.max(0,b.vy)*.12;
+        b.vx*=.94;
+      }
+    }
+    function ballStep(s,dt){
+      dt=tick(s,dt);
+      if(!dt)return;
+      s.balls.forEach(function(b){b.vy+=840*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;contain(b);});
+      for(var i=0;i<s.balls.length;i++){
+        var a=s.balls[i];
+        for(var j=i+1;j<s.balls.length;j++){
+          var b=s.balls[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+          if(d>=a.r+b.r)continue;
+          if(a.value===b.value){
+            a.x=(a.x+b.x)/2;a.y=(a.y+b.y)/2;a.vx=(a.vx+b.vx)/2;a.vy=-38;
+            a.value*=2;a.r=radius(a.value);a.born=s.elapsed;
+            s.score+=a.value;s.largest=Math.max(s.largest,a.value);
+            s.balls.splice(j,1);contain(a);break;
+          }
+          // A tiny lateral bias lets a ball roll off a perfectly centred stack.
+          if(Math.abs(dx)<.01){dx=.1;d=Math.hypot(dx,dy);}
+          var nx=dx/d,ny=dy/d,overlap=a.r+b.r-d;
+          var share=b.r*b.r/(a.r*a.r+b.r*b.r);
+          a.x-=nx*overlap*share;a.y-=ny*overlap*share;
+          b.x+=nx*overlap*(1-share);b.y+=ny*overlap*(1-share);
+          var impulse=Math.min(0,(b.vx-a.vx)*nx+(b.vy-a.vy)*ny)*1.12;
+          a.vx+=impulse*nx*share;a.vy+=impulse*ny*share;
+          b.vx-=impulse*nx*(1-share);b.vy-=impulse*ny*(1-share);
+          contain(a);contain(b);
+        }
+      }
+      var high=s.balls.some(function(b){return s.elapsed-b.born>.85&&b.y-b.r<174&&Math.abs(b.vy)<65;});
+      s.overflow=high?s.overflow+dt:0;
+      if(s.overflow>=1.5)host.finish('merge','Das Glas ist voll!');
+    }
+    function paintBall(c,x,y,r,value){
+      dot(c,x,y+2,r,ink);
+      dot(c,x,y,r-1,ballColors[(Math.log2(value)-1)%ballColors.length]);
+      dot(c,x-r*.38,y-r*.48,r*.12,'#fff8ea');
+      text(c,String(value),x,y+r*.26,Math.round(r*.81),ink);
+    }
+    function drawMerge(s){
+      var c=s.ctx;
+      round(c,0,0,480,640,0,'#20394f');
+      round(c,46,143,388,462,24,'#78b9b4');
+      round(c,56,146,368,447,16,'#29495d');
+      text(c,'Danach',374,39,17,cream);paintBall(c,374,78,23,s.next);
+      text(c,'Ziel: '+(s.largest<16?16:s.largest*2),42,45,19,cream,'left');
+      for(var x=58;x<423;x+=20)line(c,x,174,x+10,174,3,s.overflow?'#ff927c':'#e6c691');
+      for(var y=144;y<575;y+=18)dot(c,s.aimX,y,1.8,'#83b1b9');
+      s.balls.forEach(function(b){paintBall(c,b.x,b.y,b.r,b.value);});
+      if(s.elapsed>=s.readyAt)paintBall(c,s.aimX,116,radius(s.current),s.current);
+      text(c,s.overflow?'Achtung, der Stapel ist am Rand!':'Gleiche Zahlen rollen zusammen',240,628,16,cream);
+    }
+
+    var shapes=[
+      [[0,0],[1,0]], [[0,0],[1,0],[2,0]], [[0,0],[1,0],[0,1]],
+      [[0,0],[1,0],[0,1],[1,1]], [[0,0],[1,0],[2,0],[1,1]],
+      [[0,0],[0,1],[0,2],[1,2]], [[0,0],[1,0],[2,0],[3,0]],
+      [[0,0],[1,0],[1,1],[2,1]], [[0,0],[0,1],[0,2],[1,2],[2,2]]
+    ];
+    var crates=['#f0af64','#7fc6ba','#ef9889','#adade1','#85b9db'];
+    function rotated(cells){
+      var maxY=Math.max.apply(null,cells.map(function(p){return p[1];}));
+      return cells.map(function(p){return [maxY-p[1],p[0]];});
+    }
+    function fits(s,cells,x,y){
+      return cells.every(function(p){
+        var col=x+p[0],row=y+p[1];
+        return col>=0&&col<8&&row>=0&&row<8&&!s.board[row*8+col];
+      });
+    }
+    function hasBerth(s){
+      return s.tray.some(function(piece){
+        if(!piece)return false;
+        var cells=piece.cells;
+        for(var turn=0;turn<4;turn++){
+          for(var n=0;n<64;n++)if(fits(s,cells,n%8,Math.floor(n/8)))return true;
+          cells=rotated(cells);
+        }
+        return false;
+      });
+    }
+    function loadCargo(s){
+      s.load++;
+      var count=s.load<3?4:s.load<5?7:shapes.length;
+      s.tray=[0,1,2].map(function(slot){
+        var id=s.load===1?[1,2,0][slot]:Math.floor(Math.random()*count);
+        return {cells:shapes[id],color:1+(id+slot)%crates.length};
+      });
+      s.selected=0;
+    }
+    function initHarbor(s){
+      s.board=Array(64).fill(0);
+      for(var i=56;i<61;i++)s.board[i]=2;
+      s.load=0;s.lines=0;s.col=5;s.row=7;
+      loadCargo(s);
+    }
+    function berth(s){
+      var piece=s.tray[s.selected];
+      if(!fits(s,piece.cells,s.col,s.row)){notice(s,'Hier fehlt Platz');return;}
+      piece.cells.forEach(function(p){s.board[(s.row+p[1])*8+s.col+p[0]]=piece.color;});
+      var rows=[],cols=[];
+      for(var y=0;y<8;y++){
+        var row=true,col=true;
+        for(var x=0;x<8;x++){if(!s.board[y*8+x])row=false;if(!s.board[x*8+y])col=false;}
+        if(row)rows.push(y);
+        if(col)cols.push(y);
+      }
+      var cleared=rows.length+cols.length;
+      if(cleared){
+        s.board=s.board.map(function(v,n){return rows.indexOf(Math.floor(n/8))>=0||cols.indexOf(n%8)>=0?0:v;});
+        s.lines+=cleared;
+        notice(s,cleared===1?'Eine Linie verschifft!':cleared+' Linien auf einmal!');
+      }
+      s.score+=piece.cells.length+10*cleared*cleared;
+      s.tray[s.selected]=null;
+      s.selected=s.tray.findIndex(function(p){return !!p;});
+      if(s.selected<0)loadCargo(s);
+      if(!hasBerth(s)){drawHarbor(s);host.finish('harbor','Der Hafen ist voll!');}
+    }
+    function harborAction(s,a){
+      if(!begin('harbor'))return;
+      if(a==='rotate')s.tray[s.selected].cells=rotated(s.tray[s.selected].cells);
+      if(a==='next'){do{s.selected=(s.selected+1)%3;}while(!s.tray[s.selected]);}
+      if(a==='left'||a==='right')s.col=clamp(s.col+(a==='left'?-1:1),0,7);
+      if(a==='up'||a==='down')s.row=clamp(s.row+(a==='up'?-1:1),0,7);
+      if(a==='fire')berth(s);
+    }
+    function harborPointer(s,phase,p){
+      if(phase==='cancel'||!begin('harbor'))return;
+      if(phase==='down'&&p.y>=495&&p.y<=605){
+        var slot=clamp(Math.floor(p.x/160),0,2);
+        if(s.tray[slot])s.selected=slot;
+      }
+      var x=Math.floor((p.x-32)/52),y=Math.floor((p.y-63)/52);
+      if(x<0||x>=8||y<0||y>=8)return;
+      s.col=x;s.row=y;
+      if(phase==='up')berth(s);
+    }
+    function crate(c,x,y,size,color){
+      round(c,x+2,y+2,size-4,size-4,4,color);
+      line(c,x+6,y+size-7,x+size-7,y+6,2,'#3e5157');
+    }
+    function drawHarbor(s){
+      var c=s.ctx,piece=s.tray[s.selected];
+      round(c,0,0,480,640,0,'#184956');
+      text(c,'Ladung '+s.load,32,39,23,cream,'left');
+      text(c,s.notice&&s.notice.until>s.elapsed?s.notice.text:'8 × 8',448,39,18,cream,'right');
+      round(c,25,56,430,430,8,'#bf976c');
+      s.board.forEach(function(v,n){
+        var x=32+n%8*52,y=63+Math.floor(n/8)*52;
+        c.fillStyle=n%2===Math.floor(n/8)%2?'#28505c':'#315b65';c.fillRect(x,y,52,52);
+        if(v)crate(c,x,y,52,crates[v-1]);
+      });
+      var valid=fits(s,piece.cells,s.col,s.row);
+      piece.cells.forEach(function(p){
+        var x=s.col+p[0],y=s.row+p[1];
+        if(x>=8||y>=8)return;
+        c.strokeStyle=valid?'#a1ffca':'#ff997b';c.lineWidth=3;c.strokeRect(35+x*52,66+y*52,46,46);
+      });
+      s.tray.forEach(function(item,i){
+        round(c,9+i*156,505,150,94,12,i===s.selected?'#f4d7a0':'#37616c');
+        if(!item)return;
+        var w=Math.max.apply(null,item.cells.map(function(p){return p[0];}))+1;
+        var h=Math.max.apply(null,item.cells.map(function(p){return p[1];}))+1;
+        item.cells.forEach(function(p){crate(c,84+i*156+(p[0]-w/2)*22,552+(p[1]-h/2)*22,22,crates[item.color-1]);});
+      });
+      text(c,'Fracht wählen · auf den Kai setzen',240,626,17,cream);
+    }
+
     var definitions={
+      merge:{title:'Kugel-Merge',fixedHeight:640,
+        help:'Ziehe zum Zielen und lass los. Zwei gleiche Kugeln ergeben die doppelte Zahl. Die nächste Kugel siehst du oben rechts. Mit der Tastatur: Pfeile und Leertaste.',
+        init:function(s){s.balls=[];s.current=2;s.next=2;s.largest=2;s.aimX=240;s.readyAt=0;s.overflow=0;},
+        update:ballStep,draw:drawMerge,action:mergeAction,pointer:mergePointer},
+      harbor:{title:'Blockhafen',fixedHeight:640,
+        help:'Wähle unten eine Fracht und tippe auf ihr linkes oberes Zielfeld. Volle Reihen und Spalten werden verschifft. Fülle zuerst die Lücke unten rechts! Pfeile bewegen, N wechselt, R dreht, Leertaste setzt.',
+        init:initHarbor,update:tick,draw:drawHarbor,action:harborAction,pointer:harborPointer},
       golf:{title:'Mini-Golf',fixedHeight:640,help:'Ziehe auf der Bahn zurück und lasse los. Die Linie zeigt das Ziel. Am Rechner: ← → zielen, ↑ ↓ für die Kraft, Leertaste schlägt.',init:function(s){s.hole=1;golfCourse(s);},update:updateGolf,draw:drawGolf,recover:function(s){s.strokes=0;},action:golfAction,pointer:golfPointer},
       grab:{title:'Schatzgreifer',fixedHeight:640,help:'Tippe zum Start. Tippe erneut oder drücke die Leertaste, wenn der Greifer auf einen Schatz zeigt. Fange Fische und den Schatz der Krabbe. Stiefel und Dosen kosten Punkte. Du hast drei aktive Minuten.',init:function(s){s.reef=1;s.angle=0;resetHook(s);fillSeabed(s);},update:updateGrab,draw:drawGrab,recover:resetHook,
         action:function(s,a){if(a!=='fire'||s.phase!=='swing')return;if(s.awaitingStart){begin('grab');return;}s.phase='out';}},
@@ -658,7 +871,7 @@
       if(kind==='asteroid'&&Object.prototype.hasOwnProperty.call(s.keys,a))s.keys[a]=true;
     }
     return {kinds:KINDS,definitions:definitions,action:action,update:function(kind,dt){var s=g(kind);if(!s||!s.running||s.pausedAt!=null)return;
-      if(kind==='golf'||kind==='pinball'){
+      if(kind==='golf'||kind==='pinball'||kind==='merge'){
         for(var left=dt;left>1e-8&&s.running;left-=1/120)definitions[kind].update(s,Math.min(left,1/120));
       }else definitions[kind].update(s,dt);},draw:function(kind){var s=g(kind);if(s){if(host.prepare)s.renderScale=host.prepare(s.canvas,s.ctx,480,viewHeight(s));definitions[kind].draw(s);}},resize:function(kind,oldHeight){var s=g(kind);if(!s)return;if(kind==='pinball')s.camera=clamp(s.ball.y-viewHeight(s)*.55,0,pinHeight-viewHeight(s));if(kind==='doodle')s.cameraY+=oldHeight-viewHeight(s);if(kind==='asteroid'){s.touchTarget=null;var ratio=viewHeight(s)/oldHeight;s.ship.y*=ratio;s.rocks.concat(s.shots,s.sparks).forEach(function(p){p.y*=ratio;});}}};
   }

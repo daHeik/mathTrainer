@@ -6,6 +6,7 @@ var games={},losses=[],api=A.create({
  get:function(kind){return games[kind];},
  begin:function(kind){games[kind].awaitingStart=false;games[kind].running=true;return true;},
  advance:function(g,dt){if(!g.active||!g.running||g.pausedAt!=null)return 0;g.playTimeMs=(g.playTimeMs||0)+dt*1000;return dt;},
+ finish:function(kind){games[kind].active=false;games[kind].running=false;},
  lose:function(kind,reason){var g=games[kind];losses.push({kind:kind,reason:reason});g.attempts++;g.running=false;if(kind==='tiles'||g.attempts>=3)g.active=false;else{api.definitions[kind].recover(g);g.awaitingStart=true;}}
 });
 function start(kind){
@@ -150,3 +151,50 @@ assert(pin.lamps[0]);assert.equal(pin.score,20);
 pin.ball.y=1490;pin.safeUntil=0;api.update('pinball',.02);
 assert.equal(pin.attempts,1);assert(pin.ball.y<1350&&pin.ride);
 console.log('OK: six golf courses, jump and castle tunnel; timed fishing, signed catches and treasure crab; launch, scrolling, three flipper pairs, tube, orbit and hyperlane.');
+
+var merge=start('merge');
+function advanceFrames(kind,n){for(var frame=0;frame<n;frame++)api.update(kind,1/60);}
+api.action('merge','fire',true);
+api.action('merge','fire',true);
+assert.equal(merge.balls.length,1,'Rapid taps cannot overlap drops');
+advanceFrames('merge',75);
+api.action('merge','fire',true);
+advanceFrames('merge',75);
+assert.equal(merge.largest,4);
+assert.equal(merge.score,4);
+assert.equal(merge.balls.length,1);
+merge.current=4;
+api.action('merge','fire',true);
+advanceFrames('merge',100);
+assert.equal(merge.largest,8);
+assert.equal(merge.score,12);
+assert(merge.active,'Passing through the rim is safe');
+api.draw('merge');
+
+var harbor=start('harbor');
+api.action('harbor','fire',true);
+assert.equal(harbor.lines,1);
+assert.equal(harbor.score,13);
+assert.equal(harbor.load,1);
+assert.equal(harbor.tray.filter(Boolean).length,2);
+harbor.row=0;harbor.col=0;
+api.action('harbor','rotate',true);
+api.action('harbor','fire',true);
+var prior=harbor.score;
+harbor.row=0;harbor.col=1;
+api.action('harbor','fire',true);
+assert.equal(harbor.score,prior,'Overlap cannot consume cargo');
+harbor.row=4;
+api.action('harbor','fire',true);
+assert.equal(harbor.load,2);
+assert.equal(harbor.tray.filter(Boolean).length,3);
+harbor.board=Array(64).fill(0);
+for(var edge=1;edge<8;edge++){harbor.board[edge]=1;harbor.board[edge*8]=1;}
+harbor.row=0;harbor.col=0;
+harbor.tray[0].cells=[[0,0]];
+prior=harbor.score;
+api.action('harbor','fire',true);
+assert.equal(harbor.score-prior,41);
+assert.equal(harbor.board.filter(Boolean).length,0,'Crossing lines clear together');
+api.draw('harbor');
+console.log('Kugel-Merge: opening pair, gravity, drop cooldown and doubling. Blockhafen: rotation, opening line, invalid placement, refill and crossing lines OK.');

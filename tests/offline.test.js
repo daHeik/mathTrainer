@@ -10,7 +10,7 @@ var context = { URL:URL, Response:Response, self:{ registration:{scope:"https://
 vm.runInNewContext(fs.readFileSync(path.join(root, 'sw.js'), 'utf8'), context);
 var assets = Array.from(context.ASSETS);
 assets.forEach(function(asset){ assert(fs.existsSync(path.join(root, asset)), 'Missing cached asset: ' + asset); });
-['gravity','brick','snake','snow','flappy','tower','runner','doodle','tiles','maze','asteroid','golf','grab','pinball','frog','chicken'].forEach(function(game){
+['gravity','brick','snake','snow','flappy','tower','runner','doodle','tiles','maze','asteroid','golf','grab','pinball','merge','harbor','frog','chicken'].forEach(function(game){
   assert(assets.indexOf('./' + game + '.html') !== -1);
   assert(fs.readFileSync(path.join(root, game + '.html'), 'utf8').indexOf('?demo=' + game) !== -1);
 });
@@ -81,7 +81,7 @@ Array.from(html.matchAll(/href="icons\.svg#([^"]+)"/g)).forEach(function(match){
 });
 assert(!/vocabulator|Vokabel|trainer\.js|data\/manifest/.test(html));
 assert(handlers.install && handlers.activate && handlers.fetch);
-console.log('Offline: all seventeen games, launchers, colored SVG icons, module load order and screen structure OK');
+console.log('Offline: all nineteen games, launchers, colored SVG icons, module load order and screen structure OK');
 
 assert(html.indexOf('src="curriculum.js"')<html.indexOf('src="app.js"'),'Curriculum loads before the app');
 

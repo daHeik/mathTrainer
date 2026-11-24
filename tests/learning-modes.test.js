@@ -126,7 +126,7 @@ source = source.replace(/\}\)\(\);\s*$/, [
   'drawGame:function(kind){if(extraArcade.definitions[kind])extraArcade.draw(kind);else ({dino:drawRewardGame,flappy:drawFlappyGame,tower:drawTowerGame,gravity:drawGravityGame,brick:drawBrickGame,snake:drawSnakeGame,snow:drawSnowGame,runner:drawRunnerGame})[kind]();},',
   'gravityContext:function(value){if(value)gravityCtx=value;return gravityCtx;},',
   'prepareGameCanvas:prepareGameCanvas, logicalCanvasHeight:logicalCanvasHeight,',
-  'games:function(){return {dino:rewardGame,flappy:flappyGame,tower:towerGame,gravity:gravityGame,brick:arcadeGames.brick,snake:arcadeGames.snake,snow:arcadeGames.snow,runner:arcadeGames.runner,doodle:arcadeGames.doodle,tiles:arcadeGames.tiles,maze:arcadeGames.maze,asteroid:arcadeGames.asteroid,golf:arcadeGames.golf,grab:arcadeGames.grab,pinball:arcadeGames.pinball};},',
+  'games:function(){return {dino:rewardGame,flappy:flappyGame,tower:towerGame,gravity:gravityGame,brick:arcadeGames.brick,snake:arcadeGames.snake,snow:arcadeGames.snow,runner:arcadeGames.runner,doodle:arcadeGames.doodle,tiles:arcadeGames.tiles,maze:arcadeGames.maze,asteroid:arcadeGames.asteroid,golf:arcadeGames.golf,grab:arcadeGames.grab,pinball:arcadeGames.pinball,merge:arcadeGames.merge,harbor:arcadeGames.harbor};},',
   'extras:extraArcade, resizeExtraCanvases:resizeExtraCanvases,',
   'chickenGame:function(){return chickenGame;}, startChickenGame:startChickenGame, chickenStep:chickenStep, stopChickenGame:stopChickenGame,',
   'frogGame:function(){return frogGame;}, startFrogGame:startFrogGame, frogStep:frogStep, tapFrog:tapFrog, stopFrogGame:stopFrogGame,',
@@ -2570,7 +2570,7 @@ function gameKey(target, key, repeat){
 console.log('Dino, Flappy and Tower: keyboard start, one Space action, native toolbar controls, pause and arrow mappings OK');
 
 // Vocabulator ports use the mathTrainer reward and demo lifecycle.
-[['golf','Golf','fire'],['grab','Grab','fire'],['pinball','Pinball','left']].forEach(function(spec){
+[['golf','Golf','fire'],['grab','Grab','fire'],['pinball','Pinball','left'],['merge','Merge','fire'],['harbor','Harbor','fire']].forEach(function(spec){
   var kind=spec[0], label=spec[1], action=spec[2], record='best'+label+'Score';
   var reward=api.getState().reward;
   reward.availablePlays=1;
