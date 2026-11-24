@@ -3,9 +3,9 @@
 | Projektinformationen | Stand |
 | --- | --- |
 | Projektablage | `/Users/heik/Dev/repos/mathServer` |
-| Version | Basis `722d0ad` mit lokalen Änderungen für Safe Areas, „Leeres Blatt“ und drei Spiele aus Vocabulator, PWA-Cache `1x1-trainer-v73`, keine separate semantische App-Version |
-| Letzte Quellcodeänderung | 2026-11-23 |
-| Letzte Projekt-/README-Änderung | 2026-11-23 |
+| Version | Basis `7d08b62` mit überarbeitetem Offline-Fallback, Speicherfreigabe im Blattarchiv und optimierten Spielanzeigen, PWA-Cache `1x1-trainer-v74`, keine separate semantische App-Version |
+| Letzte Quellcodeänderung | 2026-11-24 |
+| Letzte Projekt-/README-Änderung | 2026-11-24 |
 | HTML-Anleitung | [mathTrainer-Dokumentation.html](../manuals/mathTrainer-Dokumentation.html) |
 
 ## TL;DR – so funktioniert mathTrainer
@@ -314,6 +314,8 @@ Backups sind lokal erzeugte JSON-Dateien und werden vor Übernahme geprüft. Neu
 
 Die ursprünglichen zwölf Canvas-Spiele teilen Lebenszyklus, Pause, erste-Spielaktion-Buchung, Profilrekorde und Touchabbildung. Das dreizehnte Spiel, Frog Punch, verwendet SVG-/DOM-Ziele und drei Zeitrunden; es ist in dieselbe Auswahl, Pause und Kontingentbuchung integriert. Als vierzehntes Spiel ergänzt Chicken Shooter eine eigenständige 90-Sekunden-Partie mit saisonalem Hühnerhof und eigener Top-5-Liste. Die ursprünglichen Spiele liegen in `app.js`, Doodle/2048/Pac-Man/Asteroids in `arcade-extra.js` mit `VocabArcade.create()` als Schnittstelle. Ein Spiel auf der Auswahlseite zu öffnen bucht noch nichts ab. Aktive Spielzeit und Versuchszahl werden unabhängig vom Öffnen der Spielauswahl geführt. Eine Verlängerung derselben Welt wie in Vocabulator ist hier nicht implementiert.
 
+Bei Dino, Flattervogel, Turmbauer und Gravity Run schreibt die Spielschleife Zeit, Punkte und andere Anzeigen nur bei geändertem Text ins DOM.
+
 ### Mini-Golf, Schatzgreifer und Taschen-Flipper
 
 Die drei Spiele stammen aus Vocabulator `dd849bd` (Version 66, MIT). Sie verwenden die übernommenen Canvas-Grafiken, Physik, Eingaberegeln und mobilen Spielflächen. Im Mathetrainer teilen sie sich mit den vorhandenen Spielen die Kontingentbuchung bei der ersten Spielaktion, Pause und drei Minuten aktive Spielzeit.
@@ -410,9 +412,11 @@ IndexedDB `mathTrainer-paper` speichert je Blatt ID, Profil-ID, letztes Bearbeit
 
 Der Export verwendet eine versionierte JSON-Hülle mit Kennung `mathTrainer-paper`. Der Import prüft Datum, Farbwerte, Werkzeugparameter und Punktkoordinaten und speichert die Kopien in einer gemeinsamen Transaktion. Die Blätter bleiben im Browserkontext der App. Die App bittet den Browser, falls unterstützt, um persistenten Speicher. Speicherquoten, Browserregeln und manuelles Löschen können den lokalen Bestand betreffen. Siehe [WebKit-Speicherregeln](https://webkit.org/blog/14403/updates-to-storage-policy/).
 
+Beim Wechsel ins Blattarchiv gibt der Editor die Strichliste, den Wiederholen-Stapel und die große Zeichenfläche frei. Beim erneuten Öffnen lädt er den gespeicherten Blattstand.
+
 ## Technischer Deep-Dive – Offline, Aktualisierung und Hosting
 
-`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v73`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
+`sw.js` installiert eine feste App-Dateiliste unter `1x1-trainer-v74`, entfernt alte Cacheversionen dieses Projekts und verwendet anschließend Netzwerk zuerst mit Cache-Fallback für die aufgelisteten App-Dateien. Bei Netzfehlern und HTTP-5xx liefert er die vorhandene Kopie aus dem aktuellen Projektcache. Offline-Demoaufrufe mit Query-Parametern nutzen die gecachte Startseite. Erfolgreiche direkte Abrufe aktualisieren den Cache, fehlende Skripte behalten ihren Fehlerstatus. Das Manifest und die Icons erlauben eine Home-Bildschirm-Installation. Zuverlässiger Service-Worker-Betrieb benötigt localhost oder HTTPS; HTTP auf einer Pi-LAN-IP allein garantiert keine Offline-PWA auf iOS.
 
 Statische Bereitstellung benötigt keinen Appprozess. Für einen dauerhaft laufenden Pi sind nginx/Apache oder ein ausdrücklich eingerichteter systemd-Testserver möglich. Der vorhandene Pages-Workflow veröffentlicht bei Push auf `main` das Repository als statische Seite. Vor Veröffentlichung daher den ausgelieferten Dateiumfang prüfen; technische Dokumentation mit privaten Projektpfaden ist nicht automatisch für die Öffentlichkeit bestimmt. Diese Dokumentationsarbeit löst keinen Push oder Deployment aus.
 

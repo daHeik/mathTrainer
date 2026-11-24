@@ -222,6 +222,10 @@ var BlankPaper = (function(){
       var request = ++archiveRequest;
       clearTimeout(saveTimer);
       editor.hidden = true;
+      sheet = null;
+      redo = [];
+      // Release the Retina bitmap while the archive is open.
+      canvas.width = canvas.height = 1;
       archive.hidden = false;
       list.textContent = '';
       archiveStatus.textContent = 'Blätter werden geladen …';

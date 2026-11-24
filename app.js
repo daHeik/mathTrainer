@@ -3186,21 +3186,25 @@
     return survivalPoints + rewardGame.bonusScore;
   }
 
+  function setHudText(node, value){
+    if (node.textContent !== value) node.textContent = value;
+  }
+
   function updateGameHud(){
     if (!rewardGame) return;
     var elapsed = rewardGame.startedAt ? gameElapsedMs(rewardGame) : 0;
     var remaining = GAME_DURATION_MS - elapsed;
     var difficulty = rewardGameDifficulty(elapsed);
-    gameTime.textContent = remaining <= 0 ? "0:00 · letzter Versuch" : formatGameTime(remaining);
-    gameAttempts.textContent = "Versuch: " + Math.min(rewardGame.attempts + 1, rewardGame.maxAttempts) +
-      "/" + rewardGame.maxAttempts;
-    gameScore.textContent = "Punkte: " + rewardGameScore() + " · Rekord: " + state.reward.bestDinoScore;
-    gameLevel.textContent = "Stufe: " + difficulty.level + "/6";
+    setHudText(gameTime, remaining <= 0 ? "0:00 · letzter Versuch" : formatGameTime(remaining));
+    setHudText(gameAttempts, "Versuch: " + Math.min(rewardGame.attempts + 1, rewardGame.maxAttempts) +
+      "/" + rewardGame.maxAttempts);
+    setHudText(gameScore, "Punkte: " + rewardGameScore() + " · Rekord: " + state.reward.bestDinoScore);
+    setHudText(gameLevel, "Stufe: " + difficulty.level + "/6");
     var superRemaining = Math.max(0, rewardGame.superUntil - gameTimeStamp(rewardGame));
-    gameStars.textContent = superRemaining
+    setHudText(gameStars, superRemaining
       ? "Sterne: " + rewardGame.stars + " · Super: " + Math.ceil(superRemaining / 1000) + " s"
-      : "Sterne: " + rewardGame.stars + " · Super " + rewardGame.powerStars + "/3";
-    gameCombo.textContent = "Combo ×" + rewardGame.multiplier + " (" + rewardGame.combo + ")";
+      : "Sterne: " + rewardGame.stars + " · Super " + rewardGame.powerStars + "/3");
+    setHudText(gameCombo, "Combo ×" + rewardGame.multiplier + " (" + rewardGame.combo + ")");
   }
 
   function resetGameAttempt(){
@@ -3675,11 +3679,11 @@
     if (!flappyGame) return;
     var elapsed = flappyGame.startedAt ? gameElapsedMs(flappyGame) : 0;
     var remaining = GAME_DURATION_MS - elapsed;
-    flappyTime.textContent = remaining <= 0 ? '0:00 · letzter Versuch' : formatGameTime(remaining);
-    flappyAttempts.textContent = 'Versuch: ' + Math.min(flappyGame.attempts + 1, GAME_MAX_ATTEMPTS) +
-      '/' + GAME_MAX_ATTEMPTS;
-    flappyScore.textContent = 'Punkte: ' + flappyGameScore();
-    flappyBest.textContent = 'Rekord: ' + state.reward.bestFlappyScore;
+    setHudText(flappyTime, remaining <= 0 ? '0:00 · letzter Versuch' : formatGameTime(remaining));
+    setHudText(flappyAttempts, 'Versuch: ' + Math.min(flappyGame.attempts + 1, GAME_MAX_ATTEMPTS) +
+      '/' + GAME_MAX_ATTEMPTS);
+    setHudText(flappyScore, 'Punkte: ' + flappyGameScore());
+    setHudText(flappyBest, 'Rekord: ' + state.reward.bestFlappyScore);
   }
 
   function resetFlappyAttempt(){
@@ -3955,11 +3959,11 @@
     if (!towerGame) return;
     var elapsed = towerGame.startedAt ? gameElapsedMs(towerGame) : 0;
     var remaining = GAME_DURATION_MS - elapsed;
-    towerTime.textContent = remaining <= 0 ? '0:00 · letzter Versuch' : formatGameTime(remaining);
-    towerAttempts.textContent = 'Versuch: ' + Math.min(towerGame.attempts + 1, GAME_MAX_ATTEMPTS) +
-      '/' + GAME_MAX_ATTEMPTS;
-    towerScore.textContent = 'Punkte: ' + towerGameScore() + ' · Höhe: ' + towerGame.height;
-    towerBest.textContent = 'Rekord: ' + state.reward.bestTowerScore;
+    setHudText(towerTime, remaining <= 0 ? '0:00 · letzter Versuch' : formatGameTime(remaining));
+    setHudText(towerAttempts, 'Versuch: ' + Math.min(towerGame.attempts + 1, GAME_MAX_ATTEMPTS) +
+      '/' + GAME_MAX_ATTEMPTS);
+    setHudText(towerScore, 'Punkte: ' + towerGameScore() + ' · Höhe: ' + towerGame.height);
+    setHudText(towerBest, 'Rekord: ' + state.reward.bestTowerScore);
   }
 
   function createTowerMovingBlock(){
@@ -4324,12 +4328,12 @@
   function gravityScore(){return gravityGame?Math.floor(gravityGame.totalDistance/12)+gravityGame.bonusScore:0;}
   function updateGravityHud(){
     var g=gravityGame;if(!g)return;
-    el('gravityTime').textContent=formatGameTime(Math.max(0,GAME_DURATION_MS-(g.startedAt?gameElapsedMs(g):0)));
-    el('gravityAttempts').textContent='Versuch: '+Math.min(3,g.attempts+1)+'/3';
-    el('gravityScore').textContent='Punkte: '+gravityScore();
-    el('gravityBest').textContent='Rekord: '+state.reward.bestGravityScore;
-    el('gravityLevel').textContent=g.section+' · '+gravityDifficulty(g.elapsed).level+'/6';
-    el('gravityCoins').textContent='Münzen: '+g.coins+' · +'+g.bonusScore;
+    setHudText(el('gravityTime'), formatGameTime(Math.max(0,GAME_DURATION_MS-(g.startedAt?gameElapsedMs(g):0))));
+    setHudText(el('gravityAttempts'), 'Versuch: '+Math.min(3,g.attempts+1)+'/3');
+    setHudText(el('gravityScore'), 'Punkte: '+gravityScore());
+    setHudText(el('gravityBest'), 'Rekord: '+state.reward.bestGravityScore);
+    setHudText(el('gravityLevel'), g.section+' · '+gravityDifficulty(g.elapsed).level+'/6');
+    setHudText(el('gravityCoins'), 'Münzen: '+g.coins+' · +'+g.bonusScore);
   }
   function startGravityGame(demo){
     if(demo!==true&&state.reward.availablePlays<1)return;

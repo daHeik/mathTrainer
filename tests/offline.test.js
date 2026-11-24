@@ -6,7 +6,7 @@ var path = require('path');
 var vm = require('vm');
 var root = path.join(__dirname, '..');
 var handlers = {};
-var context = { self:{ addEventListener:function(name, fn){ handlers[name] = fn; } } };
+var context = { URL:URL, Response:Response, self:{ registration:{scope:"https://example.org/trainer/"}, addEventListener:function(name, fn){ handlers[name] = fn; } } };
 vm.runInNewContext(fs.readFileSync(path.join(root, 'sw.js'), 'utf8'), context);
 var assets = Array.from(context.ASSETS);
 assets.forEach(function(asset){ assert(fs.existsSync(path.join(root, asset)), 'Missing cached asset: ' + asset); });
@@ -84,3 +84,32 @@ assert(handlers.install && handlers.activate && handlers.fetch);
 console.log('Offline: all seventeen games, launchers, colored SVG icons, module load order and screen structure OK');
 
 assert(html.indexOf('src="curriculum.js"')<html.indexOf('src="app.js"'),'Curriculum loads before the app');
+
+async function verifyFetch(){
+  var base=context.self.registration.scope, stored=new Map(), cached=new Response('working');
+  stored.set(base+'app.js', cached);
+  stored.set(base+'index.html', new Response('home'));
+  context.caches={open:async function(name){
+    assert.strictEqual(name,context.CACHE_NAME);
+    return {match:async function(key){return stored.get(key);},put:async function(key,value){stored.set(key,value);}};
+  }};
+  async function visit(path){
+    var result, work=[];
+    handlers.fetch({request:new Request(new URL(path,base)),respondWith:function(p){result=p;},waitUntil:function(p){work.push(p);}});
+    var response=await result;
+    await Promise.all(work);
+    return response;
+  }
+  context.fetch=async function(){return new Response('unavailable',{status:503});};
+  assert.strictEqual(await visit('app.js'),cached);
+  assert.strictEqual(stored.get(base+'app.js'),cached);
+  context.fetch=async function(){throw Error('offline');};
+  assert.strictEqual(await (await visit('index.html?demo=golf')).text(),'home');
+  assert.strictEqual((await visit('styles.css')).type,'error');
+  assert.strictEqual(await visit('unknown.js'),undefined);
+  context.fetch=async function(){return new Response('updated');};
+  assert.strictEqual(await (await visit('app.js')).text(),'updated');
+  assert.strictEqual(await stored.get(base+'app.js').text(),'updated');
+  console.log('Offline fetch: updates, server errors, missing assets and demo navigation OK');
+}
+verifyFetch().catch(function(error){console.error(error);process.exitCode=1;});

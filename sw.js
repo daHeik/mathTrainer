@@ -1,4 +1,4 @@
-var CACHE_NAME = "1x1-trainer-v73";
+var CACHE_NAME = "1x1-trainer-v74";
 var ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./blank-paper.js", "./curriculum.js", "./arcade-extra.js", "./frog-punch.js", "./frog.html", "./chicken-shooter.js", "./chicken.html", "./doodle.html", "./tiles.html", "./maze.html", "./asteroid.html", "./golf.html", "./grab.html", "./pinball.html", "./icons.svg", "./flappy.html", "./tower.html", "./gravity.html", "./brick.html", "./snake.html", "./snow.html", "./runner.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", function(e){
@@ -20,19 +20,35 @@ self.addEventListener("activate", function(e){
   );
 });
 
-// Network first so updates arrive when the server is reachable; the cache
-// keeps the app working offline or when the Pi is down.
-self.addEventListener("fetch", function(e){
-  if (e.request.method !== "GET") return;
-  e.respondWith(
-    fetch(e.request).then(function(res){
-      var copy = res.clone();
-      caches.open(CACHE_NAME).then(function(c){ c.put(e.request, copy); });
-      return res;
-    }).catch(function(){
-      return caches.match(e.request, { ignoreSearch: true }).then(function(hit){
-        return hit || caches.match("./index.html");
-      });
-    })
-  );
+// Resolve relative to this installation, including GitHub Pages project paths.
+var assetUrls = new Set(ASSETS.map(function(path){
+  return new URL(path, self.registration.scope).href;
+}));
+
+self.addEventListener("fetch", function(event){
+  var request = event.request;
+  if (request.method !== "GET" || request.headers.has("range")) return;
+  var url = new URL(request.url);
+  url.search = "";
+  url.hash = "";
+  if (!assetUrls.has(url.href)) return;
+
+  function fallback(response){
+    return caches.open(CACHE_NAME).then(function(cache){
+      return cache.match(url.href);
+    }).catch(function(){ return undefined; }).then(function(hit){
+      return hit || response;
+    });
+  }
+
+  event.respondWith(fetch(request).then(function(response){
+    if (response.status >= 500) return fallback(response);
+    if (response.status === 200 && !response.redirected && request.url === url.href){
+      var copy = response.clone();
+      event.waitUntil(caches.open(CACHE_NAME).then(function(cache){
+        return cache.put(url.href, copy);
+      }).catch(function(){ /* A full cache still permits online use. */ }));
+    }
+    return response;
+  }, function(){ return fallback(Response.error()); }));
 });
